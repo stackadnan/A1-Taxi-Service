@@ -1,0 +1,44 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Booking Feedback ERD" id="0">
+    <mxGraphModel dx="1220" dy="535" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="booking_feedback" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="booking_feedback&#xa;&#xa;id (PK)&#xa;booking_id (FK)&#xa;rating (1-5)&#xa;experience_type (positive / negative)&#xa;comments&#xa;submitted_at&#xa;ip_address" vertex="1">
+          <mxGeometry height="200" width="300" x="40" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="feedback_rules" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="feedback_rules&#xa;&#xa;id (PK)&#xa;trigger_type (positive / negative)&#xa;min_rating&#xa;max_rating&#xa;response_type (apology / review_link / custom)&#xa;is_active&#xa;created_at&#xa;updated_at" vertex="1">
+          <mxGeometry height="220" width="300" x="400" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="feedback_messages" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="feedback_messages&#xa;&#xa;id (PK)&#xa;rule_id (FK)&#xa;email_subject&#xa;email_body&#xa;created_at&#xa;updated_at" vertex="1">
+          <mxGeometry height="160" width="300" x="400" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="review_platforms" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="review_platforms&#xa;&#xa;id (PK)&#xa;platform_name&#xa;review_url&#xa;status&#xa;created_at&#xa;updated_at" vertex="1">
+          <mxGeometry height="160" width="300" x="760" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="feedback_dispatch_log" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="feedback_dispatch_log&#xa;&#xa;id (PK)&#xa;booking_id (FK)&#xa;feedback_id (FK)&#xa;rule_id (FK)&#xa;message_type (email / sms)&#xa;sent_to&#xa;sent_at&#xa;status" vertex="1">
+          <mxGeometry height="220" width="300" x="760" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_feedback_dispatch" edge="1" parent="1" source="booking_feedback" style="endArrow=block;html=1;entryX=-0.006;entryY=0.819;entryDx=0;entryDy=0;entryPerimeter=0;" target="feedback_dispatch_log">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="500" />
+              <mxPoint x="720" y="500" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel_rules_messages" edge="1" parent="1" source="feedback_rules" style="endArrow=block;html=1;" target="feedback_messages">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_rules_dispatch" edge="1" parent="1" source="feedback_rules" style="endArrow=block;html=1;entryX=0.033;entryY=0.045;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.962;exitY=0.961;exitDx=0;exitDy=0;exitPerimeter=0;" target="feedback_dispatch_log">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="700" y="280" />
+            </Array>
+            <mxPoint x="690" y="270" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

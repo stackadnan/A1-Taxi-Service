@@ -1,0 +1,52 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Notification System ERD" id="0">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;admin_settings&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           app_name&lt;br&gt;           default_language&lt;br&gt;           timezone&lt;br&gt;           created_at&lt;br&gt;           updated_at" vertex="1">
+          <mxGeometry height="240" width="320" x="80" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="&lt;b&gt;notification_events&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           event_key&lt;br&gt;           description&lt;br&gt;           status&lt;br&gt;           created_at&lt;br&gt;           updated_at" vertex="1">
+          <mxGeometry height="260" width="320" x="440" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;b&gt;notification_targets&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           event_id (FK)&lt;br&gt;           recipient_type&lt;br&gt;           enabled&lt;br&gt;           created_at&lt;br&gt;           updated_at" vertex="1">
+          <mxGeometry height="260" width="340" x="820" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;b&gt;notification_channels&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           target_id (FK)&lt;br&gt;           channel_type&lt;br&gt;           enabled&lt;br&gt;           priority&lt;br&gt;           created_at&lt;br&gt;           updated_at" vertex="1">
+          <mxGeometry height="260" width="360" x="1210" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;b&gt;notification_templates&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           event_id (FK)&lt;br&gt;           recipient_type&lt;br&gt;           channel_type&lt;br&gt;           subject&lt;br&gt;           message_body&lt;br&gt;           status&lt;br&gt;           created_at&lt;br&gt;           updated_at" vertex="1">
+          <mxGeometry height="240" width="320" x="440" y="355" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fad7ac;strokeColor=#b46504;" value="&lt;b&gt;notification_logs&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           event_id (FK)&lt;br&gt;           recipient_type&lt;br&gt;           channel_type&lt;br&gt;           recipient_contact&lt;br&gt;           status&lt;br&gt;           error_message&lt;br&gt;           sent_at" vertex="1">
+          <mxGeometry height="250" width="310" x="800" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d0cee2;strokeColor=#56517e;" value="&lt;b&gt;email_settings&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           provider&lt;br&gt;           smtp_host&lt;br&gt;           smtp_port&lt;br&gt;           username&lt;br&gt;           from_email&lt;br&gt;           encryption&lt;br&gt;           status&lt;br&gt;           updated_at" vertex="1">
+          <mxGeometry height="240" width="320" x="80" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;" value="&lt;b&gt;api_settings&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           service_name&lt;br&gt;           base_url&lt;br&gt;           auth_type&lt;br&gt;           api_key&lt;br&gt;           status&lt;br&gt;           updated_at" vertex="1">
+          <mxGeometry height="250" width="320" x="80" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="&lt;b&gt;log_settings&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           log_level&lt;br&gt;           retention_days&lt;br&gt;           store_location&lt;br&gt;           status&lt;br&gt;           updated_at" vertex="1">
+          <mxGeometry height="260" width="320" x="440" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3fcef;strokeColor=#00875a;" value="&lt;b&gt;ui_settings&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           primary_color&lt;br&gt;           secondary_color&lt;br&gt;           accent_color&lt;br&gt;           logo_url&lt;br&gt;           updated_at" vertex="1">
+          <mxGeometry height="260" width="340" x="800" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-11" edge="1" parent="1" source="qd_X8zgdxtg6_WVxFfJ9-2" style="endArrow=block;html=1;" target="qd_X8zgdxtg6_WVxFfJ9-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-12" edge="1" parent="1" source="qd_X8zgdxtg6_WVxFfJ9-3" style="endArrow=block;html=1;" target="qd_X8zgdxtg6_WVxFfJ9-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-13" edge="1" parent="1" source="qd_X8zgdxtg6_WVxFfJ9-2" style="endArrow=block;html=1;" target="qd_X8zgdxtg6_WVxFfJ9-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qd_X8zgdxtg6_WVxFfJ9-14" edge="1" parent="1" source="qd_X8zgdxtg6_WVxFfJ9-2" style="endArrow=block;html=1;" target="qd_X8zgdxtg6_WVxFfJ9-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

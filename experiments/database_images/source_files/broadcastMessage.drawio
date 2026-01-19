@@ -1,0 +1,47 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Driver Broadcast With Councils ERD" id="0">
+    <mxGraphModel dx="1601" dy="703" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="councils" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="&lt;b&gt;councils&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           council_name&lt;br&gt;           status&lt;br&gt;           created_at" vertex="1">
+          <mxGeometry height="220" width="300" x="60" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="driver_broadcasts" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;driver_broadcasts&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           title&lt;br&gt;           message&lt;br&gt;           broadcast_type&lt;br&gt;           status&lt;br&gt;           scheduled_at&lt;br&gt;           created_by&lt;br&gt;           created_at" vertex="1">
+          <mxGeometry height="280" width="380" x="390" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="driver_broadcast_councils" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;b&gt;driver_broadcast_councils&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           broadcast_id (FK)&lt;br&gt;           council_id (FK)&lt;br&gt;           created_at" vertex="1">
+          <mxGeometry height="240" width="360" x="860" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="driver_broadcast_channels" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;b&gt;driver_broadcast_channels&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           broadcast_id (FK)&lt;br&gt;           channel_type&lt;br&gt;           template_id (nullable)&lt;br&gt;           status&lt;br&gt;           created_at" vertex="1">
+          <mxGeometry height="260" width="380" x="390" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="driver_broadcast_logs" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;b&gt;driver_broadcast_logs&lt;/b&gt;&lt;br&gt;&lt;br&gt;           id (PK)&lt;br&gt;           broadcast_id (FK)&lt;br&gt;           driver_id (FK)&lt;br&gt;           council_id (FK)&lt;br&gt;           channel_type&lt;br&gt;           recipient_contact&lt;br&gt;           status&lt;br&gt;           error_message&lt;br&gt;           sent_at" vertex="1">
+          <mxGeometry height="340" width="420" x="860" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" edge="1" parent="1" source="driver_broadcasts" style="endArrow=block;html=1;" target="driver_broadcast_councils">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="850" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r2" edge="1" parent="1" source="councils" style="endArrow=block;html=1;exitX=0.436;exitY=-0.011;exitDx=0;exitDy=0;exitPerimeter=0;" target="driver_broadcast_councils">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="190" y="30" />
+              <mxPoint x="1010" y="30" />
+              <mxPoint x="1010" y="60" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r3" edge="1" parent="1" source="driver_broadcasts" style="endArrow=block;html=1;" target="driver_broadcast_channels">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" edge="1" parent="1" source="driver_broadcasts" style="endArrow=block;html=1;exitX=0.975;exitY=0.949;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.008;entryY=0.081;entryDx=0;entryDy=0;entryPerimeter=0;" target="driver_broadcast_logs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

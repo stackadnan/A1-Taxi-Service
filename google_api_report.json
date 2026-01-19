@@ -1,0 +1,30 @@
+{
+    "api_key": "AIzaSyBdmyqdJzsLJJuo7ZiZOAlY3nMx-IMrS8g",
+    "checked_at": "2026-01-09 15:34:17.208232",
+    "results": [
+        {
+            "api": "Geocoding",
+            "status": "OK",
+            "success": true,
+            "message": "API working"
+        },
+        {
+            "api": "Places",
+            "status": "OK",
+            "success": true,
+            "message": "API working"
+        },
+        {
+            "api": "Directions",
+            "status": "OK",
+            "success": true,
+            "message": "API working"
+        },
+        {
+            "api": "Distance Matrix",
+            "status": "OK",
+            "success": true,
+            "message": "API working"
+        }
+    ]
+}

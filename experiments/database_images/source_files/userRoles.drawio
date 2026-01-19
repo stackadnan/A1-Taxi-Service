@@ -1,0 +1,72 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Page-1" id="k0vYeZyj62hRgV5iXU18">
+    <mxGraphModel dx="2985" dy="937" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" value="users&#xa;----------------&#xa;id (PK)&#xa;email&#xa;username&#xa;password&#xa;is_active&#xa;idle_timeout&#xa;last_login_at&#xa;last_login_ip&#xa;created_at&#xa;updated_at&#xa;deleted_at" vertex="1">
+          <mxGeometry height="260" width="280" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" value="roles&#xa;----------------&#xa;id (PK)&#xa;name&#xa;description&#xa;is_system_role&#xa;created_at&#xa;updated_at" vertex="1">
+          <mxGeometry height="200" width="260" x="400" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" value="permissions&#xa;----------------&#xa;id (PK)&#xa;module&#xa;action&#xa;description&#xa;created_at&#xa;updated_at" vertex="1">
+          <mxGeometry height="200" width="280" x="760" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" value="user_roles&#xa;----------------&#xa;user_id (FK)&#xa;role_id (FK)&#xa;PK (user_id, role_id)" vertex="1">
+          <mxGeometry height="140" width="260" x="400" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6" value="role_permissions&#xa;----------------&#xa;role_id (FK)&#xa;permission_id (FK)&#xa;PK (role_id, permission_id)" vertex="1">
+          <mxGeometry height="140" width="280" x="760" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" value="user_login_logs&#xa;----------------&#xa;id (PK)&#xa;user_id (FK)&#xa;ip_address&#xa;user_agent&#xa;logged_in_at&#xa;logged_out_at" vertex="1">
+          <mxGeometry height="200" width="280" x="40" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" value="user_sessions&#xa;----------------&#xa;id (PK)&#xa;user_id (FK)&#xa;session_id&#xa;ip_address&#xa;last_activity_at&#xa;expires_at" vertex="1">
+          <mxGeometry height="200" width="280" x="40" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" value="password_resets&#xa;----------------&#xa;id (PK)&#xa;user_id (FK)&#xa;token&#xa;expires_at&#xa;used_at&#xa;created_at" vertex="1">
+          <mxGeometry height="180" width="260" x="400" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" value="user_notifications&#xa;----------------&#xa;id (PK)&#xa;user_id (FK)&#xa;title&#xa;message&#xa;is_read&#xa;created_at" vertex="1">
+          <mxGeometry height="180" width="280" x="760" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-10" edge="1" parent="1" source="6HVO-bDZ-iqE2F6cx08h-1" style="endArrow=block;html=1;" target="6HVO-bDZ-iqE2F6cx08h-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-11" edge="1" parent="1" source="6HVO-bDZ-iqE2F6cx08h-2" style="endArrow=block;html=1;" target="6HVO-bDZ-iqE2F6cx08h-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-12" edge="1" parent="1" source="6HVO-bDZ-iqE2F6cx08h-2" style="endArrow=block;html=1;" target="6HVO-bDZ-iqE2F6cx08h-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-13" edge="1" parent="1" source="6HVO-bDZ-iqE2F6cx08h-3" style="endArrow=block;html=1;" target="6HVO-bDZ-iqE2F6cx08h-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-14" edge="1" parent="1" source="6HVO-bDZ-iqE2F6cx08h-1" style="endArrow=block;html=1;" target="6HVO-bDZ-iqE2F6cx08h-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-15" edge="1" parent="1" source="6HVO-bDZ-iqE2F6cx08h-1" style="endArrow=block;html=1;" target="6HVO-bDZ-iqE2F6cx08h-7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-170" y="170" />
+              <mxPoint x="-170" y="680" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-16" edge="1" parent="1" source="6HVO-bDZ-iqE2F6cx08h-1" style="endArrow=block;html=1;" target="6HVO-bDZ-iqE2F6cx08h-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6HVO-bDZ-iqE2F6cx08h-17" edge="1" parent="1" source="6HVO-bDZ-iqE2F6cx08h-1" style="endArrow=block;html=1;exitX=0.962;exitY=0.041;exitDx=0;exitDy=0;exitPerimeter=0;" target="6HVO-bDZ-iqE2F6cx08h-9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="360" y="10" />
+              <mxPoint x="1120" y="10" />
+              <mxPoint x="1120" y="570" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

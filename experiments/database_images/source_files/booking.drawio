@@ -1,0 +1,64 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Booking Module ERD" id="ebVdlWbDb2u46bjI3q5o">
+    <mxGraphModel dx="2329" dy="1022" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" value="bookings&#xa;----------------&#xa;id (PK)&#xa;booking_code (UNIQUE)&#xa;status (FK)&#xa;payment_type&#xa;payment_id&#xa;passenger_name&#xa;phone&#xa;alternate_phone&#xa;email&#xa;passengers_count&#xa;luggage_count&#xa;pickup_address&#xa;dropoff_address&#xa;pickup_date&#xa;pickup_time&#xa;flight_number&#xa;flight_arrival_time&#xa;meet_and_greet&#xa;baby_seat&#xa;vehicle_type&#xa;total_price&#xa;driver_price&#xa;driver_id (FK)&#xa;driver_name&#xa;return_booking&#xa;return_booking_id (FK)&#xa;message_to_driver&#xa;message_to_admin&#xa;source_url&#xa;source_ip&#xa;created_by_user_id (FK)&#xa;handled_by_user_id (FK)&#xa;created_at&#xa;updated_at" vertex="1">
+          <mxGeometry height="620" width="360" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" value="booking_statuses&#xa;----------------&#xa;id (PK)&#xa;name&#xa;description" vertex="1">
+          <mxGeometry height="160" width="240" x="460" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" value="booking_payments&#xa;----------------&#xa;id (PK)&#xa;booking_id (FK)&#xa;payment_type&#xa;payment_id&#xa;amount&#xa;currency&#xa;payment_status&#xa;gateway_response&#xa;created_at" vertex="1">
+          <mxGeometry height="240" width="260" x="460" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" value="booking_logs&#xa;----------------&#xa;id (PK)&#xa;booking_id (FK)&#xa;action_type&#xa;field_name&#xa;old_value&#xa;new_value&#xa;performed_by_user_id (FK)&#xa;performed_by_role&#xa;ip_address&#xa;user_agent&#xa;created_at" vertex="1">
+          <mxGeometry height="260" width="300" x="460" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6" value="booking_driver_history&#xa;----------------&#xa;id (PK)&#xa;booking_id (FK)&#xa;driver_id (FK)&#xa;driver_name&#xa;driver_price&#xa;assigned_by_user_id (FK)&#xa;assigned_at&#xa;unassigned_at" vertex="1">
+          <mxGeometry height="220" width="300" x="800" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" value="users&#xa;----------------&#xa;id (PK)&#xa;email&#xa;username" vertex="1">
+          <mxGeometry height="140" width="240" x="800" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" value="drivers&#xa;----------------&#xa;id (PK)&#xa;name&#xa;phone&#xa;vehicle_type" vertex="1">
+          <mxGeometry height="160" width="240" x="800" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-8" edge="1" parent="1" source="fAdH5yotM6vbEjA0bgIp-1" style="exitX=1.005;exitY=0.129;exitDx=0;exitDy=0;exitPerimeter=0;" target="fAdH5yotM6vbEjA0bgIp-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-9" edge="1" parent="1" source="fAdH5yotM6vbEjA0bgIp-1" target="fAdH5yotM6vbEjA0bgIp-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-10" edge="1" parent="1" source="fAdH5yotM6vbEjA0bgIp-1" style="entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="fAdH5yotM6vbEjA0bgIp-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-11" edge="1" parent="1" source="fAdH5yotM6vbEjA0bgIp-1" target="fAdH5yotM6vbEjA0bgIp-5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="410" y="220" />
+              <mxPoint x="850" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-12" edge="1" parent="1" source="fAdH5yotM6vbEjA0bgIp-6" target="fAdH5yotM6vbEjA0bgIp-1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="890" y="10" />
+              <mxPoint x="360" y="10" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="fAdH5yotM6vbEjA0bgIp-13" edge="1" parent="1" source="fAdH5yotM6vbEjA0bgIp-7" target="fAdH5yotM6vbEjA0bgIp-5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="920" y="470" />
+              <mxPoint x="920" y="460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

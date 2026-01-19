@@ -1,0 +1,1278 @@
+<div class="grid grid-cols-12 gap-4" style="max-width:100%; overflow-x:hidden;">
+  <style>
+    /* Booking form visual polish: rounder controls and smooth blue hover/focus */
+    #manual-booking-form { }
+    .manual-card { border-radius: 14px !important; transition: box-shadow .18s ease, border-color .18s ease, transform .06s ease; }
+    .manual-card:hover { box-shadow: 0 18px 40px rgba(59,53,233,0.08); border-color: rgba(79,70,229,0.08); }
+
+    /* Inputs / selects / textarea */
+    #manual-booking-form input, #manual-booking-form select, #manual-booking-form textarea,
+    .manual-card input, .manual-card select, .manual-card textarea {
+      border-radius: 10px !important; transition: box-shadow .18s ease, border-color .18s ease, transform .05s ease; border-color: #e5e7eb; }
+    #manual-booking-form input:hover, #manual-booking-form select:hover, #manual-booking-form textarea:hover,
+    .manual-card input:hover, .manual-card select:hover, .manual-card textarea:hover {
+      box-shadow: 0 8px 20px rgba(99,102,241,0.06); border-color: #6366f1; }
+    #manual-booking-form input:focus, #manual-booking-form select:focus, #manual-booking-form textarea:focus,
+    .manual-card input:focus, .manual-card select:focus, .manual-card textarea:focus {
+      outline: none; box-shadow: 0 12px 30px rgba(99,102,241,0.12); border-color: #4f46e5; transform: translateY(-1px); }
+
+    /* Buttons subtle lift */
+    #manual-booking-form button { transition: transform .08s ease, box-shadow .12s ease; }
+    #manual-booking-form button:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(99,102,241,0.08); }
+
+    /* Prevent any accidental horizontal scrollbar */
+    #manual-booking-form, .manual-card, .card-inner { overflow-x: hidden; }
+
+    @media (max-width: 1024px) { #manual-booking-form input, #manual-booking-form select, .manual-card input, #manual-booking-form textarea { border-radius: 8px !important; } }
+
+    /* Pricing list items */
+    #vehicle-pricing-list .pricing-item { border-radius: 10px; border: 1px solid #e5e7eb; padding: 10px 12px; margin-bottom: 8px; transition: border-color .12s ease, box-shadow .12s ease; background:#fff; }
+    #vehicle-pricing-list .pricing-item:hover { border-color: #6366f1; box-shadow: 0 8px 30px rgba(99,102,241,0.06); }
+  </style>
+
+  <div class="col-span-8">
+    <form id="manual-booking-form" method="POST" action="{{ route('admin.bookings.manual.store') }}" class="space-y-4 bg-white p-6 rounded-xl manual-card shadow-sm border border-gray-200">
+      @csrf
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            Pickup Address
+          </label>
+          <input type="text" name="pickup_address" class="border rounded p-2 w-full" placeholder="Enter a location" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-600">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            Dropoff Address
+          </label>
+          <input type="text" name="dropoff_address" class="border rounded p-2 w-full" placeholder="Enter a location" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Get quote
+          </label>
+          <div class="mt-1 flex items-center gap-2">
+            <button type="button" id="get-quote-btn" class="px-3 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition-colors">Get quote</button>
+          </div>
+          <!-- keep hidden select for compatibility with existing code and server handling -->
+          <select name="vehicle_type" class="hidden">
+            <option value="">select vehicle</option>
+            @foreach($vehicleTypes as $v)
+              <option value="{{ $v }}">{{ $v }}</option>
+            @endforeach
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="text-sm flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500">
+              <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            Booking ID
+          </label>
+          <input readonly value="{{ mt_rand(100000,999999) }}" class="border rounded p-2 w-full bg-gray-100" />
+        </div>
+        <div class="col-span-2">
+          <label class="text-sm text-red-600 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.3-4.3"/>
+            </svg>
+            Search Previous booking by name , booking id or phone
+          </label>
+          <input type="search" name="search_prev" class="border rounded p-2 w-full" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            Pickup Address
+          </label>
+          <input type="text" name="pickup_address_line" class="border rounded p-2 w-full" />
+          <!-- <div id="pickup-zone" class="text-sm text-gray-600 mt-1">Zone: <span>-</span></div> -->
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-600">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            Dropoff Address
+          </label>
+          <input type="text" name="dropoff_address_line" class="border rounded p-2 w-full" />
+          <!-- <div id="dropoff-zone" class="text-sm text-gray-600 mt-1">Zone: <span>-</span></div> -->
+        </div>
+        <div> flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Passenger Name
+          </label>
+          <input type="text" name="passenger_name" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            Passenger Phone
+          </label>
+          <input type="text" name="phone" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <rect width="20" height="16" x="2" y="4" rx="2"/>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+            Passenger Email
+          </label>
+          <input type="email" name="email" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            Alternate phone
+          
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+              <line x1="12" x2="12" y1="2" y2="22"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            Price / Charge (£)
+          </label>
+          <input type="number" step="0.01" name="price" class="border rounded p-2 w-full" placeholder="0.00" />
+        </div>
+      </div>
+ flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            No of Passengers
+          </label>
+          <input type="number" name="passengers" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/>
+              <path d="M22 10v6"/>
+              <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>
+            </svg>
+            Luggage
+          </label> flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+            </svg>
+            Flight Number
+          </label>
+          <input type="text" name="flight_number" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Flight Time
+          </label>
+          <input type="time" name="flight_time" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" x2="19" y1="8" y2="14"/>
+              <line x1="22" x2="16" y1="11" y2="11"/>
+            </svg>
+            Meet & Greet
+          </label>
+          <select name="meet_and_greet" class="border rounded p-2 w-full">
+            <option value="">Select</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-500">
+              <path d="M12 3a3 3 0 0 0-3 3v4h6V6a3 3 0 0 0-3-3z"/>
+              <rect width="12" height="10" x="6" y="10" rx="1"/>
+            </svg>
+            Baby seat
+          -center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Pickup Time
+           p-2 w-full" />
+        </div> flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+          Note to Driver
+        </label>
+        <textarea name="message_to_driver" class="border rounded p-2 w-full" rows="2"></textarea>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 items-end">
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-600">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
+            Note from admin
+          </label>
+          <input type="text" name="message_to_admin" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600">
+              <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
+              <path d="M12 7v5"/>
+              <path d="M12 16h.01"/>
+            </svg>
+            Booking Source
+          ded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700">Luggage</label>
+          <input type="text" name="luggage" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700">Pickup Date</label>
+          <input type="date" name="pickup_date" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700">Pickup Time</label>
+          <input type="time" name="pickup_time" class="border rounded p-2 w-full" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm text-gray-700">Flight Number</label>
+          <input type="text" name="flight_number" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700">Flight Time</label>
+          <input type="time" name="flight_time" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700">Meet & Greet</label>
+          <select name="meet_and_greet" class="border rounded p-2 w-full">
+            <option value="">Select</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700">Baby seat</label>
+          <select name="baby_seat" class="border rounded p-2 w-full">
+            <option value="">Select</option>
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm text-gray-700">Note to Driver</label>
+        <textarea name="message_to_driver" class="border rounded p-2 w-full" rows="2"></textarea>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 items-end">
+        <div>
+          <label class="block text-sm text-gray-700">Note from admin</label>
+          <input type="text" name="message_to_admin" class="border rounded p-2 w-full" />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700">Booking Source</label>
+          <select name="source" class="border rounded p-2 w-full">
+            <option value="">Select</option>
+            <option value="phone">Phone</option>
+            <option value="web">Web</option>
+            <option value="app">App</option>
+          </select>
+        </div>
+        <div class="text-right">
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 transition-colors">Make changes</button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <div class="col-span-4">
+    <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-200 manual-card card-inner">
+      <!-- Legacy Leaflet map (fallback) -->
+      <div id="manual-map" class="w-full h-80 rounded-lg overflow-hidden"></div>
+      <!-- Google map (preferred) -->
+      <div id="manual-google-map" class="w-full h-80 rounded-lg overflow-hidden" style="display:none;"></div>
+
+      <div class="mt-4 text-sm text-gray-700">
+        <div>Time required: <span id="manual-time">-</span></div>
+        <div>Distance: <span id="manual-distance">0</span> miles</div>
+      </div>
+
+      <!-- Pricing list (hidden until quote) -->
+      <div id="vehicle-pricing-list" class="mt-4" style="display:none;">
+        <!-- Dynamically populated with available vehicle prices and source -->
+      </div>
+
+      <div id="manual-charges-container" style="display:none;">
+        <div class="mt-2 text-sm text-gray-700" id="manual-zone-pricing">Zone price: <span id="manual-zone-price">-</span></div>
+        <!-- Visible editable booking charges field -->
+        <div class="mt-2 text-sm text-gray-700">Booking Charges £</div>
+        <input type="number" step="0.01" name="booking_charges" id="booking-charges-input" class="border rounded p-2 w-full" placeholder="0.00" />
+        <div class="text-xs text-gray-500 mt-1">You can edit this value after getting a quote.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leaflet assets (local) -->
+<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}" />
+<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
+
+<!-- Google Maps JS (Places) will be loaded when this partial is injected -->
+<script>
+  // Load Google Maps asynchronously with proper loading parameter
+  (function(){
+    var script = document.createElement('script');
+    script.src = 'https://maps.googleapis.com/maps/api/js?key={{ config("services.google.maps_api_key") }}&libraries=places&loading=async&callback=initMaps';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  })();
+</script>
+
+<style>
+  .autocomplete-list { position: absolute; z-index: 50; background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; max-height: 240px; overflow:auto; width:100%; box-shadow: 0 4px 8px rgba(0,0,0,0.06); }
+  .autocomplete-item { padding: 8px 10px; font-size: 13px; color: #111827; }
+  .autocomplete-item:hover, .autocomplete-item:focus { background:#f3f4f6; cursor:pointer; }
+</style>
+
+<script>
+(function(){
+  // Suppress Google Maps deprecation warnings and other console noise
+  (function(){
+    var originalWarn = console.warn;
+    var originalError = console.error;
+    
+    console.warn = function() {
+      var msg = Array.prototype.slice.call(arguments).join(' ');
+      // Filter out Google Maps deprecation warnings
+      if (msg.indexOf('google.maps.places.Autocomplete') !== -1 ||
+          msg.indexOf('google.maps.Marker') !== -1 ||
+          msg.indexOf('PlaceAutocompleteElement') !== -1 ||
+          msg.indexOf('AdvancedMarkerElement') !== -1 ||
+          msg.indexOf('loading=async') !== -1) {
+        return; // Suppress these specific warnings
+      }
+      originalWarn.apply(console, arguments);
+    };
+    
+    // Suppress interceptor.js errors (third-party widget errors)
+    window.addEventListener('error', function(e) {
+      if (e && e.filename && (e.filename.indexOf('interceptor.js') !== -1 || e.filename.indexOf('widgetId') !== -1)) {
+        e.preventDefault();
+        return true; // Suppress this error
+      }
+    }, true);
+  })();
+
+  // simple toast helper
+  function showToast(msg){
+    var container = document.getElementById('toast-container');
+    if (!container) { container = document.createElement('div'); container.id='toast-container'; container.style.position='fixed'; container.style.right='20px'; container.style.bottom='20px'; container.style.zIndex=10000; document.body.appendChild(container); }
+    var t = document.createElement('div'); t.className='bg-black text-white px-4 py-2 rounded shadow'; t.style.opacity='0'; t.textContent = msg; container.appendChild(t); requestAnimationFrame(function(){ t.style.opacity='1'; t.style.transition='opacity 200ms'; }); setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){ t.remove(); }, 300); }, 2500);
+  }
+
+  // init map
+  try {
+    var map = L.map('manual-map').setView([51.5074, -0.1278], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Fix Leaflet default icon paths (use CDN) to avoid missing images in development
+    try {
+      if (L && L.Icon && L.Icon.Default && L.Icon.Default.mergeOptions) {
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png',
+          iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png'
+        });
+        console.debug('Leaflet default icons set to CDN URLs');
+      }
+    } catch (e) { console.warn('Could not set Leaflet default icon urls', e); }
+
+  } catch(e){ console.error('Map init failed', e); }
+
+  var pickupMarker = null;
+  var dropoffMarker = null;
+
+  function haversineDistance(lat1, lon1, lat2, lon2){
+    function toRad(x){ return x*Math.PI/180; }
+    var R = 6371; // km
+    var dLat = toRad(lat2-lat1);
+    var dLon = toRad(lon2-lon1);
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    var d = R * c;
+    return d; // km
+  }
+
+  function updateDistanceAndTime(){
+    var plat = parseFloat(document.querySelector('input[name="pickup_lat"]').value || '');
+    var plon = parseFloat(document.querySelector('input[name="pickup_lon"]').value || '');
+    var dlat = parseFloat(document.querySelector('input[name="dropoff_lat"]').value || '');
+    var dlon = parseFloat(document.querySelector('input[name="dropoff_lon"]').value || '');
+    if (!isNaN(plat) && !isNaN(plon) && !isNaN(dlat) && !isNaN(dlon)){
+      var km = haversineDistance(plat, plon, dlat, dlon);
+      var miles = (km * 0.621371).toFixed(1);
+      document.getElementById('manual-distance').textContent = miles;
+      // rough time estimate assuming average 40 mph
+      var hours = Math.max(0.1, (km * 0.621371) / 40);
+      var mins = Math.round(hours * 60);
+      document.getElementById('manual-time').textContent = mins + ' min';
+    }
+  }
+
+  // Initialize Google Places Autocomplete and Directions proxy integration
+  function decodePolyline(encoded) {
+    if (!encoded) return [];
+    var points = [];
+    var index = 0, len = encoded.length;
+    var lat = 0, lng = 0;
+    while (index < len) {
+      var b, shift = 0, result = 0;
+      do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+      var dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+      shift = 0; result = 0;
+      do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+      var dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+      points.push([lat / 1e5, lng / 1e5]);
+    }
+    return points;
+  }
+
+  function removeRoute(){ if (typeof routeLine !== 'undefined' && routeLine) { try { map.removeLayer(routeLine); } catch(e){} routeLine = null; } }
+
+  function getDefaultIcon(){
+    // prefer retina icon if device supports it
+    var iconUrl = 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png';
+    var iconRetinaUrl = 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png';
+    var shadowUrl = 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png';
+    var useRetina = (window.devicePixelRatio && window.devicePixelRatio > 1);
+    return L.icon({
+      iconUrl: useRetina ? iconRetinaUrl : iconUrl,
+      shadowUrl: shadowUrl,
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      tooltipAnchor: [16, -28],
+      shadowSize: [41, 41]
+    });
+  }
+
+  function setMarker(kind, lat, lon){
+    try {
+      // If Google map is active, set Google markers and compute route via client-side DirectionsService
+      if (window.google && window.google.maps && document.getElementById('manual-google-map') && document.getElementById('manual-google-map').style.display !== 'none'){
+        if (window.setGoogleMarker) window.setGoogleMarker(kind, lat, lon);
+        // when both lat/lon present on inputs, use client route computation
+        var plat = document.querySelector('input[name="pickup_lat"]').value;
+        var plon = document.querySelector('input[name="pickup_lon"]').value;
+        var dlat = document.querySelector('input[name="dropoff_lat"]').value;
+        var dlon = document.querySelector('input[name="dropoff_lon"]').value;
+        if (plat && plon && dlat && dlon && window.computeRouteClient) {
+          window.computeRouteClient();
+        }
+        return;
+      }
+
+      var icon = getDefaultIcon();
+      console.debug('Creating marker', kind, {lat:lat, lon:lon, icon: icon.options && icon.options.iconUrl});
+
+      if (kind === 'pickup'){
+        if (pickupMarker) pickupMarker.remove();
+        pickupMarker = L.marker([lat, lon], { title: 'Pickup', icon: icon }).addTo(map);
+      } else {
+        if (dropoffMarker) dropoffMarker.remove();
+        dropoffMarker = L.marker([lat, lon], { title: 'Dropoff', icon: icon }).addTo(map);
+      }
+
+      // verify image loads; if fails, replace with a simple DivIcon fallback
+      var img = new Image(); img.onload = function(){ console.debug('Marker image loaded:', icon.options && icon.options.iconUrl); };
+      img.onerror = function(){ console.warn('Marker image failed to load, using DivIcon fallback');
+        var fallback = L.divIcon({ className: 'booking-marker-fallback', html: '<div style="width:14px;height:14px;border-radius:7px;background:#2563eb;border:2px solid #fff;"></div>' });
+        if (kind === 'pickup'){ if (pickupMarker) { pickupMarker.setIcon(fallback); } }
+        else { if (dropoffMarker) { dropoffMarker.setIcon(fallback); } }
+      };
+      img.src = icon.options && icon.options.iconUrl;
+
+    } catch(e){ console.error('setMarker error', e); }
+
+    var pts = [];
+    if (pickupMarker) pts.push(pickupMarker.getLatLng());
+    if (dropoffMarker) pts.push(dropoffMarker.getLatLng());
+    if (pts.length === 1) map.setView(pts[0], 12);
+    if (pts.length === 2) {
+      var bounds = L.latLngBounds(pts); map.fitBounds(bounds.pad(0.25));
+      // fetch server-side directions (cached) and draw
+      fetchRoute();
+    }
+  }
+
+  // call server proxy to get directions (Google Directions) and draw route on Leaflet or Google map (fallback)
+  function fetchRoute(){
+    var plat = document.querySelector('input[name="pickup_lat"]').value;
+    var plon = document.querySelector('input[name="pickup_lon"]').value;
+    var dlat = document.querySelector('input[name="dropoff_lat"]').value;
+    var dlon = document.querySelector('input[name="dropoff_lon"]').value;
+    if (!plat || !plon || !dlat || !dlon) return;
+
+    var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    fetch('{{ route('admin.bookings.directions') }}', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }, body: JSON.stringify({ pickup_lat: plat, pickup_lon: plon, dropoff_lat: dlat, dropoff_lon: dlon }) })
+    .then(function(res){ return res.json(); })
+    .then(function(json){
+      if (!json.success) { console.warn('Directions failed', json); removeRoute(); return; }
+      removeRoute();
+
+      // If Google map is active, draw polyline on Google map
+      if (window.google && window.google.maps && document.getElementById('manual-google-map') && document.getElementById('manual-google-map').style.display !== 'none'){
+        var path = decodePolyline(json.polyline).map(function(p){ return { lat: p[0], lng: p[1] }; });
+        if (window.googleRoute) { window.googleRoute.setMap(null); window.googleRoute = null; }
+        window.googleRoute = new google.maps.Polyline({ path: path, strokeColor: '#2563eb', strokeOpacity: 0.9, strokeWeight: 5 });
+        window.googleRoute.setMap(window.googleMap);
+        // fit bounds
+        var bounds = new google.maps.LatLngBounds(); path.forEach(function(pt){ bounds.extend(pt); });
+        window.googleMap.fitBounds(bounds);
+      } else {
+        var pts = decodePolyline(json.polyline);
+        if (pts && pts.length) {
+          var latlngs = pts.map(function(p){ return [p[0], p[1]]; });
+          routeLine = L.polyline(latlngs, { color: '#2563eb', weight: 4, opacity: 0.9 }).addTo(map);
+          map.fitBounds(routeLine.getBounds().pad(0.25));
+        }
+      }
+
+      // show distance/time
+      if (json.distance !== undefined) document.getElementById('manual-distance').textContent = ( (json.distance/1000)*0.621371 ).toFixed(1);
+      if (json.duration !== undefined) document.getElementById('manual-time').textContent = Math.round(json.duration/60) + ' min';
+    }).catch(function(err){ console.error('Directions error', err); removeRoute(); });
+  }
+
+  function initPlaces(){
+    try {
+      // make sure autocomplete dropdown is visible above other UI
+      var css = document.createElement('style'); css.innerHTML = '.pac-container{ z-index: 10050 !important; }'; document.head.appendChild(css);
+
+      var pickupEls = [document.querySelector('input[name="pickup_address"]'), document.querySelector('input[name="pickup_address_line"]')];
+      var dropEls = [document.querySelector('input[name="dropoff_address"]'), document.querySelector('input[name="dropoff_address_line"]')];
+
+      function attachAutocompleteTo(el, kind){
+        if (!el) return;
+        
+        // Use the standard Autocomplete (suppress console warnings by handling them gracefully)
+        var ac = new google.maps.places.Autocomplete(el, { 
+          componentRestrictions: { country: 'gb' },
+          fields: ['formatted_address', 'address_components', 'geometry', 'name']
+        });
+        
+        ac.addListener('place_changed', function(){ 
+          var place = ac.getPlace(); 
+          console.debug('place_changed', {kind: kind, element: el.name, place: place});
+          if (place && place.geometry && place.geometry.location){ 
+            var lat = place.geometry.location.lat(); 
+            var lng = place.geometry.location.lng(); 
+            // Prefer the place name for display (e.g., "Heathrow Airport"). Fall back to formatted_address and finally the element value.
+            var displayName = place.name || (place.formatted_address ? (place.formatted_address.split(',')[0] || place.formatted_address) : null);
+            var addressText = displayName || place.formatted_address || el.value;
+
+            // set both corresponding inputs (top and line) to keep UI in sync
+            try {
+              var topInput = document.querySelector('input[name="'+kind+'_address"]');
+              var lineInput = document.querySelector('input[name="'+kind+'_address_line"]');
+              if (topInput) topInput.value = addressText;
+              if (lineInput) lineInput.value = addressText;
+              // also set the input that triggered this event
+              el.value = addressText;
+
+              // Reapply after a short delay to avoid other listeners overwriting our chosen value
+              setTimeout(function(){
+                try {
+                  if (topInput && topInput.value !== addressText) topInput.value = addressText;
+                  if (lineInput && lineInput.value !== addressText) lineInput.value = addressText;
+                  if (el && el.value !== addressText) el.value = addressText;
+                } catch(e){ console.warn('reapply addressText failed', e); }
+              }, 120);
+            } catch(e){ console.warn('Failed to sync address inputs', e); }
+
+            document.querySelector('input[name="'+kind+'_lat"]').value = lat; 
+            document.querySelector('input[name="'+kind+'_lon"]').value = lng; 
+            
+            // extract postcode from address components if present
+            var postcode = '';
+            try {
+              if (place.address_components && place.address_components.length) {
+                for (var i=0;i<place.address_components.length;i++){
+                  var comp = place.address_components[i];
+                  if (comp.types && comp.types.indexOf('postal_code') !== -1) { postcode = comp.long_name; break; }
+                }
+              }
+            } catch(e){}
+            
+            try { if (!postcode && addressText) { var m = addressText.match(/[A-Z]{1,2}\d[\dA-Z]?\s*\d[A-Z]{2}/i); if (m) postcode = m[0]; } } catch(e){}
+            if (postcode) document.querySelector('input[name="'+kind+'_postcode"]').value = postcode.trim().toUpperCase();
+            setMarker(kind, lat, lng); 
+          } 
+        });
+      }
+
+      pickupEls.forEach(function(el){ attachAutocompleteTo(el, 'pickup'); });
+      dropEls.forEach(function(el){ attachAutocompleteTo(el, 'dropoff'); });
+
+    } catch(e){ console.error('initPlaces error', e); }
+  }
+
+  // Geocode an address to lat/lng using Google Geocoder (returns a Promise)
+  function geocodeAddress(address){
+    return new Promise(function(resolve, reject){
+      try {
+        if (!address) return reject('empty_address');
+        if (window.google && window.google.maps && window.google.maps.Geocoder){
+          var geocoder = new google.maps.Geocoder();
+          geocoder.geocode({ address: address, componentRestrictions: { country: 'GB' } }, function(results, status){
+            if (status === 'OK' && results && results.length){
+              var place = results[0];
+              var lat = place.geometry.location.lat();
+              var lng = place.geometry.location.lng();
+              var postcode = '';
+              try {
+                if (place.address_components && place.address_components.length) {
+                  for (var i=0;i<place.address_components.length;i++){
+                    var comp = place.address_components[i];
+                    if (comp.types && comp.types.indexOf('postal_code') !== -1) { postcode = comp.long_name; break; }
+                  }
+                }
+              } catch(e){}
+              resolve({ lat: lat, lng: lng, formatted_address: place.formatted_address, postcode: postcode });
+              return;
+            }
+            reject(status || 'no_results');
+          });
+        } else {
+          // Google Geocoder not available
+          reject('geocoder_unavailable');
+        }
+      } catch(e){ reject(e); }
+    });
+  }
+
+  // Zone lookup & quoting helpers
+  var zoneLookupUrl = "{{ route('admin.pricing.zones.lookup') }}";
+  var zoneQuoteUrl = "{{ route('admin.pricing.zones.quote') }}";
+
+  // Vehicle quote modal markup (created dynamically)
+  function showVehicleQuoteModal(rows){
+    // remove existing if present
+    var existing = document.getElementById('vehicle-quote-modal');
+    if (existing) existing.remove();
+
+    var modal = document.createElement('div'); modal.id = 'vehicle-quote-modal';
+    modal.style.position = 'fixed'; modal.style.left = '0'; modal.style.top = '0'; modal.style.right = '0'; modal.style.bottom = '0'; modal.style.background = 'rgba(0,0,0,0.5)'; modal.style.zIndex = 20000; modal.style.display = 'flex'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center';
+
+    var box = document.createElement('div'); box.style.background = '#fff'; box.style.borderRadius = '8px'; box.style.width = '420px'; box.style.maxWidth = '90%'; box.style.padding = '16px'; box.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
+
+    var title = document.createElement('h3'); title.textContent = 'Select vehicle'; title.style.margin = '0 0 8px 0'; box.appendChild(title);
+
+    var list = document.createElement('div'); list.style.maxHeight = '320px'; list.style.overflow = 'auto'; list.style.marginBottom = '12px';
+
+    Object.keys(rows).forEach(function(k){
+      var price = rows[k];
+      var label = k; // display label
+      var displayName = k.replace('_price','');
+      var human = (displayName === 'saloon') ? 'Saloon' : (displayName === 'business' ? 'Business' : (displayName === 'mpv6' ? 'MPV6' : (displayName === 'mpv8' ? 'MPV8' : displayName))); 
+      var item = document.createElement('label'); item.style.display = 'flex'; item.style.alignItems = 'center'; item.style.justifyContent = 'space-between'; item.style.padding = '8px'; item.style.borderBottom = '1px solid #eee';
+      var left = document.createElement('div');
+      var radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'vehicle_quote_radio'; radio.value = human; radio.dataset.price = (price !== null && price !== undefined) ? price : '';
+      radio.style.marginRight = '8px';
+      left.appendChild(radio);
+      var span = document.createElement('span'); span.textContent = human; left.appendChild(span);
+      var right = document.createElement('div'); right.textContent = (price !== null && price !== undefined) ? Number(price).toFixed(2) + ' ' : 'N/A';
+      item.appendChild(left); item.appendChild(right); list.appendChild(item);
+
+      radio.addEventListener('change', function(){
+        // on select, set vehicle and pricing
+        var sel = document.querySelector('select[name="vehicle_type"]'); if (sel) sel.value = this.value;
+        var display = document.getElementById('selected-vehicle-name'); if (display) display.textContent = this.value;
+        var val = this.dataset.price ? Number(this.dataset.price).toFixed(2) : '';
+        var bookingInput = document.getElementById('booking-charges-input'); if (bookingInput) bookingInput.value = val;
+        var zonePriceEl = document.getElementById('manual-zone-price'); if (zonePriceEl) zonePriceEl.textContent = val || '-';
+        // also update the visible vehicle_type_text input if present
+        var vt = document.querySelector('input[name="vehicle_type_text"]'); if (vt) vt.value = this.value;
+        // Auto-fill the price/charge field
+        var priceInput = document.querySelector('input[name="price"]'); 
+        if (priceInput) priceInput.value = val;
+        // close modal
+        modal.remove();
+      });
+    });
+
+    box.appendChild(list);
+    var footer = document.createElement('div'); footer.style.textAlign = 'right';
+    var cancel = document.createElement('button'); cancel.type='button'; cancel.textContent='Cancel'; cancel.className='px-3 py-1 border rounded mr-2'; cancel.addEventListener('click', function(){ modal.remove(); });
+    footer.appendChild(cancel);
+    box.appendChild(footer);
+
+    modal.appendChild(box); document.body.appendChild(modal);
+  }
+
+  // Render vehicle pricing list under the map (replaces modal popup)
+  function renderVehiclePricingList(json) {
+    try {
+      var container = document.getElementById('vehicle-pricing-list');
+      if (!container) {
+        container = document.createElement('div'); container.id = 'vehicle-pricing-list'; container.className = 'mt-4';
+        var ref = document.getElementById('manual-distance');
+        if (ref && ref.parentNode && ref.parentNode.parentNode) { ref.parentNode.parentNode.insertBefore(container, ref.parentNode.nextSibling); }
+        else { document.getElementById('manual-map').parentNode.appendChild(container); }
+      }
+
+      container.style.display = 'block';
+      container.innerHTML = '';
+
+      var title = document.createElement('div'); title.className = 'text-sm font-semibold mb-2'; title.textContent = 'Pricing';
+      container.appendChild(title);
+
+      var list = document.createElement('div'); list.className = 'space-y-2';
+
+      var priceList = [
+        { key: 'saloon_price', label: 'Saloon' },
+        { key: 'business_price', label: 'Business Class' },
+        { key: 'mpv6_price', label: 'MPV6' },
+        { key: 'mpv8_price', label: 'MPV8' }
+      ];
+
+      priceList.forEach(function(it){
+        var priceRaw = (json.pricing && json.pricing[it.key] !== undefined && json.pricing[it.key] !== null) ? json.pricing[it.key] : null;
+        var priceText = priceRaw !== null ? Number(priceRaw).toFixed(2) : 'N/A';
+        var row = document.createElement('div'); row.className = 'p-2 border rounded flex justify-between items-center cursor-pointer hover:bg-gray-50';
+        row.dataset.key = it.key; row.dataset.price = priceRaw !== null ? priceRaw : '';
+        row.innerHTML = '<div>' + it.label + '</div><div class="font-medium">' + priceText + '</div>';
+        row.addEventListener('click', function(){
+          // mark selected
+          var prev = container.querySelectorAll('.selected-price-row'); prev.forEach(function(el){ el.classList.remove('selected-price-row'); el.classList.remove('bg-indigo-50'); el.classList.remove('border-indigo-500'); });
+          row.classList.add('selected-price-row'); row.classList.add('bg-indigo-50'); row.classList.add('border-indigo-500');
+
+          var human = it.label;
+          var sel = document.querySelector('select[name="vehicle_type"]'); var matched = false;
+          if (sel) {
+            for (var i=0;i<sel.options.length;i++){ var opt = sel.options[i]; if (opt.text === human || opt.value.toLowerCase().indexOf(human.replace(/\s+/g,'').toLowerCase()) !== -1) { sel.value = opt.value; matched = true; break; } }
+          }
+          var vt = document.querySelector('input[name="vehicle_type_text"]'); if (!matched && vt) vt.value = human; else if (matched && vt) vt.value = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : human;
+
+          // fill booking charge and zone price
+          var bookingInput = document.getElementById('booking-charges-input'); if (bookingInput) bookingInput.value = row.dataset.price ? Number(row.dataset.price).toFixed(2) : '';
+          var zonePriceEl = document.getElementById('manual-zone-price'); if (zonePriceEl) zonePriceEl.textContent = bookingInput && bookingInput.value ? bookingInput.value : '-';
+          
+          // Auto-fill the price/charge field
+          var priceInput = document.querySelector('input[name="price"]'); 
+          if (priceInput) priceInput.value = row.dataset.price ? Number(row.dataset.price).toFixed(2) : '';
+
+          // auto-fill highlighted address and vehicle type fields
+          try {
+            // copy address lines to top inputs (if present)
+            var pickupLine = document.querySelector('input[name="pickup_address_line"]');
+            var dropLine = document.querySelector('input[name="dropoff_address_line"]');
+            var pickupTop = document.querySelector('input[name="pickup_address"]');
+            var dropTop = document.querySelector('input[name="dropoff_address"]');
+            if (pickupLine && pickupTop && pickupLine.value) pickupTop.value = pickupLine.value;
+            if (dropLine && dropTop && dropLine.value) dropTop.value = dropLine.value;
+
+            // also copy top to line if line is empty
+            if (pickupTop && pickupLine && !pickupLine.value && pickupTop.value) pickupLine.value = pickupTop.value;
+            if (dropTop && dropLine && !dropLine.value && dropTop.value) dropLine.value = dropTop.value;
+
+            // update zone display if pricing provided by server
+            if (json && json.pickup_zone) updateZoneDisplay('pickup', json.pickup_zone);
+            if (json && json.dropoff_zone) updateZoneDisplay('dropoff', json.dropoff_zone);
+          } catch(e){ console.error('auto-fill on vehicle select failed', e); }
+        });
+
+        list.appendChild(row);
+      });
+
+      container.appendChild(list);
+
+      var src = document.createElement('div'); src.className = 'mt-2 text-xs text-gray-500';
+      var srcText = 'Source: ';
+      if (json.pricing_type === 'zone') srcText += 'Zones';
+      else if (json.pricing_type === 'postcode') srcText += 'Postcode';
+      else if (json.pricing_type === 'mileage') srcText += 'Mileage';
+      else srcText += (json.pricing_type || '-');
+
+      if (json.pricing_type === 'zone' && json.pickup_zone && json.dropoff_zone) srcText += ' (' + (json.pickup_zone.zone_name || '') + ' → ' + (json.dropoff_zone.zone_name || '') + ')';
+      else if (json.pricing_type === 'postcode' && json.pickup_postcode && json.dropoff_postcode) srcText += ' (' + (json.pickup_postcode || '') + ' → ' + (json.dropoff_postcode || '') + ')';
+      else if (json.pricing_type === 'mileage' && json.mileage) {
+        var em = (json.mileage.end_mile === null || json.mileage.end_mile === undefined) ? '∞' : json.mileage.end_mile;
+        srcText += ' (' + (json.mileage.start_mile || 0) + ' - ' + em + ' miles)';
+      }
+
+      src.textContent = srcText;
+      container.appendChild(src);
+
+      // Show airport charges if applied
+      if (json.pricing && json.pricing.airport_charges && json.pricing.airport_charges > 0) {
+        var chargesDiv = document.createElement('div'); 
+        chargesDiv.className = 'mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs';
+        var chargesText = '<strong>Airport Charges Applied:</strong> £' + Number(json.pricing.airport_charges).toFixed(2);
+        if (json.pricing.applied_charges && json.pricing.applied_charges.length > 0) {
+          chargesText += '<br>';
+          json.pricing.applied_charges.forEach(function(charge) {
+            chargesText += '• ' + charge.type.charAt(0).toUpperCase() + charge.type.slice(1) + ' (' + charge.zone + '): £' + Number(charge.amount).toFixed(2) + '<br>';
+          });
+        }
+        chargesDiv.innerHTML = chargesText;
+        container.appendChild(chargesDiv);
+      }
+
+      // select the server-provided selected_price when present
+      if (json.pricing && json.pricing.selected_price !== undefined && json.pricing.selected_price !== null) {
+        var rows = container.querySelectorAll('[data-price]'); for (var r=0;r<rows.length;r++){ if (rows[r].dataset.price && Number(rows[r].dataset.price) == Number(json.pricing.selected_price)) { rows[r].click(); break; } }
+      }
+
+    } catch(e){ console.error('renderVehiclePricingList error', e); }
+  }
+
+  function getAllVehiclePrices(){
+    // reuse quote endpoint without vehicle_type to get pricing object with all prices
+    var plat = document.querySelector('input[name="pickup_lat"]').value;
+    var plon = document.querySelector('input[name="pickup_lon"]').value;
+    var dlat = document.querySelector('input[name="dropoff_lat"]').value;
+    var dlon = document.querySelector('input[name="dropoff_lon"]').value;
+    var pcode = document.querySelector('input[name="pickup_postcode"]') ? document.querySelector('input[name="pickup_postcode"]').value : null;
+    var dcode = document.querySelector('input[name="dropoff_postcode"]') ? document.querySelector('input[name="dropoff_postcode"]').value : null;
+    if (!plat || !plon || !dlat || !dlon) {
+      // If user typed an address but didn't select from autocomplete, try geocoding the typed addresses
+      var pAddr = document.querySelector('input[name="pickup_address_line"]') ? document.querySelector('input[name="pickup_address_line"]').value : document.querySelector('input[name="pickup_address"]').value;
+      var dAddr = document.querySelector('input[name="dropoff_address_line"]') ? document.querySelector('input[name="dropoff_address_line"]').value : document.querySelector('input[name="dropoff_address"]').value;
+
+      var needsPickupGeocode = (!plat || !plon) && pAddr;
+      var needsDropGeocode = (!dlat || !dlon) && dAddr;
+
+      if (!needsPickupGeocode && !needsDropGeocode) {
+        alert('Please select both pickup and dropoff locations first');
+        return;
+      }
+
+      // provide UI feedback
+      var btnEl = document.getElementById('get-quote-btn');
+      if (btnEl) { btnEl.disabled = true; btnEl.dataset.origText = btnEl.textContent; btnEl.textContent = 'Looking up...'; }
+      console.log('Geocoding missing coordinates...', { pickup: needsPickupGeocode ? pAddr : null, dropoff: needsDropGeocode ? dAddr : null });
+
+      var tasks = [];
+      if (needsPickupGeocode) tasks.push(geocodeAddress(pAddr).then(function(res){ return { kind: 'pickup', res: res }; }).catch(function(err){ return { kind: 'pickup', err: err }; }));
+      else tasks.push(Promise.resolve({ kind: 'pickup', res: { lat: plat, lng: plon } }));
+      if (needsDropGeocode) tasks.push(geocodeAddress(dAddr).then(function(res){ return { kind: 'dropoff', res: res }; }).catch(function(err){ return { kind: 'dropoff', err: err }; }));
+      else tasks.push(Promise.resolve({ kind: 'dropoff', res: { lat: dlat, lng: dlon } }));
+
+      Promise.all(tasks).then(function(results){
+        var failed = false;
+        results.forEach(function(r){
+          if (r.err) {
+            console.warn('Geocode failed for', r.kind, r.err);
+            failed = true;
+            return;
+          }
+          if (r.kind === 'pickup' && r.res && r.res.lat && r.res.lng){
+            document.querySelector('input[name="pickup_lat"]').value = r.res.lat;
+            document.querySelector('input[name="pickup_lon"]').value = r.res.lng;
+            if (r.res.postcode) document.querySelector('input[name="pickup_postcode"]').value = r.res.postcode.trim().toUpperCase();
+            setMarker('pickup', r.res.lat, r.res.lng);
+          }
+          if (r.kind === 'dropoff' && r.res && r.res.lat && r.res.lng){
+            document.querySelector('input[name="dropoff_lat"]').value = r.res.lat;
+            document.querySelector('input[name="dropoff_lon"]').value = r.res.lng;
+            if (r.res.postcode) document.querySelector('input[name="dropoff_postcode"]').value = r.res.postcode.trim().toUpperCase();
+            setMarker('dropoff', r.res.lat, r.res.lng);
+          }
+        });
+
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = btnEl.dataset.origText || 'Get quote'; }
+
+        if (failed) {
+          alert('Failed to resolve one or more addresses. Please select the correct address from the autocomplete suggestions.');
+          return;
+        }
+
+        // Re-run quoting now that coordinates are filled
+        getAllVehiclePrices();
+      }).catch(function(err){
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = btnEl.dataset.origText || 'Get quote'; }
+        console.error('Geocoding error', err); alert('Failed to lookup addresses for quoting. Please try selecting addresses from suggestions.');
+      });
+
+      return;
+    }
+    var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    // include client-side driving distance (if available) so server can use the same distance when matching mileage ranges
+    var distEl = document.getElementById('manual-distance');
+    var distVal = null;
+    try { distVal = distEl && distEl.textContent ? parseFloat(distEl.textContent) : null; if (isNaN(distVal)) distVal = null; } catch(e){ distVal = null; }
+    fetch(zoneQuoteUrl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }, body: JSON.stringify({ pickup_lat: plat, pickup_lon: plon, dropoff_lat: dlat, dropoff_lon: dlon, pickup_postcode: pcode, dropoff_postcode: dcode, distance_miles: distVal }) })
+    .then(function(res){ return res.json(); })
+    .then(function(json){
+      // Log pricing calculation details to console
+      if (json && json.success) {
+        console.log('%c=== PRICE CALCULATION RESULT ===', 'color: #2563eb; font-weight: bold; font-size: 14px;');
+        console.log('📍 Pickup Location:', { lat: plat, lon: plon, postcode: pcode || 'N/A' });
+        console.log('📍 Dropoff Location:', { lat: dlat, lon: dlon, postcode: dcode || 'N/A' });
+        
+        if (json.pickup_zone) {
+          console.log('🏢 Pickup Zone Detected:', json.pickup_zone.zone_name);
+        } else {
+          console.log('❌ No pickup zone detected');
+        }
+        
+        if (json.dropoff_zone) {
+          console.log('🏢 Dropoff Zone Detected:', json.dropoff_zone.zone_name);
+        } else {
+          console.log('❌ No dropoff zone detected');
+        }
+        
+        console.log('💰 Pricing Type:', json.pricing_type);
+        
+        if (json.pricing) {
+          console.log('💵 Base Prices:', {
+            Saloon: '£' + (json.pricing.base_saloon_price || json.pricing.saloon_price),
+            Business: '£' + (json.pricing.base_business_price || json.pricing.business_price),
+            MPV6: '£' + (json.pricing.base_mpv6_price || json.pricing.mpv6_price),
+            MPV8: '£' + (json.pricing.base_mpv8_price || json.pricing.mpv8_price)
+          });
+          
+          if (json.pricing.airport_charges && json.pricing.airport_charges > 0) {
+            console.log('%c✈️ Airport Charges Applied: £' + json.pricing.airport_charges, 'color: #059669; font-weight: bold;');
+            if (json.pricing.applied_charges && json.pricing.applied_charges.length > 0) {
+              json.pricing.applied_charges.forEach(function(charge) {
+                console.log('  • ' + charge.type + ' (' + charge.zone + '): £' + charge.amount);
+              });
+            }
+          }
+          
+          console.log('%c🎯 Final Prices (with airport charges):', 'color: #7c3aed; font-weight: bold;');
+          console.log({
+            Saloon: '£' + json.pricing.saloon_price,
+            Business: '£' + json.pricing.business_price,
+            MPV6: '£' + json.pricing.mpv6_price,
+            MPV8: '£' + json.pricing.mpv8_price
+          });
+        }
+        
+        console.log('%c=================================', 'color: #2563eb; font-weight: bold;');
+      }
+      
+      if (json && json.success && json.pricing) {
+        renderVehiclePricingList(json);
+      } else {
+        // if server says matching mileage exists but inactive, show informative message in pricing panel
+        if (json && json.matching_mileage) {
+          var container = document.getElementById('vehicle-pricing-list');
+          if (!container) {
+            container = document.createElement('div'); container.id = 'vehicle-pricing-list'; container.className = 'mt-4';
+            var ref = document.getElementById('manual-distance'); if (ref && ref.parentNode && ref.parentNode.parentNode) ref.parentNode.parentNode.insertBefore(container, ref.parentNode.nextSibling);
+            else document.getElementById('manual-map').parentNode.appendChild(container);
+          }
+          container.style.display = 'block'; container.innerHTML = '';
+          var msg = document.createElement('div'); msg.className = 'p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 text-sm rounded';
+          var rangeText = (json.matching_mileage.end_mile === null || json.matching_mileage.end_mile === undefined) ? json.matching_mileage.start_mile + ' - ∞' : json.matching_mileage.start_mile + ' - ' + json.matching_mileage.end_mile;
+          msg.innerHTML = '<strong>Pricing unavailable:</strong> a matching mileage rule exists (' + rangeText + ' miles) but it is currently inactive. Please enable it in Admin → Pricing → Mileage or create an active range.';
+          container.appendChild(msg);
+        } else {
+          alert(json.message || 'No pricing available');
+        }
+      }
+    }).catch(function(err){ console.error('getAllVehiclePrices error', err); alert('Failed to get quotes'); });
+  }
+
+  function attachGetQuoteHandler(){
+    try {
+      var btn = document.getElementById('get-quote-btn');
+      if (!btn) return;
+      if (btn.dataset.quoteBound === '1') return; // already bound
+      btn.addEventListener('click', function(e){
+        try { console.log('Get quote button clicked'); } catch(e){}
+        // brief UI feedback
+        btn.disabled = true; var orig = btn.textContent; btn.textContent = 'Getting...';
+        Promise.resolve().then(function(){
+          try { getAllVehiclePrices(); } catch(err){ console.error('getAllVehiclePrices error', err); }
+        }).finally(function(){ setTimeout(function(){ try { btn.disabled = false; btn.textContent = orig; } catch(e){} }, 500); });
+      });
+      btn.dataset.quoteBound = '1';
+      console.log('Get quote handler attached');
+    } catch(e){ console.error('attachGetQuoteHandler failed', e); }
+  }
+
+  // ensure handler is attached on DOM ready
+  document.addEventListener('DOMContentLoaded', function(){ attachGetQuoteHandler(); });
+
+  function updateZoneDisplay(kind, zone){
+    try {
+      var el = document.getElementById(kind + '-zone');
+      if (!el) return;
+      el.innerHTML = 'Zone: <strong>' + (zone && zone.zone_name ? zone.zone_name : '-') + '</strong>';
+    } catch(e){ console.error('updateZoneDisplay error', e); }
+  }
+
+  function lookupZone(kind, lat, lon){
+    var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    fetch(zoneLookupUrl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }, body: JSON.stringify({ lat: lat, lon: lon }) })
+    .then(function(res){ return res.json(); })
+    .then(function(json){ if (json && json.success && json.zone) { updateZoneDisplay(kind, json.zone); } else { updateZoneDisplay(kind, null); } 
+      // try to quote when both zones available
+      try { var pzoneText = document.getElementById('pickup-zone') && document.getElementById('pickup-zone').textContent.indexOf('-') === -1; var dzoneText = document.getElementById('dropoff-zone') && document.getElementById('dropoff-zone').textContent.indexOf('-') === -1; if (pzoneText && dzoneText) { quoteRoute(); } } catch(e){}
+    }).catch(function(err){ console.error('lookupZone error', err); updateZoneDisplay(kind, null); });
+  }
+
+  function quoteRoute(){
+    var plat = document.querySelector('input[name="pickup_lat"]').value;
+    var plon = document.querySelector('input[name="pickup_lon"]').value;
+    var dlat = document.querySelector('input[name="dropoff_lat"]').value;
+    var dlon = document.querySelector('input[name="dropoff_lon"]').value;
+    // prefer the select vehicle type if present, otherwise fall back to free-text vehicle input
+    var vsel = document.querySelector('select[name="vehicle_type"]');
+    var vtxt = document.querySelector('input[name="vehicle_type_text"]');
+    var v = null;
+    if (vsel && vsel.value) v = vsel.value;
+    else if (vtxt && vtxt.value) v = vtxt.value;
+
+    if (!plat || !plon || !dlat || !dlon) return;
+    var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    var pcode = document.querySelector('input[name="pickup_postcode"]') ? document.querySelector('input[name="pickup_postcode"]').value : null;
+    var dcode = document.querySelector('input[name="dropoff_postcode"]') ? document.querySelector('input[name="dropoff_postcode"]').value : null;
+    // include client-side driving distance (if available) so server can use the same distance when matching mileage ranges
+    var distEl2 = document.getElementById('manual-distance');
+    var distVal2 = null;
+    try { distVal2 = distEl2 && distEl2.textContent ? parseFloat(distEl2.textContent) : null; if (isNaN(distVal2)) distVal2 = null; } catch(e){ distVal2 = null; }
+    fetch(zoneQuoteUrl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }, body: JSON.stringify({ pickup_lat: plat, pickup_lon: plon, dropoff_lat: dlat, dropoff_lon: dlon, vehicle_type: v, pickup_postcode: pcode, dropoff_postcode: dcode, distance_miles: distVal2 }) })
+    .then(function(res){ return res.json(); })
+    .then(function(json){ if (json && json.success && json.pricing) { var sel = json.pricing.selected_price !== null ? json.pricing.selected_price : null; var zonePriceEl = document.getElementById('manual-zone-price'); if (zonePriceEl) zonePriceEl.textContent = sel !== null ? sel : '-'; var bookingInput = document.getElementById('booking-charges-input'); if (bookingInput) { if (sel !== null) bookingInput.value = Number(sel).toFixed(2); else bookingInput.value = ''; } renderVehiclePricingList(json); } else { var zonePriceEl2 = document.getElementById('manual-zone-price'); if (zonePriceEl2) zonePriceEl2.textContent = '-'; var bookingInput2 = document.getElementById('booking-charges-input'); if (bookingInput2) bookingInput2.value = ''; var list = document.getElementById('vehicle-pricing-list'); if (list) { list.style.display = 'none'; list.innerHTML = ''; } } })
+    .catch(function(err){ console.error('quoteRoute error', err); var zonePriceEl3 = document.getElementById('manual-zone-price'); if (zonePriceEl3) zonePriceEl3.textContent = '-'; var bookingInput3 = document.getElementById('booking-charges-input'); if (bookingInput3) bookingInput3.value = ''; var list2 = document.getElementById('vehicle-pricing-list'); if (list2) { list2.style.display = 'none'; list2.innerHTML = ''; } });
+  }
+
+  // allow vehicle type changes to trigger quoting (debounced for text input)
+  function debounce(fn, delay){ var t; return function(){ var args = arguments; clearTimeout(t); t = setTimeout(function(){ fn.apply(null, args); }, delay); }; }
+
+  var vehicleSelect = document.querySelector('select[name="vehicle_type"]');
+  if (vehicleSelect) {
+    vehicleSelect.addEventListener('change', function(){ try { quoteRoute(); } catch(e){ console.error('vehicle change quote error', e); } });
+  }
+  var vehicleText = document.querySelector('input[name="vehicle_type_text"]');
+  if (vehicleText) {
+    vehicleText.addEventListener('input', debounce(function(){ try { quoteRoute(); } catch(e){ console.error('vehicle text quote error', e); } }, 300));
+  }
+
+  // If coordinates present on load and a vehicle is selected, auto-run quote once
+  try {
+    var _plat = document.querySelector('input[name="pickup_lat"]').value;
+    var _plon = document.querySelector('input[name="pickup_lon"]').value;
+    var _dlat = document.querySelector('input[name="dropoff_lat"]').value;
+    var _dlon = document.querySelector('input[name="dropoff_lon"]').value;
+    if (_plat && _plon && _dlat && _dlon) {
+      // small timeout to allow page resources to settle
+      setTimeout(function(){ try { quoteRoute(); } catch(e){} }, 250);
+    }
+  } catch(e){}
+
+  // patch: ensure autocomplete attach calls perform lookup after place selected by adding observer to hidden inputs
+  // the attachAutocompleteTo callbacks already set the hidden lat/lon and call setMarker.
+  // We intercept setMarker by wrapping the existing local function (or install a handler) to also perform lookup and attach the get-quote handler.
+  (function(){
+    var _origLocal = (typeof setMarker === 'function') ? setMarker : null;
+    if (typeof setMarker === 'function') {
+      setMarker = function(kind, lat, lon){
+        try { _origLocal && _origLocal(kind, lat, lon); } catch(e){ console.error('wrapped setMarker orig failed', e); }
+        try { lookupZone(kind, lat, lon); } catch(e){ console.error('wrapped lookupZone failed', e); }
+        try { attachGetQuoteHandler(); } catch(e){}
+      };
+    } else {
+      // fallback: expose a global stub that at least performs lookup
+      window.setMarker = function(kind, lat, lon){ try { lookupZone(kind, lat, lon); } catch(e){} try { attachGetQuoteHandler(); } catch(e){} };
+    }
+  })();
+
+  // If Google is ready, init; otherwise the API script triggers `initMaps` callback which calls initPlaces below
+  if (window.google && google.maps && google.maps.places) { console.log('Google Maps API available — initializing google map and places'); initGoogleMap(); initPlaces(); }
+  window.initMaps = function(){ console.log('Google Maps API loaded'); initGoogleMap(); initPlaces(); attachGetQuoteHandler(); };
+
+  // Initialize Google map and Directions rendering
+  function initGoogleMap(){
+    try {
+      var gmDiv = document.getElementById('manual-google-map');
+      var lfDiv = document.getElementById('manual-map');
+      if (!gmDiv) return;
+      // show google map and hide leaflet
+      gmDiv.style.display = 'block';
+      if (lfDiv) lfDiv.style.display = 'none';
+
+      // create map
+      window.googleMap = new google.maps.Map(gmDiv, { center: {lat:51.5074, lng:-0.1278}, zoom: 12, mapTypeControl: true });
+      window.directionsService = new google.maps.DirectionsService();
+      window.directionsRenderer = new google.maps.DirectionsRenderer({ map: window.googleMap, suppressMarkers: true, preserveViewport: false });
+      window.googleMarkers = { pickup: null, dropoff: null };
+      window.googleRoute = null;
+      console.log('Google map initialized');
+
+      // helper to set Google markers (labels A/B)
+      window.setGoogleMarker = function(kind, lat, lon){
+        if (!window.google || !window.google.maps) return;
+        var pos = {lat: parseFloat(lat), lng: parseFloat(lon)};
+        var label = (kind === 'pickup') ? 'A' : 'B';
+        if (window.googleMarkers[kind]) { window.googleMarkers[kind].setMap(null); window.googleMarkers[kind] = null; }
+        window.googleMarkers[kind] = new google.maps.Marker({ position: pos, map: window.googleMap, label: { text: label, color: 'white', fontWeight: 'bold' }, title: kind === 'pickup' ? 'Pickup' : 'Dropoff' });
+      };
+
+      window.computeRouteClient = function(){
+        var plat = parseFloat(document.querySelector('input[name="pickup_lat"]').value || '');
+        var plon = parseFloat(document.querySelector('input[name="pickup_lon"]').value || '');
+        var dlat = parseFloat(document.querySelector('input[name="dropoff_lat"]').value || '');
+        var dlon = parseFloat(document.querySelector('input[name="dropoff_lon"]').value || '');
+        if (isNaN(plat) || isNaN(plon) || isNaN(dlat) || isNaN(dlon)) return;
+
+        var req = {
+          origin: { lat: plat, lng: plon },
+          destination: { lat: dlat, lng: dlon },
+          travelMode: google.maps.TravelMode.DRIVING
+        };
+        window.directionsService.route(req, function(result, status){
+          if (status === 'OK'){
+            window.directionsRenderer.setDirections(result);
+            try {
+              var leg = result.routes[0].legs[0];
+              document.getElementById('manual-distance').textContent = (leg.distance && leg.distance.value) ? ((leg.distance.value/1000)*0.621371).toFixed(2) : '-';
+              document.getElementById('manual-time').textContent = (leg.duration && leg.duration.value) ? Math.round(leg.duration.value/60) + ' min' : '-';
+            } catch(e){ console.warn('Failed to set distance/time from directions', e); }
+
+            // place labeled markers
+            var start = result.routes[0].legs[0].start_location;
+            var end = result.routes[0].legs[0].end_location;
+            window.setGoogleMarker('pickup', start.lat(), start.lng());
+            window.setGoogleMarker('dropoff', end.lat(), end.lng());
+          } else {
+            console.warn('DirectionsService failed, falling back to server proxy', status);
+            fetchRoute();
+          }
+        });
+      };
+
+    } catch(e){ console.error('initGoogleMap error', e); }
+  };
+
+  // Debug helper: log script src and errors to help diagnose failures
+  (function(){
+    try {
+      var scriptEl = document.querySelector('script[src*="maps.googleapis.com"]');
+      console.log('Detected Google Maps script tag:', scriptEl ? scriptEl.src : 'none');
+      console.log('Google object present at load check:', !!window.google, 'google.maps present:', !!(window.google && window.google.maps));
+
+      if (scriptEl) {
+        scriptEl.addEventListener('load', function(){ console.log('maps.googleapis.com script loaded event'); });
+        scriptEl.addEventListener('error', function(){ console.error('maps.googleapis.com script failed to load (network or blocked)'); });
+      }
+
+      window.addEventListener('error', function(e){
+        try {
+          if (e && e.filename && e.filename.indexOf('maps.googleapis.com') !== -1) {
+            console.error('Global error from maps.googleapis.com script:', e.message, e);
+          }
+        } catch (ex) { /* ignore */ }
+      });
+    } catch(e){ console.error('Debug init failed', e); }
+
+    // Diagnostic helper: if Google Maps/Places fail to load, show a visible banner with guidance
+    function showGoogleError(msg){
+      console.error(msg);
+      var form = document.getElementById('manual-booking-form');
+      if (form) {
+        var existing = document.getElementById('google-maps-error');
+        if (existing) return;
+        var el = document.createElement('div');
+        el.id = 'google-maps-error';
+        el.className = 'mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 text-sm rounded';
+        el.innerHTML = '<strong>Google Maps failed to load.</strong> Check the API key, enabled APIs (Maps JavaScript, Places, Directions), and referer restrictions (include http://localhost if developing locally). Open the browser console for specific error messages.';
+        form.parentNode.insertBefore(el, form.nextSibling);
+      }
+    }
+
+    setTimeout(function(){
+      if (!window.google || !google.maps || !google.maps.places) {
+        showGoogleError('Google Maps JS or Places library is not available on this page after load timeout.');
+      }
+    }, 2500);
+  })();
+
+  // add hidden fields for lat/lon and postcodes (if not present)
+  var form = document.getElementById('manual-booking-form');
+  if (form && !document.querySelector('input[name="pickup_lat"]')){
+    var extra = document.createElement('div'); extra.style.display='none'; extra.innerHTML = '<input type="hidden" name="pickup_lat" /><input type="hidden" name="pickup_lon" /><input type="hidden" name="dropoff_lat" /><input type="hidden" name="dropoff_lon" /><input type="hidden" name="pickup_postcode" /><input type="hidden" name="dropoff_postcode" />'; form.appendChild(extra);
+  }
+
+  // wire up legacy createAutocomplete calls to stay compatible (no-op now)
+  function createAutocomplete(a,b,c) { return; }
+
+  // form submit via ajax (preserve existing behavior)
+  if (form) {
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var fd = new FormData(form);
+      var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      fetch(form.getAttribute('action'), { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function(res){ if (res.status === 201) return res.json(); return res.json().then(function(j){ throw {status: res.status, body: j}; }); })
+      .then(function(json){ showToast('Booking created'); setTimeout(function(){ location.reload(); }, 600); })
+      .catch(function(err){
+        console.error('Booking create failed', err);
+        if (err && err.body && err.body.errors) {
+          var errors = err.body.errors;
+          var msgs = Object.keys(errors).map(function(k){ return errors[k][0]; }).join('\n');
+          alert(msgs);
+        } else {
+          alert('Failed to create booking');
+        }
+      });
+    });
+  }
+})();
+</script>

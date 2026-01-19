@@ -1,0 +1,112 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Relational ERD">
+    <mxGraphModel dx="1600" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- USERS -->
+        <mxCell id="users" vertex="1" parent="1"
+          value="users&#10;-------------------&#10;PK id&#10;email&#10;password_hash&#10;role&#10;is_active&#10;created_at"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;">
+          <mxGeometry x="40" y="40" width="240" height="180" as="geometry"/>
+        </mxCell>
+
+        <!-- PASSENGERS -->
+        <mxCell id="passengers" vertex="1" parent="1"
+          value="passengers&#10;-------------------&#10;PK id&#10;name&#10;phone&#10;email&#10;created_at"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;">
+          <mxGeometry x="40" y="260" width="240" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- DRIVERS -->
+        <mxCell id="drivers" vertex="1" parent="1"
+          value="drivers&#10;-------------------&#10;PK id&#10;name&#10;phone&#10;status&#10;approved&#10;created_at"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;">
+          <mxGeometry x="40" y="460" width="240" height="180" as="geometry"/>
+        </mxCell>
+
+        <!-- VEHICLES -->
+        <mxCell id="vehicles" vertex="1" parent="1"
+          value="vehicles&#10;-------------------&#10;PK id&#10;FK driver_id&#10;vehicle_type&#10;plate_number"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;">
+          <mxGeometry x="320" y="460" width="240" height="140" as="geometry"/>
+        </mxCell>
+
+        <!-- BOOKINGS -->
+        <mxCell id="bookings" vertex="1" parent="1"
+          value="bookings&#10;-------------------&#10;PK id&#10;FK passenger_id&#10;pickup_location&#10;dropoff_location&#10;status&#10;fare_amount&#10;created_at"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;">
+          <mxGeometry x="320" y="260" width="260" height="200" as="geometry"/>
+        </mxCell>
+
+        <!-- JOBS -->
+        <mxCell id="jobs" vertex="1" parent="1"
+          value="jobs&#10;-------------------&#10;PK id&#10;FK booking_id&#10;FK driver_id&#10;status&#10;eta&#10;assigned_at"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;">
+          <mxGeometry x="620" y="260" width="260" height="180" as="geometry"/>
+        </mxCell>
+
+        <!-- PAYMENTS -->
+        <mxCell id="payments" vertex="1" parent="1"
+          value="payments&#10;-------------------&#10;PK id&#10;FK booking_id&#10;method&#10;amount&#10;status&#10;paid_at"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;">
+          <mxGeometry x="620" y="40" width="260" height="180" as="geometry"/>
+        </mxCell>
+
+        <!-- PRICING -->
+        <mxCell id="pricing" vertex="1" parent="1"
+          value="pricing_rules&#10;-------------------&#10;PK id&#10;type (zone, mileage, postcode)&#10;base_price&#10;extra_price"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;">
+          <mxGeometry x="920" y="40" width="260" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- REVIEWS -->
+        <mxCell id="reviews" vertex="1" parent="1"
+          value="reviews&#10;-------------------&#10;PK id&#10;FK booking_id&#10;rating&#10;comment&#10;created_at"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;">
+          <mxGeometry x="920" y="260" width="260" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- CONCERNS -->
+        <mxCell id="concerns" vertex="1" parent="1"
+          value="concerns&#10;-------------------&#10;PK id&#10;FK booking_id&#10;description&#10;status&#10;created_at"
+          style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;">
+          <mxGeometry x="920" y="460" width="260" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- RELATIONSHIPS -->
+        <mxCell id="r1" edge="1" parent="1" source="passengers" target="bookings"
+          style="endArrow=block;html=1;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="r2" edge="1" parent="1" source="bookings" target="jobs"
+          style="endArrow=block;html=1;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="r3" edge="1" parent="1" source="drivers" target="jobs"
+          style="endArrow=block;html=1;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="r4" edge="1" parent="1" source="bookings" target="payments"
+          style="endArrow=block;html=1;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="r5" edge="1" parent="1" source="bookings" target="reviews"
+          style="endArrow=block;html=1;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="r6" edge="1" parent="1" source="bookings" target="concerns"
+          style="endArrow=block;html=1;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

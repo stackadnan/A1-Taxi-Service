@@ -1,0 +1,58 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Driver Module ERD" id="wnaIqvNrNdJbDZkbPswp">
+    <mxGraphModel dx="1971" dy="865" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" value="drivers&#xa;----------------&#xa;id (PK)&#xa;name&#xa;phone&#xa;email&#xa;status&#xa;coverage_area&#xa;plate_number&#xa;badge_number&#xa;registered_council_name&#xa;car_type&#xa;car_make_model&#xa;car_color&#xa;time_slot&#xa;password&#xa;total_bookings&#xa;total_assigned&#xa;total_completed&#xa;total_cancelled&#xa;last_assigned_at&#xa;created_at&#xa;updated_at" vertex="1">
+          <mxGeometry height="420" width="360" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" value="driver_documents&#xa;----------------&#xa;id (PK)&#xa;driver_id (FK)&#xa;document_type&#xa;file_path&#xa;expiry_date&#xa;status&#xa;uploaded_by_user_id (FK)&#xa;created_at&#xa;updated_at" vertex="1">
+          <mxGeometry height="260" width="300" x="460" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" value="driver_logs&#xa;----------------&#xa;id (PK)&#xa;driver_id (FK)&#xa;action_type&#xa;field_name&#xa;old_value&#xa;new_value&#xa;performed_by_user_id (FK)&#xa;ip_address&#xa;user_agent&#xa;created_at" vertex="1">
+          <mxGeometry height="260" width="320" x="460" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" value="driver_notifications&#xa;----------------&#xa;id (PK)&#xa;driver_id (FK)&#xa;title&#xa;message&#xa;is_read&#xa;created_at" vertex="1">
+          <mxGeometry height="200" width="280" x="820" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6" value="driver_booking_stats&#xa;----------------&#xa;id (PK)&#xa;driver_id (FK)&#xa;date&#xa;assigned_count&#xa;completed_count&#xa;cancelled_count&#xa;created_at" vertex="1">
+          <mxGeometry height="220" width="280" x="820" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" value="driver_locations&#xa;----------------&#xa;id (PK)&#xa;driver_id (FK)&#xa;latitude&#xa;longitude&#xa;accuracy&#xa;updated_at" vertex="1">
+          <mxGeometry height="200" width="280" x="820" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-7" edge="1" parent="1" source="dxrpmQvBthaS0XVsjzKU-1" target="dxrpmQvBthaS0XVsjzKU-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-8" edge="1" parent="1" source="dxrpmQvBthaS0XVsjzKU-1" target="dxrpmQvBthaS0XVsjzKU-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-9" edge="1" parent="1" source="dxrpmQvBthaS0XVsjzKU-1" target="dxrpmQvBthaS0XVsjzKU-4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="210" y="20" />
+              <mxPoint x="600" y="20" />
+              <mxPoint x="970" y="20" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-10" edge="1" parent="1" source="dxrpmQvBthaS0XVsjzKU-1" style="exitX=0.999;exitY=0.661;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.01;entryY=0.193;entryDx=0;entryDy=0;entryPerimeter=0;" target="dxrpmQvBthaS0XVsjzKU-5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790" y="320" />
+              <mxPoint x="820" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dxrpmQvBthaS0XVsjzKU-11" edge="1" parent="1" source="dxrpmQvBthaS0XVsjzKU-1" target="dxrpmQvBthaS0XVsjzKU-6">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="630" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
