@@ -7,6 +7,7 @@
           <th class="p-2">Phone</th>
           <th class="p-2">Email</th>
           <th class="p-2">Coverage</th>
+          <th class="p-2">Car Type</th>
           <th class="p-2">Status</th>
           <th class="p-2">Actions</th>
         </tr>
@@ -18,6 +19,7 @@
           <td class="p-2">{{ $d->phone ?? '-' }}</td>
           <td class="p-2">{{ $d->email ?? '-' }}</td>
           <td class="p-2">{{ $d->coverage_area ?? '-' }}</td>
+          <td class="p-2">{{ $d->car_type ?? '-' }}</td>
           <td class="p-2"><span class="text-sm px-2 py-1 rounded bg-gray-100">{{ $d->status ?? 'active' }}</span></td>
           <td class="p-2">
             <a href="{{ route('admin.drivers.show', $d) }}" class="driver-view-button text-indigo-600 mr-2 text-sm" data-title="View Driver">View</a>
@@ -27,7 +29,7 @@
         </tr>
         @empty
         <tr>
-          <td colspan="6" class="p-4 text-center text-gray-600">No drivers found.</td>
+          <td colspan="7" class="p-4 text-center text-gray-600">No drivers found.</td>
         </tr>
         @endforelse
       </tbody>

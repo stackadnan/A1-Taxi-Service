@@ -32,12 +32,26 @@
     </div>
 
     <div>
-      <h3 class="font-semibold">Status & Stats</h3>
-      <p>Status: {{ $driver->status ?? 'active' }}</p>
-      <p>Time slot: {{ $driver->time_slot ?? '-' }}</p>
-      <p>Rating: {{ $driver->rating ?? '-' }}</p>
-      <p>Total assigned: {{ $driver->total_assigned }}</p>
-      <p>Total completed: {{ $driver->total_completed }}</p>
+      <div class="flex flex-col items-end">
+        <div class="mb-4">
+          @if($driver->driver_picture)
+            <a href="{{ asset('storage/' . $driver->driver_picture) }}" target="_blank" title="View full image">
+              <img src="{{ asset('storage/' . $driver->driver_picture) }}" alt="{{ $driver->name }}" class="h-24 w-24 object-cover rounded border" />
+            </a>
+          @else
+            <div class="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center text-xl font-semibold text-gray-600 border">{{ strtoupper(substr($driver->name, 0, 1)) }}</div>
+          @endif
+        </div>
+
+        <div class="text-right">
+          <h3 class="font-semibold">Status & Stats</h3>
+          <p>Status: {{ $driver->status ?? 'active' }}</p>
+          <p>Time slot: {{ $driver->time_slot ?? '-' }}</p>
+          <p>Rating: {{ $driver->rating ?? '-' }}</p>
+          <p>Total assigned: {{ $driver->total_assigned }}</p>
+          <p>Total completed: {{ $driver->total_completed }}</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
