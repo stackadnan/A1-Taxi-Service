@@ -6,6 +6,13 @@
   <title>@yield('title', 'Admin') - AirportServices</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  @vite(['resources/css/app.css', 'resources/js/app.js'])
+  <style>
+    /* Smooth page transition */
+    body {
+      transition: opacity 0.2s ease-in-out;
+    }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50 overflow-x-hidden">
   <!-- Sidebar for lg+ -->
@@ -80,9 +87,9 @@
             </div>
           </div>
         </div>
-        <form id="logout-form" method="POST" action="{{ route('admin.logout') }}" class="hidden">@csrf</form>
+        <form id="logout-form" method="POST" action="{{ route('admin.logout') }}" class="hidden" data-turbo="false">@csrf</form>
         <!-- Form used for idle auto-logout -->
-        <form id="idleLogoutForm" method="POST" action="{{ route('admin.logout') }}" class="hidden">@csrf</form>
+        <form id="idleLogoutForm" method="POST" action="{{ route('admin.logout') }}" class="hidden" data-turbo="false">@csrf</form>
       </header>
 
       <main class="p-6">

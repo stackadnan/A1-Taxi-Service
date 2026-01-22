@@ -1,12 +1,12 @@
 <!-- Shared modals and helpers for pricing pages -->
 <div id="postcode-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
   <div class="absolute inset-0 bg-black opacity-50" data-action="close-modal"></div>
-  <div class="bg-white rounded shadow-lg w-full max-w-2xl mx-4 z-10 overflow-auto">
+  <div class="bg-white rounded shadow-lg w-full max-w-5xl mx-4 z-10 overflow-auto max-h-[90vh]">
     <div class="p-4 border-b flex justify-between items-center">
       <h3 class="text-lg font-semibold" id="modal-title">Add</h3>
       <button data-action="close-modal" class="text-gray-500 hover:text-gray-700">✕</button>
     </div>
-    <div class="p-4" id="postcode-modal-body">
+    <div id="postcode-modal-body" class="p-4 overflow-y-auto pr-2" style="max-height:75vh; overflow-y:auto; -webkit-overflow-scrolling: touch;">
       <!-- form injected here -->
     </div>
   </div>
@@ -146,7 +146,7 @@
         fetch(url, { method: form.getAttribute('method') || 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' }).then(function(res){
           if (res.status === 201 || res.status === 200) {
             // success
-            var modal = document.getElementById('postcode-modal'); if (modal) modal.classList.add('hidden'); var body = document.getElementById('postcode-modal-body'); if (body) body.innerHTML = '';
+            var modal = document.getElementById('postcode-modal'); if (modal) { modal.classList.add('hidden'); try { document && document.body && (document.body.style.overflow = ''); } catch(e){} } var body = document.getElementById('postcode-modal-body'); if (body) body.innerHTML = '';
             res.json().then(function(json){
               try {
                 if (json && json.option_html && json.item) {
@@ -230,8 +230,10 @@
   if (typeof window.openPostcodeModal === 'undefined') {
     window.openPostcodeModal = function(url, title){
       var modal = document.getElementById('postcode-modal'); var body = document.getElementById('postcode-modal-body'); var modalTitle = document.getElementById('modal-title'); if (modalTitle && title) modalTitle.textContent = title || 'Add'; modal.classList.remove('hidden'); if (body) body.innerHTML = '<div class="text-gray-600">Loading form...</div>';
+      // prevent body scrolling while modal is open
+      try { document && document.body && (document.body.style.overflow = 'hidden'); } catch(e){}
       fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function(r){ return r.text(); }).then(function(html){ var frag = document.createElement('div'); frag.innerHTML = html; var form = frag.querySelector('#postcode-create-form') || frag.querySelector('#mileage-form') || frag.querySelector('form'); if (form) { if (frag.querySelector('script') || frag.querySelector('#zone-map')) { body.innerHTML = html; runInjectedScripts(body); var appendedForm = body.querySelector('#postcode-create-form') || body.querySelector('#mileage-form') || body.querySelector('form'); if (appendedForm) attachModalFormHandlers(appendedForm); } else { body.innerHTML = ''; body.appendChild(form); attachModalFormHandlers(form); } } else { body.innerHTML = html; runInjectedScripts(body); } }).catch(function(){ if (body) body.innerHTML = '<div class="text-red-600">Failed to load form.</div>'; });
-      modal.querySelectorAll('[data-action="close-modal"]').forEach(function(el){ el.addEventListener('click', function(){ modal.classList.add('hidden'); body.innerHTML = ''; }); });
+      modal.querySelectorAll('[data-action="close-modal"]').forEach(function(el){ el.addEventListener('click', function(){ modal.classList.add('hidden'); body.innerHTML = ''; try { document && document.body && (document.body.style.overflow = ''); } catch(e){} }); });
     };
   }
 
@@ -244,6 +246,6 @@
   }
 
   // delegate: close modal elements with data-action="close-modal"
-  document.addEventListener('click', function(e){ var el = e.target.closest('[data-action="close-modal"]'); if (!el) return; var modal = document.getElementById('postcode-modal'); if (modal && !modal.classList.contains('hidden')) { modal.classList.add('hidden'); var body = document.getElementById('postcode-modal-body'); if (body) body.innerHTML = ''; } });
+  document.addEventListener('click', function(e){ var el = e.target.closest('[data-action="close-modal"]'); if (!el) return; var modal = document.getElementById('postcode-modal'); if (modal && !modal.classList.contains('hidden')) { modal.classList.add('hidden'); var body = document.getElementById('postcode-modal-body'); if (body) body.innerHTML = ''; try { document && document.body && (document.body.style.overflow = ''); } catch(e){} } });
 })();
 </script>
