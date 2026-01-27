@@ -32,7 +32,7 @@
           <li>
             <a href="{{ route('admin.bookings.index', array_merge(request()->except('page'), ['section' => $key])) }}" class="px-4 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $isActive ? 'border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}" data-tab="{{ $key }}">
               {{ $label }}
-              <span class="ml-2 inline-block {{ $isActive ? '' : 'bg-gray-100 text-gray-700' }} text-xs px-2 py-0.5 rounded">{{ $counts[$key] ?? 0 }}</span>
+              <span data-count-for="{{ $key }}" class="ml-2 inline-block {{ $isActive ? '' : 'bg-gray-100 text-gray-700' }} text-xs px-2 py-0.5 rounded">{{ $counts[$key] ?? 0 }}</span>
             </a>
           </li>
         @endif
@@ -84,15 +84,35 @@
           e.preventDefault();
           var href = a.getAttribute('href');
           if (!href) return;
-          fetch(href + (href.indexOf('?') === -1 ? '?' : '&') + 'partial=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(r){ return r.text(); }).then(function(html){ container.innerHTML = html; runInjectedScripts(container); attachPagination(container); attachRowHandlers(container); }).catch(function(err){ console.error('Pagination load failed', err); });
+          fetch(href + (href.indexOf('?') === -1 ? '?' : '&') + 'partial=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(r){ return r.text(); }).then(function(html){ container.innerHTML = html; runInjectedScripts(container); attachPagination(container); attachBookingViewButtons(container); }).catch(function(err){ console.error('Pagination load failed', err); });
         });
       });
     }
 
+    // Expose helpers globally so other scripts can refresh panes via AJAX
+    if (typeof window.attachBookingViewButtons === 'undefined') window.attachBookingViewButtons = attachBookingViewButtons;
+    if (typeof window.attachPagination === 'undefined') window.attachPagination = attachPagination;
+
     function attachRowHandlers(container){
-      // rows should have data-booking-id attributes in partial view; attach click handler if present
-      var rows = container.querySelectorAll('[data-booking-id]');
-      rows.forEach(function(r){ if (r.dataset.rowBound) return; r.dataset.rowBound = '1'; r.addEventListener('click', function(){ var id = r.getAttribute('data-booking-id'); if (!id) return; window.location.href = '/admin/bookings/' + id; }); });
+      // Row click navigation has been disabled — clicking a row will do nothing.
+      // This keeps the function present for future use but intentionally avoids adding click handlers.
+      return;
+    }
+
+    function attachBookingViewButtons(container){
+      // Bind "View" buttons to open the booking show partial inside a modal (reuses openPostcodeModal)
+      var buttons = container.querySelectorAll('.booking-view-button');
+      buttons.forEach(function(btn){
+        if (btn.dataset.bound) return; btn.dataset.bound = '1';
+        btn.addEventListener('click', function(e){
+          e.preventDefault();
+          if (typeof window.openPostcodeModal === 'function') {
+            window.openPostcodeModal(btn.getAttribute('href'), btn.dataset.title || 'View Booking');
+          } else {
+            window.location = btn.getAttribute('href');
+          }
+        });
+      });
     }
 
     // Load a single booking pane via AJAX partial
@@ -102,12 +122,15 @@
       if (container.dataset.loaded) return Promise.resolve();
       container.innerHTML = '<div class="p-4 text-gray-600">Loading…</div>';
       var url = '{{ route('admin.bookings.index') }}?partial=1&section=' + encodeURIComponent(key);
-      return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(res){ if (!res.ok) return res.text().then(function(t){ throw new Error('Failed to load: ' + res.status + '\n' + t.slice(0,200)); }); return res.text(); }).then(function(html){ container.innerHTML = html; container.dataset.loaded = '1'; runInjectedScripts(container); attachPagination(container); attachRowHandlers(container); return Promise.resolve(); }).catch(function(err){ console.error('Load section '+key+' error', err); container.innerHTML = '<div class="text-red-600">Failed to load. <button id="retry-'+key+'" class="ml-2 px-2 py-1 border rounded">Retry</button></div>'; var btn = document.getElementById('retry-'+key); if (btn) btn.addEventListener('click', function(){ loadSection(key); }); return Promise.resolve(); });
+      return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(res){ if (!res.ok) return res.text().then(function(t){ throw new Error('Failed to load: ' + res.status + '\n' + t.slice(0,200)); }); return res.text(); }).then(function(html){ container.innerHTML = html; container.dataset.loaded = '1'; runInjectedScripts(container); attachPagination(container); attachBookingViewButtons(container); return Promise.resolve(); }).catch(function(err){ console.error('Load section '+key+' error', err); container.innerHTML = '<div class="text-red-600">Failed to load. <button id="retry-'+key+'" class="ml-2 px-2 py-1 border rounded">Retry</button></div>'; var btn = document.getElementById('retry-'+key); if (btn) btn.addEventListener('click', function(){ loadSection(key); }); return Promise.resolve(); });
     }
 
     // preload all sections on first load, then hide via CSS (so switching is instant)
     var sections = @json(array_keys($sections));
-    Promise.all(sections.map(function(k){ return loadSection(k); })).then(function(){ console.debug('All booking sections loaded'); }).catch(function(){ console.warn('Some booking sections failed to load'); });
+    Promise.all(sections.map(function(k){ return loadSection(k); })).then(function(){ console.debug('All booking sections loaded');
+      // Ensure modal view handlers are attached to any server-rendered panes that did not go through AJAX load
+      sections.forEach(function(k){ var c = document.getElementById('booking-' + k + '-container'); if (c) attachBookingViewButtons(c); });
+    }).catch(function(){ console.warn('Some booking sections failed to load'); });
 
     // Tab activation (show/hide panes similar to pricing)
     var tabs = document.querySelectorAll('ul[role="tablist"] [data-tab]');

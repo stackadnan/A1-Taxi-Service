@@ -20,7 +20,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Expiry Date</label>
-          <input type="date" name="driving_license_expiry" value="{{ old('driving_license_expiry', $driver->driving_license_expiry ?? '') }}" class="mt-1 block w-full border rounded p-2">
+          <input type="date" name="driving_license_expiry" value="{{ old('driving_license_expiry', optional($driver->driving_license_expiry)->format('Y-m-d')) }}" class="mt-1 block w-full border rounded p-2">
         </div>
 
         {{-- Private Hire Drivers License --}}
@@ -33,7 +33,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Expiry Date</label>
-          <input type="date" name="private_hire_drivers_license_expiry" value="{{ old('private_hire_drivers_license_expiry', $driver->private_hire_drivers_license_expiry ?? '') }}" class="mt-1 block w-full border rounded p-2">
+          <input type="date" name="private_hire_drivers_license_expiry" value="{{ old('private_hire_drivers_license_expiry', optional($driver->private_hire_drivers_license_expiry)->format('Y-m-d')) }}" class="mt-1 block w-full border rounded p-2">
         </div>
 
         {{-- Private Hire Vehicle Insurance --}}
@@ -46,7 +46,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Expiry Date</label>
-          <input type="date" name="private_hire_vehicle_insurance_expiry" value="{{ old('private_hire_vehicle_insurance_expiry', $driver->private_hire_vehicle_insurance_expiry ?? '') }}" class="mt-1 block w-full border rounded p-2">
+          <input type="date" name="private_hire_vehicle_insurance_expiry" value="{{ old('private_hire_vehicle_insurance_expiry', optional($driver->private_hire_vehicle_insurance_expiry)->format('Y-m-d')) }}" class="mt-1 block w-full border rounded p-2">
         </div>
 
         {{-- Private Hire Vehicle License --}}
@@ -59,7 +59,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Expiry Date</label>
-          <input type="date" name="private_hire_vehicle_license_expiry" value="{{ old('private_hire_vehicle_license_expiry', $driver->private_hire_vehicle_license_expiry ?? '') }}" class="mt-1 block w-full border rounded p-2">
+          <input type="date" name="private_hire_vehicle_license_expiry" value="{{ old('private_hire_vehicle_license_expiry', optional($driver->private_hire_vehicle_license_expiry)->format('Y-m-d')) }}" class="mt-1 block w-full border rounded p-2">
         </div>
 
         {{-- Private Hire Vehicle MOT --}}
@@ -72,7 +72,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Expiry Date</label>
-          <input type="date" name="private_hire_vehicle_mot_expiry" value="{{ old('private_hire_vehicle_mot_expiry', $driver->private_hire_vehicle_mot_expiry ?? '') }}" class="mt-1 block w-full border rounded p-2">
+          <input type="date" name="private_hire_vehicle_mot_expiry" value="{{ old('private_hire_vehicle_mot_expiry', optional($driver->private_hire_vehicle_mot_expiry)->format('Y-m-d')) }}" class="mt-1 block w-full border rounded p-2">
         </div>
 
       </div>

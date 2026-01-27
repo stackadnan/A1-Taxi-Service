@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\TurboMiddleware::class,
         ]);
+        
+        // Register driver middleware aliases
+        $middleware->alias([
+            'driver.auth' => \App\Http\Middleware\DriverAuth::class,
+            'driver.guest' => \App\Http\Middleware\DriverGuest::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Driver\DriverAuthController;
+use App\Http\Controllers\Driver\DriverDashboardController;
 
 Route::get('/', function() {
     // If user is already logged in, redirect to admin dashboard
@@ -122,5 +124,29 @@ Route::name('admin.')->group(function () {
         // Permissions management
         Route::get('permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'index'])->name('permissions.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.view');
         Route::post('permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'update'])->name('permissions.update')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.edit');
+    });
+});
+
+// Driver Routes
+Route::prefix('driver')->name('driver.')->group(function () {
+    Route::middleware('driver.guest')->group(function () {
+        Route::get('login', [DriverAuthController::class, 'showLoginForm'])->name('login');
+        Route::post('login', [DriverAuthController::class, 'login'])->name('login.post');
+    });
+
+    Route::middleware('driver.auth')->group(function () {
+        Route::post('logout', [DriverAuthController::class, 'logout'])->name('logout');
+        Route::get('dashboard', [DriverDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/', [DriverDashboardController::class, 'index'])->name('home');
+        
+        // Job management
+        Route::get('jobs/new', [DriverDashboardController::class, 'newJobs'])->name('jobs.new');
+        Route::get('jobs/accepted', [DriverDashboardController::class, 'acceptedJobs'])->name('jobs.accepted');
+        Route::get('jobs/completed', [DriverDashboardController::class, 'completedJobs'])->name('jobs.completed');
+        Route::get('jobs/declined', [DriverDashboardController::class, 'declinedJobs'])->name('jobs.declined');
+        
+        // Job actions
+        Route::post('jobs/{booking}/accept', [DriverDashboardController::class, 'acceptJob'])->name('jobs.accept');
+        Route::post('jobs/{booking}/decline', [DriverDashboardController::class, 'declineJob'])->name('jobs.decline');
     });
 });
