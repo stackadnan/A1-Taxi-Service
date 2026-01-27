@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\BookingStatus;
+use App\Models\Driver;
 
 class BookingController extends Controller
 {
@@ -57,8 +58,11 @@ class BookingController extends Controller
                 $query->whereHas('status', function($q){ $q->where('name', 'cancelled'); });
                 break;
             case 'junk':
-                // stash junk in meta->junk = true
-                $query->where('meta->junk', true);
+                // stash junk in meta->junk = true OR where status name is 'junk' (support DB FK)
+                $query->where(function($q){
+                    $q->where('meta->junk', true)
+                      ->orWhereHas('status', function($q2){ $q2->where('name','junk'); });
+                });
                 break;
         }
 
@@ -78,7 +82,7 @@ class BookingController extends Controller
             if ($active === 'new_manual') {
                 return view('admin.bookings._manual', compact('statuses','vehicleTypes'));
             }
-            return view('admin.bookings._list', compact('bookings'));
+            return view('admin.bookings._list', compact('bookings','active'));
         }
 
         return view('admin.bookings.index', compact('sections', 'active', 'counts', 'bookings','statuses','vehicleTypes'));
@@ -101,7 +105,9 @@ class BookingController extends Controller
             case 'cancelled':
                 return Booking::whereHas('status', function($q){ $q->where('name', 'cancelled'); })->count();
             case 'junk':
-                return Booking::where('meta->junk', true)->count();
+                return Booking::where(function($q){
+                    $q->where('meta->junk', true)->orWhereHas('status', function($q2){ $q2->where('name','junk'); });
+                })->count();
             default:
                 return 0;
         }
@@ -117,7 +123,7 @@ class BookingController extends Controller
             'passenger_name' => 'required|string|max:255',
             'phone' => 'required|string|max:50',
             'email' => 'nullable|email|max:255',
-            'pickup_date' => 'required|date',
+            'pickup_date' => 'required|date|after_or_equal:today',
             'pickup_time' => 'required',
             'vehicle_type' => 'nullable|string|max:100',
             'flight_number' => 'nullable|string|max:100',
@@ -127,6 +133,7 @@ class BookingController extends Controller
             'baby_seat_age' => 'nullable|string|max:50',
             'message_to_driver' => 'nullable|string|max:1000',
             'message_to_admin' => 'nullable|string|max:1000',
+            'booking_charges' => 'nullable|numeric|min:0',
             'source' => 'nullable|string|max:50',
             'passengers' => 'nullable|integer|min:1',
             'luggage' => 'nullable|string|max:100',
@@ -239,12 +246,14 @@ class BookingController extends Controller
     {
         $statuses = BookingStatus::all();
         $vehicleTypes = ['Saloon','Business','MPV6','MPV8'];
+        // active drivers for assignment dropdown
+        $activeDrivers = Driver::where('status','active')->orderBy('name')->get(['id','name']);
 
         if ($request->get('partial') || $request->ajax()) {
-            return view('admin.bookings._edit', compact('booking','statuses','vehicleTypes'));
+            return view('admin.bookings._edit', compact('booking','statuses','vehicleTypes','activeDrivers'));
         }
 
-        return view('admin.bookings.edit', compact('booking','statuses','vehicleTypes'));
+        return view('admin.bookings.edit', compact('booking','statuses','vehicleTypes','activeDrivers'));
     }
 
     /**
@@ -272,9 +281,14 @@ class BookingController extends Controller
             'message_to_admin' => 'nullable|string|max:1000',
             'status' => 'nullable|string|max:50',
             'passengers' => 'nullable|integer|min:1',
-            'luggage' => 'nullable|string|max:100'
+            'luggage' => 'nullable|string|max:100',
+            'driver_id' => 'nullable|exists:drivers,id',
+            'driver_price' => 'nullable|numeric|min:0',
+            'use_percentage' => 'nullable|boolean',
+            'driver_percentage' => 'nullable|numeric|min:0|max:100'  
         ]);
 
+        $wasJunk = false;
         try {
             $booking->passenger_name = $data['passenger_name'] ?? $booking->passenger_name;
             $booking->phone = $data['phone'] ?? $booking->phone;
@@ -288,6 +302,10 @@ class BookingController extends Controller
             $booking->baby_seat_age = (isset($data['baby_seat']) && $data['baby_seat']) ? ($data['baby_seat_age'] ?? null) : null;
             $booking->message_to_driver = $data['message_to_driver'] ?? $booking->message_to_driver;
             $booking->message_to_admin = $data['message_to_admin'] ?? $booking->message_to_admin;
+            // update price if provided
+            if (array_key_exists('booking_charges', $data)) {
+                $booking->total_price = $data['booking_charges'];
+            }
 
             // Save pickup/dropoff into dedicated columns (fallback to legacy *_line inputs)
             $booking->pickup_address = $data['pickup_address'] ?? $data['pickup_address_line'] ?? $booking->pickup_address;
@@ -297,18 +315,71 @@ class BookingController extends Controller
             $booking->passengers_count = isset($data['passengers']) ? (int)$data['passengers'] : $booking->passengers_count;
             $booking->luggage_count = isset($data['luggage']) && is_numeric($data['luggage']) ? (int)$data['luggage'] : $booking->luggage_count;
 
+            // driver assignment and driver price (only when provided)
+            if (array_key_exists('driver_id', $data)) {
+                $booking->driver_id = $data['driver_id'] ? (int)$data['driver_id'] : null;
+                $booking->driver_name = $data['driver_id'] ? (Driver::find($data['driver_id'])->name ?? null) : null;
+            }
+
+            // Respect explicit driver_price unless percentage mode is enabled
+            if (array_key_exists('driver_price', $data)) {
+                $booking->driver_price = $data['driver_price'];
+            }
+
+            // Percentage-based driver price support
+            $driverPercent = null;
+            if (!empty($data['use_percentage']) && isset($data['driver_percentage'])) {
+                $driverPercent = (float)$data['driver_percentage'];
+                $base = (float)($booking->total_price ?? 0);
+                $computed = round($base * (1 - ($driverPercent / 100)), 2);
+                $booking->driver_price = $computed;
+            }
+
             // Preserve other meta items (source, flight_time etc.)
             $meta = is_array($booking->meta) ? $booking->meta : [];
             $meta['source'] = $data['source'] ?? ($meta['source'] ?? null);
             if (!empty($data['flight_time'])) $meta['flight_time'] = $data['flight_time'];
-            $booking->meta = $meta;
 
-            if (!empty($data['status'])) {
-                $st = BookingStatus::where('name', $data['status'])->first();
-                if ($st) $booking->status_id = $st->id;
+            // Store or clear driver percentage meta
+            if ($driverPercent !== null) {
+                $meta['driver_percentage'] = $driverPercent;
+            } else {
+                if (isset($meta['driver_percentage'])) unset($meta['driver_percentage']);
+            }
+
+            $booking->meta = $meta; 
+
+            // Handle status updates. Special value 'junk' sets a meta flag instead of a status record.
+            $wasJunk = false;
+            if (isset($data['status']) && $data['status'] !== '') {
+                if ($data['status'] === 'junk') {
+                    $meta = is_array($booking->meta) ? $booking->meta : [];
+                    $meta['junk'] = true;
+                    $booking->meta = $meta;
+
+                    // ensure there's a 'junk' status record to satisfy FK constraints and make the booking queryable
+                    $st = BookingStatus::firstOrCreate(['name' => 'junk'], ['description' => 'Junk']);
+                    $booking->status_id = $st->id;
+                    $wasJunk = true;
+                } else {
+                    // If we're setting a real status, clear the 'junk' flag if present
+                    $meta = is_array($booking->meta) ? $booking->meta : [];
+                    if (isset($meta['junk'])) { unset($meta['junk']); $booking->meta = $meta; }
+
+                    $st = BookingStatus::where('name', $data['status'])->first();
+                    if ($st) {
+                        $booking->status_id = $st->id;
+                    }
+                }
             }
 
             $booking->save();
+
+            // Refresh model and clear any cached relation so subsequent views/queries see the change immediately
+            $booking->refresh();
+            if ($wasJunk) {
+                $booking->setRelation('status', null);
+            }
         } catch (\Exception $e) {
             logger()->error('Failed to update booking: ' . $e->getMessage(), ['exception' => $e]);
             if ($request->ajax() || $request->wantsJson()) {
@@ -318,10 +389,12 @@ class BookingController extends Controller
         }
 
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'booking' => $booking], 200);
+            return response()->json(['success' => true, 'booking' => $booking, 'moved_to' => ($wasJunk ? 'junk' : null)], 200);
         }
 
-        return redirect()->route('admin.bookings.show', $booking)->with('success', 'Booking updated');
+        // For non-AJAX updates, stay on the edit page and show a toast/alert instead of redirecting to the show page.
+        $flashMsg = $wasJunk ? 'Booking moved to Junk' : 'Booking updated';
+        return redirect()->back()->with('success', $flashMsg)->with('moved_to', ($wasJunk ? 'junk' : null));
     }
 
     /**

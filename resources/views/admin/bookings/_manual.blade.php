@@ -324,10 +324,10 @@
           </div>
         </div>
         <div>
-          <label class="form-label">Price (£)</label>
+          <label class="form-label">Price (EUR)</label>
           <div class="input-with-icon">
-            <span class="input-icon" style="color: #6b7280;">£</span>
-            <input type="number" step="0.01" name="price" class="form-input form-input-with-icon" placeholder="0.00" />
+            <span class="input-icon" style="color: #6b7280;">€</span>
+            <input id="booking-charges-input" type="number" step="0.01" name="booking_charges" value="{{ old('booking_charges') }}" class="form-input form-input-with-icon" placeholder="0.00" />
           </div>
         </div>
       </div>
@@ -417,7 +417,7 @@
         </div>
         <div>
           <label class="form-label">Pickup Date mm/dd/yyyy</label>
-          <input type="date" name="pickup_date" class="form-input" />
+          <input type="date" name="pickup_date" class="form-input" min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" value="{{ old('pickup_date', \Carbon\Carbon::today()->format('Y-m-d')) }}" />
         </div>
       </div>
       
@@ -923,7 +923,7 @@
         // also update the visible vehicle_type_text input if present
         var vt = document.querySelector('input[name="vehicle_type_text"]'); if (vt) vt.value = this.value;
         // Auto-fill the price/charge field
-        var priceInput = document.querySelector('input[name="price"]'); 
+        var priceInput = document.querySelector('input[name="booking_charges"]'); 
         if (priceInput) priceInput.value = val;
         // close modal
         modal.remove();
@@ -988,7 +988,7 @@
           var zonePriceEl = document.getElementById('manual-zone-price'); if (zonePriceEl) zonePriceEl.textContent = bookingInput && bookingInput.value ? bookingInput.value : '-';
           
           // Auto-fill the price/charge field
-          var priceInput = document.querySelector('input[name="price"]'); 
+          var priceInput = document.querySelector('input[name="booking_charges"]'); 
           if (priceInput) priceInput.value = row.dataset.price ? Number(row.dataset.price).toFixed(2) : '';
 
           // auto-fill highlighted address and vehicle type fields
@@ -1490,6 +1490,19 @@
   if (form) {
     form.addEventListener('submit', function(e){
       e.preventDefault();
+      // Ensure booking_charges has a value before submit (fallback to manual zone price if user didn't explicitly choose)
+      try {
+        var bookingInput = form.querySelector('input[name="booking_charges"]');
+        var zonePriceEl = document.getElementById('manual-zone-price');
+        if (bookingInput && (!bookingInput.value || bookingInput.value === '')) {
+          var zp = zonePriceEl ? zonePriceEl.textContent.trim() : '';
+          if (zp && !isNaN(parseFloat(zp))) {
+            bookingInput.value = parseFloat(zp).toFixed(2);
+          }
+        }
+        console.debug('Submitting manual booking with booking_charges=', bookingInput ? bookingInput.value : '(none)');
+      } catch(e){ console.error('Pre-submit booking_charges check failed', e); }
+
       var fd = new FormData(form);
       var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
       fetch(form.getAttribute('action'), { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' })
@@ -1504,7 +1517,49 @@
           throw { status: res.status, body: { message: txt } };
         });
       })
-      .then(function(json){ showToast('Booking created'); setTimeout(function(){ location.reload(); }, 600); })
+      .then(function(json){ showToast('Booking created');
+        try {
+          var id = json && json.booking && json.booking.id ? json.booking.id : null;
+          // explicitly activate the 'new' tab
+          var newTab = document.querySelector('ul[role="tablist"] [data-tab="new"]');
+          if (newTab) newTab.click();
+
+          // Refresh the 'new' section via AJAX and insert updated list without reloading
+          var listUrl = '{{ route('admin.bookings.index') }}?partial=1&section=new';
+          fetch(listUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(r){ return r.text(); }).then(function(html){
+            var container = document.getElementById('booking-new-container');
+            if (container) {
+              container.innerHTML = html;
+              // run any injected scripts and attach handlers
+              if (typeof window.runInjectedScripts === 'function') window.runInjectedScripts(container);
+              if (window.attachPagination) window.attachPagination(container);
+              if (window.attachBookingViewButtons) window.attachBookingViewButtons(container);
+
+              // highlight newly created row if present
+              if (id) {
+                var row = container.querySelector('[data-booking-id="' + id + '"]');
+                if (row) {
+                  row.classList.add('bg-yellow-50');
+                  setTimeout(function(){ row.classList.remove('bg-yellow-50'); }, 2200);
+                }
+
+                // Update 'new' tab badge(s)
+                try {
+                  document.querySelectorAll('[data-count-for="new"]').forEach(function(b){
+                    var n = parseInt(b.textContent.trim()) || 0; b.textContent = n + 1;
+                    // remove inactive styles to highlight if needed
+                    b.classList.remove('bg-gray-100','text-gray-700');
+                  });
+                } catch(e){ console.error('Failed to update new badge', e); }
+
+              }
+            } else {
+              // fallback: reload page if container not present
+              setTimeout(function(){ location.reload(); }, 400);
+            }
+          }).catch(function(err){ console.error('Failed to refresh bookings list', err); setTimeout(function(){ location.reload(); }, 600); });
+        } catch(e) { console.error('Post-create handler failed', e); setTimeout(function(){ location.reload(); }, 600); }
+      })
       .catch(function(err){
         console.error('Booking create failed', err);
         // Handle validation errors

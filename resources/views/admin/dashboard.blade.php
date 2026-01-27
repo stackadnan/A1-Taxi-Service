@@ -172,7 +172,7 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
               .then(function(html){ 
                 container.innerHTML = html; 
                 attachPagination(container); 
-                attachRowHandlers(container); 
+                attachBookingViewButtons(container); 
               })
               .catch(function(err){ console.error('Pagination load failed', err); });
           });
@@ -180,16 +180,16 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
       }
 
       function attachRowHandlers(container){
-        var rows = container.querySelectorAll('[data-booking-id]');
-        rows.forEach(function(r){ 
-          if (r.dataset.rowBound) return; 
-          r.dataset.rowBound = '1'; 
-          r.style.cursor = 'pointer';
-          r.addEventListener('click', function(){ 
-            var id = r.getAttribute('data-booking-id'); 
-            if (!id) return; 
-            window.location.href = '{{ route('admin.bookings.index') }}/' + id; 
-          }); 
+        // Row click navigation disabled on dashboard bookings list — clicks intentionally do nothing.
+        // Links (View/Edit) inside rows will continue to function normally.
+        return;
+      }
+
+      function attachBookingViewButtons(container){
+        var buttons = container.querySelectorAll('.booking-view-button');
+        buttons.forEach(function(btn){
+          if (btn.dataset.bound) return; btn.dataset.bound='1';
+          btn.addEventListener('click', function(e){ e.preventDefault(); if (typeof window.openPostcodeModal === 'function') { window.openPostcodeModal(btn.getAttribute('href'), btn.dataset.title || 'View Booking'); } else { window.location = btn.getAttribute('href'); } });
         });
       }
 
@@ -202,7 +202,7 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
           .then(function(html){
             listContainer.innerHTML = html;
             attachPagination(listContainer);
-            attachRowHandlers(listContainer);
+            attachBookingViewButtons(listContainer);
             setActiveTab(tabEl);
           })
           .catch(function(err){ 
@@ -221,7 +221,7 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
 
       // Attach handlers to initial content
       attachPagination(listContainer);
-      attachRowHandlers(listContainer);
+      attachBookingViewButtons(listContainer);
     })();
   </script>
 </div>

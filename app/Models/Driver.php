@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Hash;
 
-class Driver extends Model
+class Driver extends Authenticatable
 {
     use HasFactory;
 
@@ -48,5 +50,74 @@ class Driver extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Automatically hash password when setting
+     */
+    public function setPasswordAttribute($value)
+    {
+        if ($value) {
+            $this->attributes['password'] = Hash::make($value);
+        }
+    }
+
+    /**
+     * Scope to get active drivers
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Get new jobs (assigned but not started)
+     */
+    public function getNewJobsCount()
+    {
+        return $this->bookings()
+            ->whereHas('status', function($q) {
+                $q->where('name', 'confirmed');
+            })
+            ->whereNull('meta->driver_response')
+            ->count();
+    }
+
+    /**
+     * Get accepted jobs count
+     */
+    public function getAcceptedJobsCount()
+    {
+        return $this->bookings()
+            ->whereHas('status', function($q) {
+                $q->where('name', 'confirmed');
+            })
+            ->where('meta->driver_response', 'accepted')
+            ->count();
+    }
+
+    /**
+     * Get completed jobs count
+     */
+    public function getCompletedJobsCount()
+    {
+        return $this->bookings()
+            ->whereHas('status', function($q) {
+                $q->where('name', 'completed');
+            })
+            ->count();
+    }
+
+    /**
+     * Get declined jobs count
+     */
+    public function getDeclinedJobsCount()
+    {
+        return $this->bookings()
+            ->whereHas('status', function($q) {
+                $q->where('name', 'confirmed');
+            })
+            ->where('meta->driver_response', 'declined')
+            ->count();
     }
 }

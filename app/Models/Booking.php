@@ -25,4 +25,14 @@ class Booking extends Model
     {
         return $this->belongsTo(BookingStatus::class, 'status_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function driver()
+    {
+        return $this->belongsTo(Driver::class, 'driver_id');
+    }
 }

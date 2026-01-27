@@ -95,6 +95,9 @@
       <main class="p-6">
         @yield('content')
       </main>
+
+      {{-- Global modals (used by many admin pages) --}}
+      @include('admin.pricing._modals')
     </div>
   </div>
 
