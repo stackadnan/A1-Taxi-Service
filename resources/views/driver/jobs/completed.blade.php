@@ -59,16 +59,17 @@
                                 <span class="ml-2 text-gray-700">{{ $job->passengers_count }}</span>
                             </div>
                             @endif
-                            @if($job->total_price)
                             <div class="flex items-center text-sm">
                                 <i class="fas fa-euro-sign text-green-600 mr-2 w-4"></i>
                                 <span class="font-medium">Price:</span>
-                                <span class="ml-2 text-gray-700">€{{ number_format($job->total_price, 2) }}</span>
-                                @if($job->driver_price)
-                                <span class="ml-2 text-sm text-green-600 font-medium">(Earned: €{{ number_format($job->driver_price, 2) }})</span>
-                                @endif
-                            </div>
-                            @endif
+                                <span class="ml-2 text-gray-700">
+                                  @if($job->driver_price)
+                                    €{{ number_format($job->driver_price, 2) }}
+                                  @else
+                                    -
+                                  @endif
+                                </span>
+                            </div> 
                         </div>
 
                         @if($job->message_to_driver)
@@ -82,12 +83,13 @@
                     </div>
 
                     <!-- Status Info -->
-                    <div class="text-center md:ml-6">
+                    <div class="text-center md:ml-6 space-y-2">
                         <div class="bg-green-100 rounded-lg p-4">
                             <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
                             <p class="text-sm font-medium text-green-800">Completed</p>
                             <p class="text-xs text-green-600">Well done!</p>
                         </div>
+                        <a href="{{ route('driver.jobs.show', $job) }}" class="block mt-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">View Full Details</a>
                     </div>
                 </div>
             </div>

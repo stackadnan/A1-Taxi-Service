@@ -57,9 +57,15 @@ class Driver extends Authenticatable
      */
     public function setPasswordAttribute($value)
     {
-        if ($value) {
-            $this->attributes['password'] = Hash::make($value);
+        if (!$value) return;
+
+        // If the value looks like an already-hashed password (bcrypt/argon), store as-is
+        if (is_string($value) && (strpos($value, '$2y$') === 0 || strpos($value, '$argon') === 0)) {
+            $this->attributes['password'] = $value;
+            return;
         }
+
+        $this->attributes['password'] = Hash::make($value);
     }
 
     /**

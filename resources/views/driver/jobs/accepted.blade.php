@@ -17,7 +17,8 @@
 
     @if($jobs->count() > 0)
         <!-- Jobs List -->
-        <div class="space-y-4">
+        <div id="accepted-jobs-container">
+          <div class="space-y-4" id="accepted-jobs-list">
             @foreach($jobs as $job)
             <div class="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
                 <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
@@ -59,16 +60,17 @@
                                 <span class="ml-2 text-gray-700">{{ $job->passengers_count }}</span>
                             </div>
                             @endif
-                            @if($job->total_price)
                             <div class="flex items-center text-sm">
                                 <i class="fas fa-euro-sign text-green-600 mr-2 w-4"></i>
                                 <span class="font-medium">Price:</span>
-                                <span class="ml-2 text-gray-700">€{{ number_format($job->total_price, 2) }}</span>
-                                @if($job->driver_price)
-                                <span class="ml-2 text-sm text-gray-500">(Driver: €{{ number_format($job->driver_price, 2) }})</span>
-                                @endif
-                            </div>
-                            @endif
+                                <span class="ml-2 text-gray-700">
+                                  @if($job->driver_price)
+                                    €{{ number_format($job->driver_price, 2) }}
+                                  @else
+                                    -
+                                  @endif
+                                </span>
+                            </div> 
                         </div>
 
                         @if($job->message_to_driver)
@@ -82,24 +84,26 @@
                     </div>
 
                     <!-- Status Info -->
-                    <div class="text-center md:ml-6">
+                    <div class="text-center md:ml-6 space-y-2">
                         <div class="bg-orange-100 rounded-lg p-4">
                             <i class="fas fa-hourglass-half text-orange-500 text-2xl mb-2"></i>
                             <p class="text-sm font-medium text-orange-800">In Progress</p>
                             <p class="text-xs text-orange-600">Complete this job</p>
                         </div>
+                        <a href="{{ route('driver.jobs.show', $job) }}" class="block mt-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">View Full Details</a>
                     </div>
                 </div>
             </div>
             @endforeach
-        </div>
+          </div>
 
-        <!-- Pagination -->
-        @if($jobs->hasPages())
-        <div class="flex justify-center">
-            {{ $jobs->links() }}
+          <!-- Pagination -->
+          @if($jobs->hasPages())
+          <div class="flex justify-center" id="accepted-jobs-pagination">
+              {{ $jobs->links() }}
+          </div>
+          @endif
         </div>
-        @endif
     @else
         <!-- Empty State -->
         <div class="bg-white rounded-lg shadow p-12 text-center">

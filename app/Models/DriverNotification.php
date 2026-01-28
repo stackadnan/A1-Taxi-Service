@@ -12,11 +12,12 @@ class DriverNotification extends Model
     protected $table = 'driver_notifications';
 
     protected $fillable = [
-        'driver_id', 'title', 'message', 'is_read'
+        'driver_id', 'title', 'message', 'is_read', 'read_at'
     ];
 
     protected $casts = [
-        'is_read' => 'boolean'
+        'is_read' => 'boolean',
+        'read_at' => 'datetime'
     ];
 
     public function driver()

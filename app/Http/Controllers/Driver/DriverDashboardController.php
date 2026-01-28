@@ -90,6 +90,36 @@ class DriverDashboardController extends Controller
     }
 
     /**
+     * Show a single booking to the driver (only if assigned and accepted or completed)
+     */
+    public function show(Booking $booking)
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) {
+            abort(403);
+        }
+
+        // Ensure booking is assigned to this driver
+        if ($booking->driver_id !== $driver->id) {
+            abort(403);
+        }
+
+        // Allow viewing only if booking is accepted (meta driver_response = accepted and confirmed) or completed
+        $statusName = optional($booking->status)->name;
+        $driverResponse = $booking->meta['driver_response'] ?? null;
+
+        $allowed = false;
+        if ($statusName === 'completed') $allowed = true;
+        if ($statusName === 'confirmed' && $driverResponse === 'accepted') $allowed = true;
+
+        if (! $allowed) {
+            abort(403);
+        }
+
+        return view('driver.jobs.show', ['job' => $booking, 'driver' => $driver]);
+    }
+
+    /**
      * Get declined jobs for the driver
      */
     public function declinedJobs()
@@ -128,13 +158,33 @@ class DriverDashboardController extends Controller
         // mark as read so they are not delivered repeatedly
         try {
             if ($count) {
-                \App\Models\DriverNotification::where('driver_id', $driver->id)->where('is_read', false)->update(['is_read' => true]);
+                \App\Models\DriverNotification::where('driver_id', $driver->id)->where('is_read', false)->update(['is_read' => true, 'read_at' => now()]);
             }
         } catch (\Exception $e) {
             logger()->warning('Failed to mark driver notifications as read: ' . $e->getMessage());
         }
 
         return response()->json(['count' => $count, 'notifications' => $notes]);
+    }
+
+    /**
+     * Return current job counts for the authenticated driver
+     */
+    public function counts()
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) {
+            return response()->json(['success' => false, 'message' => 'Not authenticated', 'counts' => [ 'new' => 0, 'accepted' => 0, 'completed' => 0, 'declined' => 0 ]]);
+        }
+
+        $counts = [
+            'new' => $driver->getNewJobsCount(),
+            'accepted' => $driver->getAcceptedJobsCount(),
+            'completed' => $driver->getCompletedJobsCount(),
+            'declined' => $driver->getDeclinedJobsCount(),
+        ];
+
+        return response()->json(['success' => true, 'counts' => $counts]);
     }
 
     /**
@@ -180,7 +230,19 @@ class DriverDashboardController extends Controller
                 'booking_id' => $booking->id
             ]);
     
-            return response()->json(['success' => true, 'message' => 'Job accepted successfully']);
+            // Return updated counts
+            $counts = [
+                'new' => $driver->getNewJobsCount(),
+                'accepted' => $driver->getAcceptedJobsCount(),
+                'completed' => $driver->getCompletedJobsCount(),
+                'declined' => $driver->getDeclinedJobsCount(),
+            ];
+    
+            return response()->json([
+                'success' => true, 
+                'message' => 'Job accepted successfully',
+                'counts' => $counts
+            ]);
         } catch (\Exception $e) {
             \Log::error('Error accepting job', [
                 'error' => $e->getMessage(),
@@ -233,7 +295,19 @@ class DriverDashboardController extends Controller
                 'booking_id' => $booking->id
             ]);
     
-            return response()->json(['success' => true, 'message' => 'Job declined']);
+            // Return updated counts
+            $counts = [
+                'new' => $driver->getNewJobsCount(),
+                'accepted' => $driver->getAcceptedJobsCount(),
+                'completed' => $driver->getCompletedJobsCount(),
+                'declined' => $driver->getDeclinedJobsCount(),
+            ];
+    
+            return response()->json([
+                'success' => true, 
+                'message' => 'Job declined',
+                'counts' => $counts
+            ]);
         } catch (\Exception $e) {
             \Log::error('Error declining job', [
                 'error' => $e->getMessage(),

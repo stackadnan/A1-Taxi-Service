@@ -17,7 +17,7 @@
 
     @if($jobs->count() > 0)
         <!-- Jobs List -->
-        <div class="space-y-4">
+        <div class="space-y-4" id="jobs-list-container">
             @foreach($jobs as $job)
             <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
                 <div class="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
@@ -79,16 +79,17 @@
                                     <span class="ml-2 text-gray-700">{{ $job->passengers_count }}</span>
                                 </div>
                                 @endif
-                                @if($job->total_price)
                                 <div class="flex items-center text-sm">
                                     <i class="fas fa-euro-sign text-green-600 mr-2 w-4"></i>
                                     <span class="font-medium">Price:</span>
-                                    <span class="ml-2 text-gray-700">€{{ number_format($job->total_price, 2) }}</span>
-                                    @if($job->driver_price)
-                                    <span class="ml-2 text-sm text-gray-500">(Driver: €{{ number_format($job->driver_price, 2) }})</span>
-                                    @endif
-                                </div>
-                                @endif
+                                    <span class="ml-2 text-gray-700">
+                                      @if($job->driver_price)
+                                        €{{ number_format($job->driver_price, 2) }}
+                                      @else
+                                        -
+                                      @endif
+                                    </span>
+                                </div> 
                             </div>
                         </div>
 
@@ -137,4 +138,126 @@
         </div>
     @endif
 </div>
+
+<script>
+// Accept job with AJAX - triggers real-time update on admin side
+function acceptJob(jobId) {
+    const button = event.target.closest('button');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Accepting...';
+
+    fetch('{{ route("driver.jobs.accept", ":id") }}'.replace(':id', jobId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': window.Laravel.csrfToken,
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update counts if provided
+            if (data.counts && typeof updateCounts === 'function') {
+                updateCounts(data.counts);
+            }
+            
+            // Show success message
+            if (typeof showNotification === 'function') {
+                showNotification(data.message || 'Job accepted successfully!', 'success');
+            }
+            
+            // Remove the job card from the list with animation
+            const jobCard = button.closest('.bg-white');
+            jobCard.style.transition = 'all 0.3s ease-out';
+            jobCard.style.opacity = '0';
+            jobCard.style.transform = 'translateX(100%)';
+            
+            setTimeout(() => {
+                jobCard.remove();
+                
+                // Check if no jobs left
+                const container = document.getElementById('jobs-list-container');
+                if (container && container.children.length === 0) {
+                    location.reload(); // Show empty state
+                }
+            }, 300);
+        } else {
+            throw new Error(data.error || 'Failed to accept job');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (typeof showNotification === 'function') {
+            showNotification(error.message || 'Failed to accept job', 'error');
+        } else {
+            alert('Error: ' + (error.message || 'Failed to accept job'));
+        }
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-check mr-2"></i>Accept';
+    });
+}
+
+// Decline job with AJAX - triggers real-time update on admin side
+function declineJob(jobId) {
+    if (!confirm('Are you sure you want to decline this job?')) {
+        return;
+    }
+
+    const button = event.target.closest('button');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Declining...';
+
+    fetch('{{ route("driver.jobs.decline", ":id") }}'.replace(':id', jobId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': window.Laravel.csrfToken,
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update counts if provided
+            if (data.counts && typeof updateCounts === 'function') {
+                updateCounts(data.counts);
+            }
+            
+            // Show success message
+            if (typeof showNotification === 'function') {
+                showNotification(data.message || 'Job declined', 'info');
+            }
+            
+            // Remove the job card from the list with animation
+            const jobCard = button.closest('.bg-white');
+            jobCard.style.transition = 'all 0.3s ease-out';
+            jobCard.style.opacity = '0';
+            jobCard.style.transform = 'translateX(-100%)';
+            
+            setTimeout(() => {
+                jobCard.remove();
+                
+                // Check if no jobs left
+                const container = document.getElementById('jobs-list-container');
+                if (container && container.children.length === 0) {
+                    location.reload(); // Show empty state
+                }
+            }, 300);
+        } else {
+            throw new Error(data.error || 'Failed to decline job');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (typeof showNotification === 'function') {
+            showNotification(error.message || 'Failed to decline job', 'error');
+        } else {
+            alert('Error: ' + (error.message || 'Failed to decline job'));
+        }
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-times mr-2"></i>Decline';
+    });
+}
+</script>
 @endsection

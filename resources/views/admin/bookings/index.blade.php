@@ -190,5 +190,43 @@
     activate('{{ $active }}');
   })();
   </script>
+
+  <script>
+    (function(){
+      // Refresh the tab counts from the server when a booking update occurs (e.g., unassign driver)
+      function refreshCounts(){
+        var url = '{{ route('admin.bookings.index') }}?counts=1';
+        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(function(res){
+            if (!res.ok) return; 
+            var ct = res.headers.get('content-type') || '';
+            // Expect JSON; if not JSON, handle gracefully (could be login page/html error)
+            if (ct.indexOf('application/json') === -1) {
+              return res.text().then(function(text){
+                console.warn('refreshCounts: non-json response, possible session expiry or error');
+                // If HTML page returned (likely login), reload full page to recover
+                if (/<!doctype|<html|<body/i.test(text)) {
+                  console.warn('refreshCounts: detected full HTML, forcing reload');
+                  window.location.reload();
+                }
+                throw new Error('Non-JSON response');
+              });
+            }
+            return res.json();
+          })
+          .then(function(json){
+            if (!json || !json.counts) return;
+            Object.keys(json.counts).forEach(function(k){ var el = document.querySelector('[data-count-for="'+k+'"]'); if (el) el.innerText = json.counts[k]; });
+          })
+          .catch(function(err){ console.error('refreshCounts error', err); });
+      }
+
+      document.addEventListener('bookingUpdated', function(){ refreshCounts(); });
+      document.addEventListener('bookingMoved', function(){ refreshCounts(); });
+
+      // Expose for manual use
+      window.refreshBookingCounts = refreshCounts;
+    })();
+  </script>
 </div>
 @endsection

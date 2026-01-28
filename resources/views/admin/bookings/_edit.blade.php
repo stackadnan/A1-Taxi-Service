@@ -114,8 +114,7 @@
     <div>
       <label class="block text-sm font-medium text-gray-700">Assign driver</label>
       <select name="driver_id" class="mt-1 block w-full border rounded p-2">
-        <!-- <option value="__remove__" data-remove="1">Remove driver</option> -->
-        <option value="">(Unassigned)</option>
+        <option value="__remove__">Remove Driver ⚠️</option>
         @foreach($activeDrivers as $drv)
           <option value="{{ $drv->id }}" {{ (string)old('driver_id', $booking->driver_id) === (string)$drv->id ? 'selected' : '' }}>{{ $drv->name }}</option>
         @endforeach
@@ -125,21 +124,66 @@
     <script>
       (function(){
         var select = document.querySelector('select[name="driver_id"]');
+        var modal = document.getElementById('remove-driver-modal');
+        var btnCancel = modal ? modal.querySelector('#remove-driver-cancel') : null;
+        var btnConfirm = modal ? modal.querySelector('#remove-driver-confirm') : null;
         if (!select) return;
         var prev = select.value;
+
+        function showModal(){ if (modal) modal.classList.remove('hidden'); }
+        function hideModal(){ if (modal) modal.classList.add('hidden'); }
+
         select.addEventListener('change', function(e){
           if (this.value === '__remove__') {
-            var ok = confirm('Remove the assigned driver from this booking? This will unassign the job from the previous driver.');
-            if (!ok) {
-              this.value = prev;
-              return;
+            // open custom styled modal instead of native confirm
+            showModal();
+
+            // on cancel, restore previous value
+            if (btnCancel) {
+              btnCancel.onclick = function(){ select.value = prev; hideModal(); };
             }
-            // set prev to empty to reflect the new unassigned state
-            prev = '';
+
+            // on confirm, submit the form and close modal
+            if (btnConfirm) {
+              btnConfirm.onclick = function(){
+                hideModal();
+                prev = '';
+                var form = document.getElementById('booking-edit-form');
+                if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+              };
+            }
+
           } else {
             prev = this.value;
           }
         });
+
+        // allow closing modal with Escape key
+        document.addEventListener('keydown', function(e){ if (e.key === 'Escape') hideModal(); });
+      })();
+    </script>
+
+    <!-- Remove driver confirmation modal (hidden by default) -->
+    <div id="remove-driver-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+      <div class="fixed inset-0 bg-black opacity-40"></div>
+      <div class="bg-white rounded-lg shadow-lg z-60 w-full max-w-md p-6 mx-4">
+        <div class="flex items-start justify-between">
+          <h3 class="text-lg font-semibold">Remove assigned driver</h3>
+          <button type="button" class="text-gray-400 hover:text-gray-600" id="remove-driver-close" aria-label="Close">✕</button>
+        </div>
+        <p class="text-sm text-gray-700 mt-3">Remove the assigned driver from this booking? This will unassign the job from the previous driver.</p>
+        <div class="mt-4 flex justify-end gap-2">
+          <button type="button" id="remove-driver-cancel" class="px-4 py-2 bg-white border rounded">Cancel</button>
+          <button type="button" id="remove-driver-confirm" class="px-4 py-2 bg-red-600 text-white rounded">Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function(){
+        var close = document.getElementById('remove-driver-close');
+        var modal = document.getElementById('remove-driver-modal');
+        if (close && modal) close.addEventListener('click', function(){ modal.classList.add('hidden'); });
       })();
     </script>
 
@@ -260,6 +304,12 @@
                 else if (typeof window.showAlert === 'function') window.showAlert('Updated', message);
                 else alert(message);
 
+                // dispatch bookingUpdated so other parts (list rows) refresh in-place
+                if (json.booking) {
+                  var updateEvent = new CustomEvent('bookingUpdated', { detail: { booking: json.booking } });
+                  document.dispatchEvent(updateEvent);
+                }
+
                 // optionally mark moved_to for client-side handling
                 if (json.moved_to) {
                   // dispatch a custom event so other scripts can refresh tabs if desired
@@ -292,3 +342,43 @@
     } catch(e){ console.error('booking-edit-form init', e); }
   })();
 </script>
+
+<script>
+  (function(){
+    function updateRow(booking){
+      try {
+        var tr = document.querySelector('tr[data-booking-id="'+booking.id+'"]');
+        if (!tr) return;
+        var driverCell = tr.querySelector('[data-col="driver_name"]');
+        if (driverCell) driverCell.innerText = booking.driver_name ? booking.driver_name : '-';
+        var driverPriceCell = tr.querySelector('[data-col="driver_price"]');
+        if (driverPriceCell) driverPriceCell.innerText = (booking.driver_price ? parseFloat(booking.driver_price).toFixed(2) : '-');
+        var responseCell = tr.querySelector('[data-col="driver_response"]');
+        if (responseCell) {
+          // show '-' if there's no driver assigned
+          if (!booking.driver_id) {
+            responseCell.innerHTML = '<span class="text-sm text-gray-500">-</span>';
+          } else {
+            var dr = booking.meta && booking.meta.driver_response ? booking.meta.driver_response : null;
+            var statusClass = '';
+            var statusText = '';
+            if (dr === 'accepted') { statusClass = 'bg-green-100 text-green-800'; statusText='Accepted'; }
+            else if (dr === 'declined') { statusClass = 'bg-red-100 text-red-800'; statusText='Rejected'; }
+            else { statusClass = 'bg-yellow-100 text-yellow-800'; statusText='Pending'; }
+            responseCell.innerHTML = '<span class="text-xs px-2 py-1 rounded-full font-medium '+statusClass+'">'+statusText+'</span>';
+          }
+        }
+        var totalCell = tr.querySelector('[data-col="total_price"]');
+        if (totalCell) totalCell.innerText = (booking.total_price ? parseFloat(booking.total_price).toFixed(2) : '-');
+      } catch(e){ console.error('updateRow error', e); }
+    }
+
+    document.addEventListener('bookingUpdated', function(e){
+      if (!e || !e.detail || !e.detail.booking) return;
+      updateRow(e.detail.booking);
+    });
+
+    // Also provide a global function for immediate usage
+    window.updateBookingRow = updateRow;
+  })();
+</script> 

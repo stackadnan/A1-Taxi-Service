@@ -195,44 +195,131 @@
             }
         }
 
-        // Notification polling (checks for unread driver notifications every 10s)
+        // Real-time notifications using Server-Sent Events (no polling!)
         window.Laravel.driverNotificationsUrl = '{{ route('driver.notifications.unread') }}';
         window.Laravel.driverNewJobsUrl = '{{ route('driver.jobs.new') }}?partial=1';
+        window.Laravel.driverAcceptedJobsUrl = '{{ route('driver.jobs.accepted') }}?partial=1';
+        window.Laravel.driverDashboardCountsUrl = '{{ route('driver.dashboard.counts') }}';
 
-        (function pollDriverNotifications(){
-            try {
-                fetch(window.Laravel.driverNotificationsUrl, {
-                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': window.Laravel.csrfToken }
-                }).then(r => r.json()).then(data => {
-                    if (!data || !data.count) return;
+        let eventSource = null;
+        let reconnectTimeout = null;
+        let processedDriverNotificationIds = new Set(); // Track processed notifications
 
-                    // show each notification and update counts
-                    const count = data.count || 0;
-                    if (count > 0) {
-                        (data.notifications || []).forEach(n => {
-                            showNotification(n.message, 'success');
-                        });
+        function connectNotificationStream() {
+            if (eventSource) {
+                eventSource.close();
+            }
 
-                        // update counts on dashboard
-                        const el = document.getElementById('new-jobs-count');
-                        const quick = document.getElementById('new-jobs-quick-count');
-                        if (el) el.textContent = (parseInt(el.textContent || '0', 10) + count);
-                        if (quick) quick.textContent = (parseInt(quick.textContent || '0', 10) + count);
+            eventSource = new EventSource('{{ route("driver.notifications.stream") }}');
 
-                        // If on new jobs page, refresh the list via AJAX
-                        if (window.location.pathname.indexOf('/driver/jobs/new') !== -1) {
-                            fetch(window.Laravel.driverNewJobsUrl, { headers: { 'Accept': 'text/html' } })
-                                .then(resp => resp.text())
-                                .then(html => {
-                                    const container = document.getElementById('page-content');
-                                    if (container) container.innerHTML = html;
-                                });
-                        }
+            // Handler that processes each notification only ONCE
+            var __driverIsRefreshing = false;
+            eventSource.addEventListener('notification', function(e) {
+                try {
+                    const notification = JSON.parse(e.data);
+                    
+                    // Skip if we've already processed this notification
+                    if (processedDriverNotificationIds.has(notification.id)) {
+                        console.log('Driver notification', notification.id, 'already processed, skipping');
+                        return;
                     }
-                }).catch(() => {});
-            } catch (e) { /* ignore */ }
-            setTimeout(pollDriverNotifications, 10000);
-        })();
+                    
+                    // Mark this notification as processed
+                    processedDriverNotificationIds.add(notification.id);
+                    console.log('Processing NEW driver notification:', notification.id);
+
+                    // Immediate lightweight feedback
+                    if (typeof showNotification === 'function') showNotification(notification.message, 'success');
+
+                    // ONE-TIME refresh for this notification (no debouncing)
+                    if (__driverIsRefreshing) {
+                        console.log('Driver already refreshing, skipping this notification refresh');
+                        return;
+                    }
+                    __driverIsRefreshing = true;
+
+                    fetch(window.Laravel.driverDashboardCountsUrl, { headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': window.Laravel.csrfToken } })
+                    .then(resp => resp.json())
+                    .then(json => {
+                        if (json && json.success && json.counts) {
+                            updateCounts(json.counts);
+
+                            // If on accepted jobs page, refresh the list
+                            if (window.location.pathname.indexOf('/driver/jobs/accepted') !== -1) {
+                                refreshAcceptedJobsList();
+                            }
+                        }
+                    }).catch(err => { console.error('Failed to refresh driver counts', err); })
+                    .finally(function(){ 
+                        __driverIsRefreshing = false; 
+                        console.log('Driver refresh completed for notification:', notification.id);
+                    });
+
+                } catch (err) {
+                    console.error('Error handling notification:', err);
+                }
+            });
+
+            eventSource.onerror = function(err) {
+                console.log('SSE connection error, reconnecting...');
+                eventSource.close();
+                // Reconnect after 5 seconds
+                reconnectTimeout = setTimeout(connectNotificationStream, 5000);
+            };
+        }
+
+        function updateCounts(counts) {
+            const elNew = document.getElementById('new-jobs-count');
+            const elQuick = document.getElementById('new-jobs-quick-count');
+            const elAcc = document.getElementById('accepted-jobs-count');
+            const elComp = document.getElementById('completed-jobs-count');
+            const elDec = document.getElementById('declined-jobs-count');
+            
+            if (elNew) elNew.textContent = counts.new;
+            if (elQuick) elQuick.textContent = counts.new;
+            if (elAcc) elAcc.textContent = counts.accepted;
+            if (elComp) elComp.textContent = counts.completed;
+            if (elDec) elDec.textContent = counts.declined;
+        }
+
+        function refreshAcceptedJobsList() {
+            fetch(window.Laravel.driverAcceptedJobsUrl, { headers: { 'Accept': 'text/html' } })
+                .then(r => r.text())
+                .then(html => {
+                    try {
+                        // If the response is a full HTML page (login/error), reload the page
+                        if (/<!doctype|<html|<body/i.test(html)) {
+                            console.warn('refreshAcceptedJobsList: full page HTML detected, reloading');
+                            window.location.reload();
+                            return;
+                        }
+
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newContainer = doc.getElementById('accepted-jobs-container');
+                        if (newContainer) {
+                            const old = document.getElementById('accepted-jobs-container');
+                            if (old) old.innerHTML = newContainer.innerHTML;
+                        } else {
+                            // fallback to full reload
+                            setTimeout(function(){ location.reload(); }, 300);
+                        }
+                    } catch (err) {
+                        console.error('Failed to parse/replace accepted jobs list - reloading', err);
+                        window.location.reload();
+                    }
+                })
+                .catch(err => { console.error('Failed to refresh accepted jobs list', err); });
+        }
+
+        // Start SSE connection
+        connectNotificationStream();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (eventSource) eventSource.close();
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+        });
     </script>
     
     @yield('scripts')

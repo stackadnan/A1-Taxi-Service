@@ -258,7 +258,7 @@
           <select name="status" class="mt-1 block w-full border rounded p-2">
             <option value="active" {{ old('status', $driver->status ?? 'active') == 'active' ? 'selected' : '' }}>Active</option>
             <option value="inactive" {{ old('status', $driver->status ?? '') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-            <option value="suspended" {{ old('status', $driver->status ?? '') == 'suspended' ? 'selected' : '' }}>Suspended</option>
+            <!-- <option value="suspended" {{ old('status', $driver->status ?? '') == 'suspended' ? 'selected' : '' }}>Suspended</option> -->
           </select>
         </div>
 

@@ -6,6 +6,7 @@
   <title>@yield('title', 'Admin') - AirportServices</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <script>console.log('Admin Header Inline Test: script block executed'); window.__adminHeaderInline = true;</script>
   @vite(['resources/css/app.css', 'resources/js/app.js'])
   <style>
     /* Smooth page transition */
@@ -463,37 +464,226 @@
     })();
     @endif
 
-    // Notification System
+    // Notification System - Split into UI and SSE parts to prevent early return from blocking SSE
     (function(){
-      var notificationButton = document.getElementById('notificationButton');
-      var notificationDropdown = document.getElementById('notificationDropdown');
-      var notificationBadge = document.getElementById('notificationBadge');
-      var notificationList = document.getElementById('notificationList');
-      var markAllRead = document.getElementById('markAllRead');
-      
-      if (!notificationButton || !notificationDropdown) return;
+      console.log('Admin Notification System: script starting');
 
-      // Toggle notification dropdown
-      notificationButton.addEventListener('click', function(e) {
-        e.preventDefault();
-        notificationDropdown.classList.toggle('hidden');
-        if (!notificationDropdown.classList.contains('hidden')) {
+      function initNotificationUI(){
+        if (window.__adminNotificationUIInitialized) { console.debug('Admin Notification System: UI already initialized'); return; }
+        window.__adminNotificationUIInitialized = true;
+
+        var notificationButton = document.getElementById('notificationButton');
+        var notificationDropdown = document.getElementById('notificationDropdown');
+        var notificationBadge = document.getElementById('notificationBadge');
+        var notificationList = document.getElementById('notificationList');
+        var markAllRead = document.getElementById('markAllRead');
+
+        // UI Setup - only if elements exist
+        if (notificationButton && notificationDropdown) {
+          console.log('Admin Notification System: UI elements found, attaching handlers');
+
+          // Remove previous listeners if they exist (defensive)
+          try { notificationButton.replaceWith(notificationButton.cloneNode(true)); } catch(e) { /* ignore */ }
+          notificationButton = document.getElementById('notificationButton');
+
+          // Toggle notification dropdown
+          notificationButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            notificationDropdown.classList.toggle('hidden');
+            if (!notificationDropdown.classList.contains('hidden')) {
+              loadNotifications();
+            }
+          });
+
+          // Close dropdown when clicking outside
+          document.addEventListener('click', function(e) {
+            if (!notificationButton.contains(e.target) && !notificationDropdown.contains(e.target)) {
+              notificationDropdown.classList.add('hidden');
+            }
+          });
+
+          // Mark all as read
+          if (markAllRead) {
+            markAllRead.addEventListener('click', function(e) {
+              e.preventDefault();
+              markNotificationsAsRead();
+            });
+          }
+
+          // Initial notification count load
           loadNotifications();
+        } else {
+          console.warn('Admin Notification System: UI elements not found (notificationButton or notificationDropdown missing)');
         }
-      });
+      }
 
-      // Close dropdown when clicking outside
-      document.addEventListener('click', function(e) {
-        if (!notificationButton.contains(e.target) && !notificationDropdown.contains(e.target)) {
-          notificationDropdown.classList.add('hidden');
+      // Run on full page load and on SPA (Turbo) navigations
+      document.addEventListener('DOMContentLoaded', initNotificationUI);
+      document.addEventListener('turbo:load', initNotificationUI);
+      // Kick off immediately in case DOMContentLoaded already fired
+      initNotificationUI();
+
+      // Robust delegated click handler (works across DOM replacements)
+      if (!window.__adminNotificationDelegated) {
+        window.__adminNotificationDelegated = true;
+
+        // Helper: returns true if dropdown is visibly open
+        function isDropdownVisible(dropdown){
+          try {
+            var cs = window.getComputedStyle(dropdown);
+            return cs && cs.display !== 'none' && cs.visibility !== 'hidden' && !dropdown.classList.contains('hidden');
+          } catch(e){ return false; }
         }
-      });
 
-      // Mark all as read
-      markAllRead.addEventListener('click', function(e) {
-        e.preventDefault();
-        markNotificationsAsRead();
-      });
+        // Helper: restore previously-saved inline styles
+        function restoreDropdownStyles(dropdown){
+          try {
+            if (dropdown.dataset.forcedShown === '1') {
+              // restore inline styles
+              dropdown.style.display = dropdown.dataset._prevDisplay || '';
+              dropdown.style.position = dropdown.dataset._prevPosition || '';
+              dropdown.style.top = dropdown.dataset._prevTop || '';
+              dropdown.style.left = dropdown.dataset._prevLeft || '';
+              dropdown.style.zIndex = dropdown.dataset._prevZ || '';
+              dropdown.style.visibility = dropdown.dataset._prevVisibility || '';
+              dropdown.style.pointerEvents = dropdown.dataset._prevPointer || '';
+              dropdown.style.outline = dropdown.dataset._prevOutline || '';
+              dropdown.style.background = dropdown.dataset._prevBackground || '';
+
+              // move back to its original parent/sibling location if we saved it
+              try {
+                if (dropdown.__prevParent) {
+                  if (dropdown.__nextSibling && dropdown.__nextSibling.parentElement === dropdown.__prevParent) {
+                    dropdown.__prevParent.insertBefore(dropdown, dropdown.__nextSibling);
+                  } else {
+                    dropdown.__prevParent.appendChild(dropdown);
+                  }
+                  delete dropdown.__nextSibling;
+                  delete dropdown.__prevParent;
+                }
+              } catch(e) { console.warn('Admin Notification: restore DOM position failed', e); }
+
+              delete dropdown.dataset.forcedShown;
+              delete dropdown.dataset._prevDisplay;
+              delete dropdown.dataset._prevPosition;
+              delete dropdown.dataset._prevTop;
+              delete dropdown.dataset._prevLeft;
+              delete dropdown.dataset._prevZ;
+              delete dropdown.dataset._prevVisibility;
+              delete dropdown.dataset._prevPointer;
+              delete dropdown.dataset._prevOutline;
+              delete dropdown.dataset._prevBackground;
+              console.info('Admin Notification: restored dropdown inline styles & DOM position after close');
+            }
+          } catch (e) { console.warn('Admin Notification: failed to restore styles', e); }
+        }
+
+        // Helper: force-show dropdown with fixed positioning and save previous styles
+        function forceShowDropdown(btn, dropdown){
+          try {
+            if (dropdown.dataset.forcedShown === '1') return; // already forced
+
+            // store previous inline styles so we can restore them on close
+            dropdown.dataset._prevDisplay = dropdown.style.display || '';
+            dropdown.dataset._prevPosition = dropdown.style.position || '';
+            dropdown.dataset._prevTop = dropdown.style.top || '';
+            dropdown.dataset._prevLeft = dropdown.style.left || '';
+            dropdown.dataset._prevZ = dropdown.style.zIndex || '';
+            dropdown.dataset._prevVisibility = dropdown.style.visibility || '';
+            dropdown.dataset._prevPointer = dropdown.style.pointerEvents || '';
+            dropdown.dataset._prevOutline = dropdown.style.outline || '';
+            dropdown.dataset._prevBackground = dropdown.style.background || '';
+
+            // remember original parent & sibling so we can restore DOM position later
+            try { dropdown.__prevParent = dropdown.parentElement; dropdown.__nextSibling = dropdown.nextElementSibling; } catch(e) { dropdown.__prevParent = null; dropdown.__nextSibling = null; }
+
+            // move into body so it's not clipped by ancestor overflow rules
+            try { document.body.appendChild(dropdown); } catch(e) { /* ignore */ }
+
+            // position fixed near the button
+            dropdown.style.position = 'fixed';
+            var br = btn.getBoundingClientRect();
+            dropdown.style.top = (br.bottom + 6) + 'px';
+            // align to right edge and make space for the width (320)
+            dropdown.style.left = Math.max(8, window.innerWidth - 340) + 'px';
+            dropdown.style.zIndex = '2147483647';
+            dropdown.style.display = 'block';
+            dropdown.style.visibility = 'visible';
+            dropdown.style.pointerEvents = 'auto';
+            dropdown.style.outline = '4px solid rgba(255,0,0,0.6)';
+            dropdown.style.background = '#fff';
+            dropdown.dataset.forcedShown = '1';
+            try { dropdown.scrollIntoView({block:'center', inline:'center'}); } catch(e){}
+            console.info('Admin Notification: forced fixed position applied (moved to body)');
+          } catch(e){ console.error('Admin Notification: forced position failed', e); }
+        }
+
+        // Open dropdown: remove hidden class and ensure visible, else force show
+        function openDropdown(btn, dropdown){
+          try {
+            // If already visible, nothing to do
+            if (isDropdownVisible(dropdown)) return;
+            // Ensure class-based show
+            dropdown.classList.remove('hidden');
+            // If still not visible, apply forced show
+            var cs = window.getComputedStyle(dropdown);
+            if (!cs || cs.display === 'none' || cs.visibility === 'hidden') {
+              forceShowDropdown(btn, dropdown);
+            }
+            try { loadNotifications(); } catch(e){ console.warn('Admin Notification: loadNotifications failed', e); }
+          } catch(e){ console.error('openDropdown failed', e); }
+        }
+
+        // Close dropdown: prefer restoring forced styles, otherwise add hidden class
+        function closeDropdown(dropdown){
+          try {
+            if (dropdown.dataset.forcedShown === '1') {
+              restoreDropdownStyles(dropdown);
+              // After restoring, hide via class to return to normal state
+              dropdown.classList.add('hidden');
+            } else {
+              dropdown.classList.add('hidden');
+            }
+          } catch(e){ console.error('closeDropdown failed', e); }
+        }
+
+        // global click handler
+        document.addEventListener('click', function(e) {
+          try {
+            var btn = e.target && e.target.closest ? e.target.closest('#notificationButton') : null;
+            if (!btn) return;
+            console.debug('Admin Notification: delegated click detected');
+            e.preventDefault();
+            // Prevent other listeners (including global close handlers) from interfering
+            try { e.stopImmediatePropagation(); e.stopPropagation(); } catch(ie){}
+            var dropdown = document.getElementById('notificationDropdown');
+            if (!dropdown) { console.warn('Admin Notification: dropdown missing'); return; }
+
+            // Use controlled open/close state handlers
+            try {
+              if (isDropdownVisible(dropdown)) {
+                // currently open -> close
+                closeDropdown(dropdown);
+              } else {
+                // currently closed -> open
+                openDropdown(btn, dropdown);
+              }
+            } catch (handlerErr) {
+              console.error('Admin Notification: open/close handler failed', handlerErr);
+            }
+          } catch(err) {
+            console.error('Admin Notification delegated click error', err);
+          }
+        }, true);
+
+        // Add a lightweight direct debug listener to make click detection obvious in console
+        try {
+          var directBtn = document.getElementById('notificationButton');
+          if (directBtn) {
+            directBtn.addEventListener('click', function(){ console.debug('Admin Notification: direct click fired'); });
+          }
+        } catch(e){}
+      }
 
       // Load notifications from server
       function loadNotifications() {
@@ -516,6 +706,8 @@
 
       // Update notification UI
       function updateNotificationUI(data) {
+        if (!notificationBadge) return; // Guard against missing elements
+        
         // Update badge
         if (data.count > 0) {
           notificationBadge.textContent = data.count;
@@ -525,22 +717,24 @@
         }
 
         // Update notification list
-        if (data.notifications && data.notifications.length > 0) {
-          var html = '';
-          data.notifications.forEach(function(notification) {
-            var date = new Date(notification.created_at);
-            var timeAgo = getTimeAgo(date);
-            html += `
-              <div class="p-3 border-b hover:bg-gray-50">
-                <div class="font-medium text-sm text-gray-900">${notification.title}</div>
-                <div class="text-sm text-gray-600 mt-1">${notification.message}</div>
-                <div class="text-xs text-gray-400 mt-1">${timeAgo}</div>
-              </div>
-            `;
-          });
-          notificationList.innerHTML = html;
-        } else {
-          notificationList.innerHTML = '<div class="p-4 text-center text-gray-500">No new notifications</div>';
+        if (notificationList) {
+          if (data.notifications && data.notifications.length > 0) {
+            var html = '';
+            data.notifications.forEach(function(notification) {
+              var date = new Date(notification.created_at);
+              var timeAgo = getTimeAgo(date);
+              html += `
+                <div class="p-3 border-b hover:bg-gray-50">
+                  <div class="font-medium text-sm text-gray-900">${notification.title}</div>
+                  <div class="text-sm text-gray-600 mt-1">${notification.message}</div>
+                  <div class="text-xs text-gray-400 mt-1">${timeAgo}</div>
+                </div>
+              `;
+            });
+            notificationList.innerHTML = html;
+          } else {
+            notificationList.innerHTML = '<div class="p-4 text-center text-gray-500">No new notifications</div>';
+          }
         }
 
         // update lastNotificationCount so we can detect new items on subsequent polls
@@ -579,17 +773,54 @@
 
         // reload content via partial endpoint
         var url = '{{ route('admin.bookings.index') }}?partial=1&section=' + encodeURIComponent(key);
-        container.innerHTML = '<div class="p-4 text-gray-600">Refreshing…</div>';
-        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
-          .then(function(res){ if (!res.ok) return res.text().then(function(t){ throw new Error('Failed to load: ' + res.status + '\n' + t.slice(0,200)); }); return res.text(); })
-          .then(function(html){ container.innerHTML = html; try { if (typeof runInjectedScripts === 'function') runInjectedScripts(container); } catch(e){}; try{ if (typeof attachPagination === 'function') attachPagination(container); if (typeof attachBookingViewButtons === 'function') attachBookingViewButtons(container); } catch(e){ console.error(e); }
+        // show placeholder only if fetch takes longer than a short delay to avoid flicker
+        var _refreshPlaceholderTimeout = setTimeout(function(){ container.innerHTML = '<div class="p-4 text-gray-600">Refreshing…</div>'; }, 250);
+        return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+          .then(function(res){
+            if (!res.ok) return res.text().then(function(t){ throw new Error('Failed to load: ' + res.status + '\n' + t.slice(0,200)); });
+            var ct = res.headers.get('content-type') || '';
+            return res.text().then(function(text){
+              return { text: text, contentType: ct };
+            });
+          })
+          .then(function(result){
+            clearTimeout(_refreshPlaceholderTimeout);
+            var html = result && result.text ? result.text : '';
+
+            // If server returned a full page (login or error), do a full reload to avoid injecting invalid HTML
+            if (/<!doctype|<html|<body/i.test(html)) {
+              console.warn('refreshBookingsView: detected full HTML response - reloading page');
+              window.location.reload();
+              return;
+            }
+
+            try {
+              container.innerHTML = html;
+            } catch (e) {
+              console.error('Error injecting HTML into container - reloading page', e);
+              window.location.reload();
+              return;
+            }
+
+            try { if (typeof runInjectedScripts === 'function') runInjectedScripts(container); } catch(e){ console.error('runInjectedScripts failed', e); }
+            try{ if (typeof attachPagination === 'function') attachPagination(container); if (typeof attachBookingViewButtons === 'function') attachBookingViewButtons(container); } catch(e){ console.error('attach handlers failed', e); }
+
             // small visual cue
             showInlineToast('Bookings updated', 1500);
 
             // Refresh tab badges counts
             try {
               fetch('{{ route('admin.bookings.counts') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' })
-                .then(function(r){ return r.json(); })
+                .then(function(r){
+                  if (!r.ok) return;
+                  var ct = r.headers.get('content-type') || '';
+                  if (ct.indexOf('application/json') === -1) {
+                    console.warn('refreshBookingsView: counts endpoint returned non-json, forcing reload');
+                    window.location.reload();
+                    return;
+                  }
+                  return r.json();
+                })
                 .then(function(json){ if (json && json.counts) {
                   Object.keys(json.counts).forEach(function(k){
                     var el = document.querySelector('[data-count-for="' + k + '"]');
@@ -598,11 +829,13 @@
                 } }).catch(function(){/* ignore */});
             } catch(e){ console.warn('Failed to refresh booking counts', e); }
           })
-          .catch(function(err){ console.error('Refresh booking pane failed', err); });
+          .catch(function(err){ clearTimeout(_refreshPlaceholderTimeout); console.error('Refresh booking pane failed', err); });
       }
 
       // Mark notifications as read
       function markNotificationsAsRead() {
+        if (!notificationBadge || !notificationList) return; // Guard
+        
         fetch('{{ route("admin.notifications.mark-read") }}', {
           method: 'POST',
           headers: {
@@ -642,61 +875,199 @@
         return Math.floor(diff / 86400) + ' days ago';
       }
 
-      // Poll for new notifications every 5 seconds (faster so admin UI updates quickly)
-      setInterval(function() {
-        fetch('{{ route("admin.notifications.unread") }}', {
-          method: 'GET',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-          }
-        })
-        .then(response => response.json())
-        .then(data => {
-          // Only update badge count without showing dropdown
-          if (data.count > 0) {
-            notificationBadge.textContent = data.count;
-            notificationBadge.classList.remove('hidden');
+      // ============================================
+      // SSE CONNECTION - Always runs regardless of UI elements
+      // ============================================
+      console.log('Admin SSE: Initializing connection setup');
+      
+      let eventSource = null;
+      let reconnectTimeout = null;
+      let processedNotificationIds = new Set(); // Track processed notifications
 
-            // If the count increased since last poll, refresh booking list and show browser notification
-            if (typeof window.lastNotificationCount === 'undefined') window.lastNotificationCount = 0;
-            if (data.count > window.lastNotificationCount) {
-              // refresh booking UI to show updated driver responses/status
-              if (typeof refreshBookingsView === 'function') {
-                refreshBookingsView();
-              } else if (typeof refreshBookingList === 'function') {
-                refreshBookingList();
+      // Debug: expose current admin user id and environment for troubleshooting
+      try {
+        console.log('Admin Debug: logged-in user id =', {{ json_encode(auth()->id()) }});
+        console.log('Admin Debug: notifications stream url =', '{{ route('admin.notifications.stream') }}');
+      } catch (e) { console.warn('Admin Debug: failed to log user id', e); }
+
+      function connectNotificationStream() {
+        console.log('Admin SSE: connectNotificationStream() called');
+        
+        if (eventSource) {
+          console.log('Admin SSE: closing existing connection');
+          eventSource.close();
+        }
+
+        console.log('Admin SSE: creating new EventSource...');
+        eventSource = new EventSource('{{ route("admin.notifications.stream") }}');
+
+        // Debug handlers so admin can see SSE state in console
+        eventSource.onopen = function() { console.info('Admin SSE: connection opened, readyState=', eventSource.readyState); };
+        eventSource.onclose = function() { console.warn('Admin SSE: connection closed'); };
+        eventSource.onerror = function(e){ console.warn('Admin SSE: error event fired', e, 'readyState=', eventSource.readyState); /* existing onerror reconnect handled below */ };
+
+
+          // Debounced notification handler to avoid rapid repeated refreshes
+          var __adminRefreshTimeout = null;
+          var __adminIsRefreshing = false;
+          eventSource.addEventListener('notification', function(e) {
+            try {
+              const notification = JSON.parse(e.data);
+              
+              // Skip if we've already processed this notification
+              if (processedNotificationIds.has(notification.id)) {
+                console.log('Notification', notification.id, 'already processed, skipping');
+                return;
               }
+              
+              // Mark this notification as processed
+              processedNotificationIds.add(notification.id);
+              console.log('Processing NEW notification:', notification.id);
 
-              // Show browser notification for the latest item
-              if ('Notification' in window && Notification.permission === 'granted') {
-                if (data.notifications && data.notifications.length > 0) {
-                  var latestNotification = data.notifications[0];
-                  new Notification(latestNotification.title, {
-                    body: latestNotification.message,
-                    icon: '/images/logo.png'
-                  });
+              // Auto-open notification dropdown so admin sees it (only if UI exists)
+              try {
+                if (notificationDropdown && notificationDropdown.classList && notificationDropdown.classList.contains('hidden')) {
+                  notificationDropdown.classList.remove('hidden');
+                  loadNotifications();
                 }
+              } catch (err) { console.warn('Failed to auto-open notification dropdown', err); }
+
+              // Do not show inline toast or native browser notification here — notifications are displayed in the dropdown only
+              // (Previously: showInlineToast and new Notification were used for immediate feedback)
+
+              // ONE-TIME refresh for this notification (no debouncing, just guard against overlap)
+              if (__adminIsRefreshing) {
+                console.log('Admin already refreshing, skipping this notification refresh');
+                return;
+              }
+              __adminIsRefreshing = true;
+
+              // Update badge count (only if badge element exists)
+              if (notificationBadge) {
+                fetch('{{ route("admin.notifications.unread") }}', {
+                  headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                  }
+                })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.count > 0) {
+                    notificationBadge.textContent = data.count;
+                    notificationBadge.classList.remove('hidden');
+                  } else {
+                    notificationBadge.classList.add('hidden');
+                  }
+                }).catch(()=>{});
               }
 
-              // Show an in-app toast indicating the list has been refreshed
-              if (typeof showInlineToast === 'function') {
-                showInlineToast('Bookings updated', 2500);
+              // Call refresh ONCE for this notification
+              try {
+                var p = (typeof refreshBookingsView === 'function') ? refreshBookingsView() : ((typeof refreshBookingList === 'function') ? (refreshBookingList(), Promise.resolve()) : Promise.resolve());
+                Promise.resolve(p).finally(function(){ 
+                  __adminIsRefreshing = false; 
+                  console.log('Admin refresh completed for notification:', notification.id);
+                });
+              } catch (err) { 
+                __adminIsRefreshing = false; 
+                console.error('Admin refresh error:', err); 
               }
+            } catch (err) {
+              console.error('Admin notification handler error:', err);
+            }
+        });
+
+        eventSource.onerror = function(err) {
+          console.log('Admin SSE: error handler triggered, reconnecting in 5s...');
+          eventSource.close();
+          // Reconnect after 5 seconds
+          reconnectTimeout = setTimeout(connectNotificationStream, 5000);
+        };
+      }
+
+      // Initialize SSE once per page load or SPA navigation (supports Turbo)
+      function initNotificationSSE(){
+        if (window.__adminSSEInitialized) {
+          console.debug('Admin SSE: already initialized, skipping');
+          return;
+        }
+        window.__adminSSEInitialized = true;
+
+        console.log('Admin SSE: initNotificationSSE() running');
+        try { connectNotificationStream(); } catch(e){ console.error('Admin SSE: connectNotificationStream failed', e); }
+
+        // Quick SSE probe: fetch the SSE URL with a short timeout and log the HTTP status (helps diagnose redirects/403)
+        (function sseProbe(){
+          try {
+            var controller = new AbortController();
+            var signal = controller.signal;
+            setTimeout(function(){ controller.abort(); }, 3000);
+            fetch('{{ route("admin.notifications.stream") }}', { method: 'GET', credentials: 'same-origin', redirect: 'manual', signal: signal })
+              .then(function(r){ console.info('Admin SSE probe status', r.status, r.statusText, 'content-type', r.headers.get('content-type')); })
+              .catch(function(e){ console.warn('Admin SSE probe failed or timed out', e); });
+          } catch (e) { console.warn('Admin SSE probe exception', e); }
+        })();
+      }
+
+      // Run on full page load
+      document.addEventListener('DOMContentLoaded', initNotificationSSE);
+      // Run on Turbo navigation
+      document.addEventListener('turbo:load', initNotificationSSE);
+
+      // Kick off immediately in case DOMContentLoaded already fired
+      initNotificationSSE();
+
+      // Lightweight fallback: poll unread notifications every 10s if SSE unavailable
+      // Optimization: don't poll while SSE is connected, and only log when count changes to reduce noise.
+      window.adminPollWasRunning = window.adminPollWasRunning || false;
+      var adminUnreadPoll = setInterval(function(){
+        // If EventSource is connected, skip the fallback poll
+        if (eventSource && eventSource.readyState === 1) {
+          if (window.adminPollWasRunning) {
+            console.info('Admin unread probe: SSE connected, suspending fallback poll');
+            window.adminPollWasRunning = false;
+          }
+          return;
+        }
+
+        window.adminPollWasRunning = true;
+        fetch('<?php echo e(route("admin.notifications.unread")); ?>', { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function(r){ if (!r.ok) { console.warn('Admin unread probe returned status', r.status); return; } return r.json(); })
+          .then(function(data){
+            if (!data) return;
+            var last = window.lastNotificationCount || 0;
+
+            // Only log when the count changed
+            if (data.count !== last) {
+              console.debug('Admin unread probe: last=%o current=%o sse_ready=%o', last, data.count, eventSource ? eventSource.readyState : 'no-sse');
             }
 
-            // store latest count
+            if (data.count > last) {
+              // update badge (only if element exists)
+              if (notificationBadge) {
+                notificationBadge.textContent = data.count;
+                notificationBadge.classList.remove('hidden');
+              }
+
+              // Show dropdown content immediately (only if elements exist)
+              try { if (notificationDropdown && notificationDropdown.classList.contains('hidden')) { notificationDropdown.classList.remove('hidden'); loadNotifications(); } } catch(e){ console.warn('Admin Debug: failed to open dropdown', e); }
+
+              // If SSE isn't connected, refresh bookings proactively; otherwise we'll refresh on SSE notification
+              try { if (!eventSource || eventSource.readyState !== 1) { if (typeof refreshBookingsView === 'function') refreshBookingsView(); } } catch(e){ console.warn('Admin Debug: refreshBookingsView failed', e); }
+            } else if (data.count === 0 && notificationBadge) {
+              notificationBadge.classList.add('hidden');
+            }
             window.lastNotificationCount = data.count;
-          } else {
-            notificationBadge.classList.add('hidden');
-            window.lastNotificationCount = 0;
-          }
-        })
-        .catch(error => {
-          console.error('Error polling notifications:', error);
-        });
-      }, 5000); // 5 seconds
+          }).catch(function(err){ console.warn('Admin unread probe error', err); });
+      }, 10000);
+
+      // Cleanup on page unload
+      window.addEventListener('beforeunload', function() {
+        if (eventSource) eventSource.close();
+        if (reconnectTimeout) clearTimeout(reconnectTimeout);
+        if (adminUnreadPoll) clearInterval(adminUnreadPoll);
+      });
 
       // Request notification permission
       if ('Notification' in window && Notification.permission === 'default') {
