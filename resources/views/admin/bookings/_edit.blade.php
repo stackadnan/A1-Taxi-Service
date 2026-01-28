@@ -114,12 +114,34 @@
     <div>
       <label class="block text-sm font-medium text-gray-700">Assign driver</label>
       <select name="driver_id" class="mt-1 block w-full border rounded p-2">
+        <!-- <option value="__remove__" data-remove="1">Remove driver</option> -->
         <option value="">(Unassigned)</option>
         @foreach($activeDrivers as $drv)
           <option value="{{ $drv->id }}" {{ (string)old('driver_id', $booking->driver_id) === (string)$drv->id ? 'selected' : '' }}>{{ $drv->name }}</option>
         @endforeach
       </select>
     </div>
+
+    <script>
+      (function(){
+        var select = document.querySelector('select[name="driver_id"]');
+        if (!select) return;
+        var prev = select.value;
+        select.addEventListener('change', function(e){
+          if (this.value === '__remove__') {
+            var ok = confirm('Remove the assigned driver from this booking? This will unassign the job from the previous driver.');
+            if (!ok) {
+              this.value = prev;
+              return;
+            }
+            // set prev to empty to reflect the new unassigned state
+            prev = '';
+          } else {
+            prev = this.value;
+          }
+        });
+      })();
+    </script>
 
     <div>
       <label class="block text-sm font-medium text-gray-700">Use percentage</label>

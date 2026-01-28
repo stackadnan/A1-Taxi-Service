@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BookingStatus;
+use App\Models\UserNotification;
 use Carbon\Carbon;
 
 class AdminController extends Controller
@@ -92,11 +93,15 @@ class AdminController extends Controller
                 break;
         }
 
-        $bookings = $query->orderBy('pickup_date', 'desc')->orderBy('pickup_time', 'desc')->paginate(15);
+        // Prefer recent status changes (status_changed_at in meta) but fallback to updated_at
+        $bookings = $query
+            ->orderByRaw("GREATEST(UNIX_TIMESTAMP(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(COALESCE(meta,'{}'), '$.status_changed_at')), updated_at)), UNIX_TIMESTAMP(updated_at)) DESC")
+            ->orderBy('id', 'desc')
+            ->paginate(15);
 
         // If partial request, return only the bookings list
         if (request()->ajax() || request()->get('partial')) {
-            return view('admin.bookings._list', compact('bookings'));
+            return view('admin.bookings._list', compact('bookings', 'active'));
         }
 
         return view('admin.dashboard', compact(
@@ -126,5 +131,46 @@ class AdminController extends Controller
             default:
                 return 0;
         }
+    }
+
+    /**
+     * Get unread notifications for the current admin user
+     */
+    public function getUnreadNotifications()
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['count' => 0, 'notifications' => []]);
+        }
+
+        $notifications = UserNotification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'count' => $notifications->count(),
+            'notifications' => $notifications
+        ]);
+    }
+
+    /**
+     * Mark notifications as read
+     */
+    public function markNotificationsRead()
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false]);
+        }
+
+        UserNotification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+
+        return response()->json(['success' => true]);
     }
 }

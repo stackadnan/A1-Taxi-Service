@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Booking;
+use App\Models\UserNotification;
+use App\Events\DriverResponseUpdated;
 
 class DriverDashboardController extends Controller
 {
@@ -107,6 +109,35 @@ class DriverDashboardController extends Controller
     }
 
     /**
+     * Return unread driver notifications and mark them as delivered (is_read=true)
+     */
+    public function unreadNotifications()
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) {
+            return response()->json(['count' => 0, 'notifications' => []]);
+        }
+
+        $notes = \App\Models\DriverNotification::where('driver_id', $driver->id)
+            ->where('is_read', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $count = $notes->count();
+
+        // mark as read so they are not delivered repeatedly
+        try {
+            if ($count) {
+                \App\Models\DriverNotification::where('driver_id', $driver->id)->where('is_read', false)->update(['is_read' => true]);
+            }
+        } catch (\Exception $e) {
+            logger()->warning('Failed to mark driver notifications as read: ' . $e->getMessage());
+        }
+
+        return response()->json(['count' => $count, 'notifications' => $notes]);
+    }
+
+    /**
      * Accept a job
      */
     public function acceptJob(Request $request, Booking $booking)
@@ -135,9 +166,14 @@ class DriverDashboardController extends Controller
     
             $meta = $booking->meta ?? [];
             $meta['driver_response'] = 'accepted';
-            $meta['driver_response_at'] = now()->toISOString();
+            $meta['driver_response_at'] = now()->toDateTimeString();
+            // also mark a status change/activity timestamp so admin ordering brings this to the top
+            $meta['status_changed_at'] = now()->toDateTimeString();
             $booking->meta = $meta;
             $booking->save();
+            
+            // Fire event for notifications
+            event(new DriverResponseUpdated($booking, $driver, 'accepted'));
             
             \Log::info('Job accepted successfully', [
                 'driver_id' => $driver->id,
@@ -183,9 +219,14 @@ class DriverDashboardController extends Controller
     
             $meta = $booking->meta ?? [];
             $meta['driver_response'] = 'declined';
-            $meta['driver_response_at'] = now()->toISOString();
+            $meta['driver_response_at'] = now()->toDateTimeString();
+            // also mark a status change/activity timestamp so admin ordering brings this to the top
+            $meta['status_changed_at'] = now()->toDateTimeString();
             $booking->meta = $meta;
             $booking->save();
+            
+            // Fire event for notifications
+            event(new DriverResponseUpdated($booking, $driver, 'declined'));
             
             \Log::info('Job declined successfully', [
                 'driver_id' => $driver->id,

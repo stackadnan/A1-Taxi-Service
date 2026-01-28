@@ -102,7 +102,7 @@
             @php $isActive = ($key === $active); @endphp
             <li>
               <a href="{{ route('admin.dashboard', array_merge(request()->except('page'), ['section' => $key])) }}" 
-                 class="dashboard-tab px-4 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $isActive ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}" 
+                 class="dashboard-tab tab-link px-4 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $isActive ? 'bg-indigo-600 text-white border-indigo-600 shadow-md active' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}" 
                  data-section="{{ $key }}" role="tab">
                 {{ $label }}
                 <span class="ml-2 inline-block {{ $isActive ? 'bg-white text-indigo-600' : 'bg-gray-100 text-gray-700' }} text-xs px-2 py-0.5 rounded">{{ $counts[$key] ?? 0 }}</span>
@@ -111,11 +111,12 @@
           @endforeach
         </ul>
       </div>
-
-      <div id="dashboard-bookings-list">
-        @include('admin.bookings._list', ['bookings' => $bookings])
-      </div>
     </div>
+
+    <div id="dashboard-bookings-list">
+      @include('admin.bookings._list', ['bookings' => $bookings, 'active' => $active])
+    </div>
+  </div>
 
     <!-- Notes panel (editable area below bookings) - removed in favor of slider above -->
     <!-- (Kept for backward compatibility but hidden) -->
@@ -137,7 +138,7 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
 
       function setActiveTab(el){
         tabs.forEach(function(t){ 
-          t.classList.remove('bg-indigo-600','text-white','border-indigo-600','shadow-md'); 
+          t.classList.remove('bg-indigo-600','text-white','border-indigo-600','shadow-md','active'); 
           t.classList.add('bg-white','text-gray-700','border-gray-300');
           var badge = t.querySelector('span');
           if (badge) {
@@ -146,7 +147,7 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
           }
         });
         if (el) { 
-          el.classList.add('bg-indigo-600','text-white','border-indigo-600','shadow-md'); 
+          el.classList.add('bg-indigo-600','text-white','border-indigo-600','shadow-md','active'); 
           el.classList.remove('bg-white','text-gray-700','border-gray-300');
           var badge = el.querySelector('span');
           if (badge) {
@@ -165,16 +166,46 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
             e.preventDefault();
             var href = a.getAttribute('href');
             if (!href) return;
-            var section = document.querySelector('.dashboard-tab.bg-indigo-600')?.dataset.section || 'new';
-            var url = href + (href.indexOf('?') === -1 ? '?' : '&') + 'partial=1&section=' + section;
+            
+            // Find the active tab to get the current section (try multiple selectors)
+            var activeTab = document.querySelector('.dashboard-tab.active') || 
+                           document.querySelector('.dashboard-tab.bg-indigo-600') ||
+                           document.querySelector('.tab-link.active');
+            var section = activeTab ? activeTab.dataset.section : '{{ $active ?? "new" }}';
+            
+            // Ensure URL has proper parameters for partial loading
+            var url = href;
+            var hasQuery = url.indexOf('?') !== -1;
+            var separator = hasQuery ? '&' : '?';
+            
+            // Add partial=1 if not present
+            if (url.indexOf('partial=1') === -1) {
+              url += separator + 'partial=1';
+              separator = '&';
+            }
+            
+            // Add section if not present
+            if (url.indexOf('section=') === -1) {
+              url += separator + 'section=' + section;
+            }
+            
+            console.log('Loading pagination with URL:', url); // Debug log
+            
+            // Load content via AJAX
+            if (!listContainer) return;
+            listContainer.innerHTML = '<div class="p-4 text-gray-600">Loading…</div>';
+            
             fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
               .then(function(r){ return r.text(); })
               .then(function(html){ 
-                container.innerHTML = html; 
-                attachPagination(container); 
-                attachBookingViewButtons(container); 
+                listContainer.innerHTML = html; 
+                attachPagination(listContainer); 
+                attachBookingViewButtons(listContainer); 
               })
-              .catch(function(err){ console.error('Pagination load failed', err); });
+              .catch(function(err){ 
+                console.error('Pagination load failed', err);
+                listContainer.innerHTML = '<div class="p-4 text-red-600">Failed to load bookings.</div>'; 
+              });
           });
         });
       }
@@ -222,6 +253,28 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
       // Attach handlers to initial content
       attachPagination(listContainer);
       attachBookingViewButtons(listContainer);
+
+      // Global function to refresh current tab (called from notification system)
+      window.refreshBookingList = function() {
+        var activeTab = document.querySelector('.dashboard-tab.active') || 
+                       document.querySelector('.dashboard-tab.bg-indigo-600') ||
+                       document.querySelector('.tab-link.active');
+        if (activeTab) {
+          loadTab(activeTab.href, activeTab);
+        }
+
+        // Also refresh counts for booking tabs
+        try {
+          fetch('{{ route('admin.bookings.counts') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(json){ if (json && json.counts) {
+              Object.keys(json.counts).forEach(function(k){
+                var el = document.querySelector('[data-count-for="' + k + '"]');
+                if (el) el.textContent = json.counts[k] || 0;
+              });
+            } }).catch(function(){/* ignore */});
+        } catch(e){ console.warn('Failed to refresh booking counts', e); }
+      };
     })();
   </script>
 </div>

@@ -55,6 +55,30 @@
         <div class="flex-1"></div>
         @endif
         <div class="flex items-center gap-4">
+          <!-- Notifications Bell -->
+          <div class="relative">
+            <button id="notificationButton" class="relative p-2 rounded hover:bg-gray-100">
+              <svg class="h-6 w-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span id="notificationBadge" class="hidden absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">0</span>
+            </button>
+            
+            <!-- Notification Dropdown -->
+            <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white border rounded-lg shadow-lg z-50">
+              <div class="p-3 border-b bg-gray-50 rounded-t-lg">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-semibold text-gray-900">Notifications</h3>
+                  <button id="markAllRead" class="text-sm text-blue-600 hover:text-blue-800">Mark all read</button>
+                </div>
+              </div>
+              <div id="notificationList" class="max-h-64 overflow-y-auto">
+                <div class="p-4 text-center text-gray-500">
+                  No new notifications
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- desktop top-right sidebar toggle removed — using edge arrow instead -->
 
           <div class="relative">
@@ -438,6 +462,250 @@
       function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     })();
     @endif
+
+    // Notification System
+    (function(){
+      var notificationButton = document.getElementById('notificationButton');
+      var notificationDropdown = document.getElementById('notificationDropdown');
+      var notificationBadge = document.getElementById('notificationBadge');
+      var notificationList = document.getElementById('notificationList');
+      var markAllRead = document.getElementById('markAllRead');
+      
+      if (!notificationButton || !notificationDropdown) return;
+
+      // Toggle notification dropdown
+      notificationButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        notificationDropdown.classList.toggle('hidden');
+        if (!notificationDropdown.classList.contains('hidden')) {
+          loadNotifications();
+        }
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!notificationButton.contains(e.target) && !notificationDropdown.contains(e.target)) {
+          notificationDropdown.classList.add('hidden');
+        }
+      });
+
+      // Mark all as read
+      markAllRead.addEventListener('click', function(e) {
+        e.preventDefault();
+        markNotificationsAsRead();
+      });
+
+      // Load notifications from server
+      function loadNotifications() {
+        fetch('{{ route("admin.notifications.unread") }}', {
+          method: 'GET',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          updateNotificationUI(data);
+        })
+        .catch(error => {
+          console.error('Error loading notifications:', error);
+        });
+      }
+
+      // Update notification UI
+      function updateNotificationUI(data) {
+        // Update badge
+        if (data.count > 0) {
+          notificationBadge.textContent = data.count;
+          notificationBadge.classList.remove('hidden');
+        } else {
+          notificationBadge.classList.add('hidden');
+        }
+
+        // Update notification list
+        if (data.notifications && data.notifications.length > 0) {
+          var html = '';
+          data.notifications.forEach(function(notification) {
+            var date = new Date(notification.created_at);
+            var timeAgo = getTimeAgo(date);
+            html += `
+              <div class="p-3 border-b hover:bg-gray-50">
+                <div class="font-medium text-sm text-gray-900">${notification.title}</div>
+                <div class="text-sm text-gray-600 mt-1">${notification.message}</div>
+                <div class="text-xs text-gray-400 mt-1">${timeAgo}</div>
+              </div>
+            `;
+          });
+          notificationList.innerHTML = html;
+        } else {
+          notificationList.innerHTML = '<div class="p-4 text-center text-gray-500">No new notifications</div>';
+        }
+
+        // update lastNotificationCount so we can detect new items on subsequent polls
+        if (typeof window.lastNotificationCount === 'undefined') window.lastNotificationCount = 0;
+        window.lastNotificationCount = data.count; 
+      }
+
+      // Show a small inline toast near the top-right
+      function showInlineToast(message, durationMs){
+        if (!message) return;
+        var el = document.createElement('div');
+        el.className = 'inline-toast fixed top-16 right-6 z-60 bg-indigo-600 text-white text-sm px-4 py-2 rounded shadow';
+        el.textContent = message;
+        document.body.appendChild(el);
+        setTimeout(function(){ el.remove(); }, durationMs || 2000);
+      }
+
+      // Refresh bookings area on either dashboard or bookings page
+      function refreshBookingsView(){
+        // Dashboard bookings area
+        if (typeof refreshBookingList === 'function' && document.getElementById('dashboard-bookings-list')){
+          try { refreshBookingList(); return; } catch(e){ console.error('refreshBookingList failed', e); }
+        }
+
+        // Bookings page: determine current visible pane
+        var activePane = document.querySelector('[data-pane]:not(.hidden)');
+        if (!activePane) {
+          // fallback: find first pane
+          activePane = document.querySelector('[data-pane]');
+        }
+        if (!activePane) return;
+
+        var key = activePane.getAttribute('data-pane');
+        var container = document.getElementById('booking-' + key + '-container');
+        if (!container) return;
+
+        // reload content via partial endpoint
+        var url = '{{ route('admin.bookings.index') }}?partial=1&section=' + encodeURIComponent(key);
+        container.innerHTML = '<div class="p-4 text-gray-600">Refreshing…</div>';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+          .then(function(res){ if (!res.ok) return res.text().then(function(t){ throw new Error('Failed to load: ' + res.status + '\n' + t.slice(0,200)); }); return res.text(); })
+          .then(function(html){ container.innerHTML = html; try { if (typeof runInjectedScripts === 'function') runInjectedScripts(container); } catch(e){}; try{ if (typeof attachPagination === 'function') attachPagination(container); if (typeof attachBookingViewButtons === 'function') attachBookingViewButtons(container); } catch(e){ console.error(e); }
+            // small visual cue
+            showInlineToast('Bookings updated', 1500);
+
+            // Refresh tab badges counts
+            try {
+              fetch('{{ route('admin.bookings.counts') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(json){ if (json && json.counts) {
+                  Object.keys(json.counts).forEach(function(k){
+                    var el = document.querySelector('[data-count-for="' + k + '"]');
+                    if (el) el.textContent = json.counts[k] || 0;
+                  });
+                } }).catch(function(){/* ignore */});
+            } catch(e){ console.warn('Failed to refresh booking counts', e); }
+          })
+          .catch(function(err){ console.error('Refresh booking pane failed', err); });
+      }
+
+      // Mark notifications as read
+      function markNotificationsAsRead() {
+        fetch('{{ route("admin.notifications.mark-read") }}', {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            notificationBadge.classList.add('hidden');
+            notificationList.innerHTML = '<div class="p-4 text-center text-gray-500">No new notifications</div>';
+            
+            // Trigger refresh of the booking list if on dashboard or bookings page
+            if (typeof refreshBookingsView === 'function') {
+              refreshBookingsView();
+            } else if (typeof refreshBookingList === 'function') {
+              refreshBookingList();
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error marking notifications as read:', error);
+        });
+      }
+
+      // Helper function to format time ago
+      function getTimeAgo(date) {
+        var now = new Date();
+        var diff = Math.floor((now - date) / 1000); // seconds
+        
+        if (diff < 60) return 'Just now';
+        if (diff < 3600) return Math.floor(diff / 60) + ' minutes ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + ' hours ago';
+        return Math.floor(diff / 86400) + ' days ago';
+      }
+
+      // Poll for new notifications every 5 seconds (faster so admin UI updates quickly)
+      setInterval(function() {
+        fetch('{{ route("admin.notifications.unread") }}', {
+          method: 'GET',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          // Only update badge count without showing dropdown
+          if (data.count > 0) {
+            notificationBadge.textContent = data.count;
+            notificationBadge.classList.remove('hidden');
+
+            // If the count increased since last poll, refresh booking list and show browser notification
+            if (typeof window.lastNotificationCount === 'undefined') window.lastNotificationCount = 0;
+            if (data.count > window.lastNotificationCount) {
+              // refresh booking UI to show updated driver responses/status
+              if (typeof refreshBookingsView === 'function') {
+                refreshBookingsView();
+              } else if (typeof refreshBookingList === 'function') {
+                refreshBookingList();
+              }
+
+              // Show browser notification for the latest item
+              if ('Notification' in window && Notification.permission === 'granted') {
+                if (data.notifications && data.notifications.length > 0) {
+                  var latestNotification = data.notifications[0];
+                  new Notification(latestNotification.title, {
+                    body: latestNotification.message,
+                    icon: '/images/logo.png'
+                  });
+                }
+              }
+
+              // Show an in-app toast indicating the list has been refreshed
+              if (typeof showInlineToast === 'function') {
+                showInlineToast('Bookings updated', 2500);
+              }
+            }
+
+            // store latest count
+            window.lastNotificationCount = data.count;
+          } else {
+            notificationBadge.classList.add('hidden');
+            window.lastNotificationCount = 0;
+          }
+        })
+        .catch(error => {
+          console.error('Error polling notifications:', error);
+        });
+      }, 5000); // 5 seconds
+
+      // Request notification permission
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+
+      // Initial load
+      loadNotifications();
+    })();
   </script>
 </body>
 </html>

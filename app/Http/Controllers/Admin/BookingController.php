@@ -66,7 +66,11 @@ class BookingController extends Controller
                 break;
         }
 
-        $bookings = $query->orderBy('pickup_date', 'desc')->paginate(20)->withQueryString();
+        // Prefer recent status changes (status_changed_at in meta) but fallback to updated_at
+        $bookings = $query
+            ->orderByRaw("GREATEST(UNIX_TIMESTAMP(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(COALESCE(meta,'{}'), '$.status_changed_at')), updated_at)), UNIX_TIMESTAMP(updated_at)) DESC")
+            ->orderBy('id', 'desc')
+            ->paginate(20)->withQueryString();
 
         // Prepare helper data for manual booking UI
         $statuses = BookingStatus::all();
@@ -83,6 +87,15 @@ class BookingController extends Controller
                 return view('admin.bookings._manual', compact('statuses','vehicleTypes'));
             }
             return view('admin.bookings._list', compact('bookings','active'));
+        }
+
+        // If an AJAX request asks for counts only (used by the UI to refresh tab badges)
+        if ($request->get('counts') || $request->ajax() && $request->get('counts')) {
+            $countsArray = [];
+            foreach (array_keys($sections) as $key) {
+                $countsArray[$key] = $this->countForSection($key);
+            }
+            return response()->json(['counts' => $countsArray]);
         }
 
         return view('admin.bookings.index', compact('sections', 'active', 'counts', 'bookings','statuses','vehicleTypes'));
@@ -282,7 +295,7 @@ class BookingController extends Controller
             'status' => 'nullable|string|max:50',
             'passengers' => 'nullable|integer|min:1',
             'luggage' => 'nullable|string|max:100',
-            'driver_id' => 'nullable|exists:drivers,id',
+            'driver_id' => 'nullable',
             'driver_price' => 'nullable|numeric|min:0',
             'use_percentage' => 'nullable|boolean',
             'driver_percentage' => 'nullable|numeric|min:0|max:100'  
@@ -316,9 +329,63 @@ class BookingController extends Controller
             $booking->luggage_count = isset($data['luggage']) && is_numeric($data['luggage']) ? (int)$data['luggage'] : $booking->luggage_count;
 
             // driver assignment and driver price (only when provided)
+            $oldDriverId = $booking->driver_id;
             if (array_key_exists('driver_id', $data)) {
-                $booking->driver_id = $data['driver_id'] ? (int)$data['driver_id'] : null;
-                $booking->driver_name = $data['driver_id'] ? (Driver::find($data['driver_id'])->name ?? null) : null;
+                $incoming = $data['driver_id'];
+
+                // Treat '__remove__' or empty string as explicit removal
+                if ($incoming === '__remove__' || $incoming === '') {
+                    // Notify previous driver that the job was removed (if any)
+                    try {
+                        if ($oldDriverId) {
+                            \App\Models\DriverNotification::create([
+                                'driver_id' => $oldDriverId,
+                                'title' => 'Job Unassigned',
+                                'message' => 'Booking #' . ($booking->booking_code ?? $booking->id) . ' has been unassigned from you.'
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        logger()->warning('Failed to notify driver about removal: ' . $e->getMessage());
+                    }
+
+                    // Remove assignment
+                    $booking->driver_id = null;
+                    $booking->driver_name = null;
+
+                    // Clear driver response meta and mark status change
+                    $meta = is_array($booking->meta) ? $booking->meta : [];
+                    if (isset($meta['driver_response'])) unset($meta['driver_response']);
+                    if (isset($meta['driver_response_at'])) unset($meta['driver_response_at']);
+                    $meta['status_changed_at'] = now()->toDateTimeString();
+                    $booking->meta = $meta;
+                } else {
+                    // Assign to a driver id (validate existence)
+                    $newDriverId = is_numeric($incoming) ? (int)$incoming : null;
+                    $newDriver = $newDriverId ? Driver::find($newDriverId) : null;
+
+                    // If driver changed (including from assigned->assigned to different), clear previous driver's response
+                    if ($oldDriverId && $newDriverId && $oldDriverId != $newDriverId) {
+                        try {
+                            \App\Models\DriverNotification::create([
+                                'driver_id' => $oldDriverId,
+                                'title' => 'Job Reassigned',
+                                'message' => 'Booking #' . ($booking->booking_code ?? $booking->id) . ' has been reassigned to another driver.'
+                            ]);
+                        } catch (\Exception $e) {
+                            logger()->warning('Failed to notify previous driver about reassignment: ' . $e->getMessage());
+                        }
+                    }
+
+                    $booking->driver_id = $newDriverId;
+                    $booking->driver_name = $newDriver ? $newDriver->name : null;
+
+                    // Clear any previous driver response since this is a new or changed assignment
+                    $meta = is_array($booking->meta) ? $booking->meta : [];
+                    if (isset($meta['driver_response'])) unset($meta['driver_response']);
+                    if (isset($meta['driver_response_at'])) unset($meta['driver_response_at']);
+                    $meta['status_changed_at'] = now()->toDateTimeString();
+                    $booking->meta = $meta;
+                }
             }
 
             // Respect explicit driver_price unless percentage mode is enabled
@@ -355,6 +422,8 @@ class BookingController extends Controller
                 if ($data['status'] === 'junk') {
                     $meta = is_array($booking->meta) ? $booking->meta : [];
                     $meta['junk'] = true;
+                    // record when the status was changed
+                    $meta['status_changed_at'] = now()->toDateTimeString();
                     $booking->meta = $meta;
 
                     // ensure there's a 'junk' status record to satisfy FK constraints and make the booking queryable
@@ -364,11 +433,14 @@ class BookingController extends Controller
                 } else {
                     // If we're setting a real status, clear the 'junk' flag if present
                     $meta = is_array($booking->meta) ? $booking->meta : [];
-                    if (isset($meta['junk'])) { unset($meta['junk']); $booking->meta = $meta; }
+                    if (isset($meta['junk'])) { unset($meta['junk']); }
 
                     $st = BookingStatus::where('name', $data['status'])->first();
                     if ($st) {
                         $booking->status_id = $st->id;
+                        // record when the status was changed
+                        $meta['status_changed_at'] = now()->toDateTimeString();
+                        $booking->meta = $meta;
                     }
                 }
             }
@@ -377,6 +449,20 @@ class BookingController extends Controller
 
             // Refresh model and clear any cached relation so subsequent views/queries see the change immediately
             $booking->refresh();
+
+            // If driver assignment changed and a driver was assigned, create a driver notification
+            try {
+                if (array_key_exists('driver_id', $data) && $booking->driver_id && $oldDriverId != $booking->driver_id) {
+                    \App\Models\DriverNotification::create([
+                        'driver_id' => $booking->driver_id,
+                        'title' => 'New Job Assigned',
+                        'message' => 'You have been assigned booking #' . ($booking->booking_code ?? $booking->id)
+                    ]);
+                }
+            } catch (\Exception $e) {
+                logger()->warning('Failed to create driver notification: ' . $e->getMessage());
+            }
+
             if ($wasJunk) {
                 $booking->setRelation('status', null);
             }
