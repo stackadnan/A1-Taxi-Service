@@ -29,6 +29,10 @@ Route::name('admin.')->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [AdminController::class, 'index'])->name('dashboard');
 
+        // Admin notifications
+        Route::get('notifications/unread', [AdminController::class, 'getUnreadNotifications'])->name('notifications.unread');
+        Route::post('notifications/mark-read', [AdminController::class, 'markNotificationsRead'])->name('notifications.mark-read');
+
         // Protected example routes
         Route::get('bookings', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('bookings.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.view');
         // Drivers CRUD
@@ -112,6 +116,9 @@ Route::name('admin.')->group(function () {
         // Search previous bookings (AJAX)
         Route::get('bookings/search', [\App\Http\Controllers\Admin\BookingController::class, 'search'])->name('bookings.search')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.view');
 
+        // Endpoint to fetch counts for booking sections (AJAX)
+        Route::get('bookings/counts', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('bookings.counts')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.view');
+
         // Directions proxy for routing (server-side so key can be kept secret)
         Route::post('bookings/directions', [\App\Http\Controllers\Admin\BookingController::class, 'directions'])->name('bookings.directions')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.view');
         Route::get('users/create', [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('users.create')->middleware(\App\Http\Middleware\EnsurePermission::class.':user.create');
@@ -138,7 +145,10 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::post('logout', [DriverAuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [DriverDashboardController::class, 'index'])->name('dashboard');
         Route::get('/', [DriverDashboardController::class, 'index'])->name('home');
-        
+
+        // Driver notifications (polling)
+        Route::get('notifications/unread', [DriverDashboardController::class, 'unreadNotifications'])->name('notifications.unread');
+
         // Job management
         Route::get('jobs/new', [DriverDashboardController::class, 'newJobs'])->name('jobs.new');
         Route::get('jobs/accepted', [DriverDashboardController::class, 'acceptedJobs'])->name('jobs.accepted');

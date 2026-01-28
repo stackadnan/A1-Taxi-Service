@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Event;
+use App\Events\DriverResponseUpdated;
+use App\Listeners\SendAdminNotificationOnDriverResponse;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +22,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register event listeners
+        Event::listen(
+            DriverResponseUpdated::class,
+            SendAdminNotificationOnDriverResponse::class,
+        );
+
         // Share broadcasts globally for all admin views
         view()->composer('layouts.admin', function ($view) {
             $broadcasts = \App\Models\Broadcast::where(function($q){

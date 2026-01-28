@@ -20,7 +20,7 @@
                 <div class="flex flex-col items-center justify-center h-full">
                     <i class="fas fa-bell text-3xl mb-3 opacity-90"></i>
                     <h3 class="text-lg font-semibold mb-2">New Jobs</h3>
-                    <p class="text-3xl font-bold">{{ $newJobsCount }}</p>
+                    <p id="new-jobs-count" class="text-3xl font-bold">{{ $newJobsCount }}</p>
                 </div>
             </div>
         </a>
@@ -69,7 +69,7 @@
         <div class="flex flex-wrap gap-3">
             <a href="{{ route('driver.jobs.new') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
                 <i class="fas fa-eye mr-2"></i>
-                View New Jobs ({{ $newJobsCount }})
+                View New Jobs (<span id="new-jobs-quick-count">{{ $newJobsCount }}</span>)
             </a>
         </div>
     </div>

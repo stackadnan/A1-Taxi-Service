@@ -69,7 +69,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <main id="page-content" class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <!-- Flash Messages -->
         @if (session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
@@ -194,6 +194,45 @@
                 });
             }
         }
+
+        // Notification polling (checks for unread driver notifications every 10s)
+        window.Laravel.driverNotificationsUrl = '{{ route('driver.notifications.unread') }}';
+        window.Laravel.driverNewJobsUrl = '{{ route('driver.jobs.new') }}?partial=1';
+
+        (function pollDriverNotifications(){
+            try {
+                fetch(window.Laravel.driverNotificationsUrl, {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': window.Laravel.csrfToken }
+                }).then(r => r.json()).then(data => {
+                    if (!data || !data.count) return;
+
+                    // show each notification and update counts
+                    const count = data.count || 0;
+                    if (count > 0) {
+                        (data.notifications || []).forEach(n => {
+                            showNotification(n.message, 'success');
+                        });
+
+                        // update counts on dashboard
+                        const el = document.getElementById('new-jobs-count');
+                        const quick = document.getElementById('new-jobs-quick-count');
+                        if (el) el.textContent = (parseInt(el.textContent || '0', 10) + count);
+                        if (quick) quick.textContent = (parseInt(quick.textContent || '0', 10) + count);
+
+                        // If on new jobs page, refresh the list via AJAX
+                        if (window.location.pathname.indexOf('/driver/jobs/new') !== -1) {
+                            fetch(window.Laravel.driverNewJobsUrl, { headers: { 'Accept': 'text/html' } })
+                                .then(resp => resp.text())
+                                .then(html => {
+                                    const container = document.getElementById('page-content');
+                                    if (container) container.innerHTML = html;
+                                });
+                        }
+                    }
+                }).catch(() => {});
+            } catch (e) { /* ignore */ }
+            setTimeout(pollDriverNotifications, 10000);
+        })();
     </script>
     
     @yield('scripts')
