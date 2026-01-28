@@ -31,7 +31,7 @@
                 <div class="flex flex-col items-center justify-center h-full">
                     <i class="fas fa-check-circle text-3xl mb-3 opacity-90"></i>
                     <h3 class="text-lg font-semibold mb-2">Accepted Jobs</h3>
-                    <p class="text-3xl font-bold">{{ $acceptedJobsCount }}</p>
+                    <p id="accepted-jobs-count" class="text-3xl font-bold">{{ $acceptedJobsCount }}</p>
                 </div>
             </div>
         </a>
@@ -42,7 +42,7 @@
                 <div class="flex flex-col items-center justify-center h-full">
                     <i class="fas fa-trophy text-3xl mb-3 opacity-90"></i>
                     <h3 class="text-lg font-semibold mb-2">Completed Jobs</h3>
-                    <p class="text-3xl font-bold">{{ $completedJobsCount }}</p>
+                    <p id="completed-jobs-count" class="text-3xl font-bold">{{ $completedJobsCount }}</p>
                 </div>
             </div>
         </a>
@@ -53,7 +53,7 @@
                 <div class="flex flex-col items-center justify-center h-full">
                     <i class="fas fa-times-circle text-3xl mb-3 opacity-90"></i>
                     <h3 class="text-lg font-semibold mb-2">Jobs Declined</h3>
-                    <p class="text-3xl font-bold">{{ $declinedJobsCount }}</p>
+                    <p id="declined-jobs-count" class="text-3xl font-bold">{{ $declinedJobsCount }}</p>
                 </div>
             </div>
         </a>

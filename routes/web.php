@@ -32,6 +32,7 @@ Route::name('admin.')->group(function () {
         // Admin notifications
         Route::get('notifications/unread', [AdminController::class, 'getUnreadNotifications'])->name('notifications.unread');
         Route::post('notifications/mark-read', [AdminController::class, 'markNotificationsRead'])->name('notifications.mark-read');
+        Route::get('notifications/stream', [\App\Http\Controllers\Admin\NotificationStreamController::class, 'stream'])->name('notifications.stream');
 
         // Protected example routes
         Route::get('bookings', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('bookings.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.view');
@@ -146,14 +147,19 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::get('dashboard', [DriverDashboardController::class, 'index'])->name('dashboard');
         Route::get('/', [DriverDashboardController::class, 'index'])->name('home');
 
-        // Driver notifications (polling)
+        // Driver notifications
         Route::get('notifications/unread', [DriverDashboardController::class, 'unreadNotifications'])->name('notifications.unread');
+        Route::get('notifications/stream', [\App\Http\Controllers\Driver\NotificationStreamController::class, 'stream'])->name('notifications.stream');
+        // Lightweight counts endpoint for the driver dashboard
+        Route::get('dashboard/counts', [DriverDashboardController::class, 'counts'])->name('dashboard.counts');
 
         // Job management
         Route::get('jobs/new', [DriverDashboardController::class, 'newJobs'])->name('jobs.new');
         Route::get('jobs/accepted', [DriverDashboardController::class, 'acceptedJobs'])->name('jobs.accepted');
         Route::get('jobs/completed', [DriverDashboardController::class, 'completedJobs'])->name('jobs.completed');
         Route::get('jobs/declined', [DriverDashboardController::class, 'declinedJobs'])->name('jobs.declined');
+        // Show a single job details to the assigned driver (accepted or completed jobs only)
+        Route::get('jobs/{booking}', [DriverDashboardController::class, 'show'])->name('jobs.show');
         
         // Job actions
         Route::post('jobs/{booking}/accept', [DriverDashboardController::class, 'acceptJob'])->name('jobs.accept');

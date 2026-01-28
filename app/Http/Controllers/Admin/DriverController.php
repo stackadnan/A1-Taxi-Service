@@ -139,6 +139,22 @@ class DriverController extends Controller
             }
         }
 
+        // Ensure drivers in the 'inactive' tab due to expired documents show status 'inactive'
+        if ($tab === 'inactive') {
+            $today = \Carbon\Carbon::today();
+            foreach ($drivers as $drv) {
+                // if already explicitly inactive skip
+                if (($drv->status ?? '') === 'inactive') continue;
+                $expiryFields = ['driving_license_expiry', 'private_hire_drivers_license_expiry', 'private_hire_vehicle_insurance_expiry', 'private_hire_vehicle_license_expiry', 'private_hire_vehicle_mot_expiry'];
+                foreach ($expiryFields as $ef) {
+                    if ($drv->{$ef} && \Carbon\Carbon::parse($drv->{$ef})->lt($today)) {
+                        $drv->status = 'inactive';
+                        break;
+                    }
+                }
+            }
+        }
+
         if ($request->ajax() || $request->get('partial')) {
             if ($tab === 'documents') {
                 return view('admin.drivers._documents', compact('drivers'));
@@ -164,12 +180,15 @@ class DriverController extends Controller
     public function create(Request $request)
     {
         $councils = DB::table('councils')->orderBy('council_name')->get();
+
+        // Ensure $driver variable exists for form bindings (create vs edit)
+        $driver = new Driver();
         
         // Full page create
         if ($request->ajax() || $request->get('partial')) {
-            return view('admin.drivers._modal_form', compact('councils'));
+            return view('admin.drivers._modal_form', compact('councils', 'driver'));
         }
-        return view('admin.drivers.create', compact('councils'));
+        return view('admin.drivers.create', compact('councils', 'driver'));
     }
 
 
@@ -245,7 +264,9 @@ class DriverController extends Controller
         }
 
         if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
+            // let the Driver model's setPasswordAttribute handle hashing
+            // assign plain password so it gets hashed by the model
+            // (avoid double-hashing which breaks login)
         } else {
             unset($data['password']);
         }
@@ -358,7 +379,9 @@ class DriverController extends Controller
         }
 
         if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
+            // let the Driver model's setPasswordAttribute handle hashing
+            // assign plain password so it gets hashed by the model
+            // (avoid double-hashing which breaks login)
         } else {
             unset($data['password']);
         }

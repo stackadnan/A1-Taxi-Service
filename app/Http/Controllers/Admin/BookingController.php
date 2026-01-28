@@ -366,11 +366,21 @@ class BookingController extends Controller
                     // If driver changed (including from assigned->assigned to different), clear previous driver's response
                     if ($oldDriverId && $newDriverId && $oldDriverId != $newDriverId) {
                         try {
-                            \App\Models\DriverNotification::create([
-                                'driver_id' => $oldDriverId,
-                                'title' => 'Job Reassigned',
-                                'message' => 'Booking #' . ($booking->booking_code ?? $booking->id) . ' has been reassigned to another driver.'
-                            ]);
+                            // Prevent duplicates within a short window
+                            $title = 'Job Unassigned';
+                            $message = 'Booking #' . ($booking->booking_code ?? $booking->id) . ' has been unassigned from you.';
+                            $recentWindow = 30; // seconds
+                            $exists = \App\Models\DriverNotification::where('driver_id', $oldDriverId)
+                                ->where('title', $title)
+                                ->where('message', $message)
+                                ->where('created_at', '>=', now()->subSeconds($recentWindow))
+                                ->exists();
+                            if (! $exists) {
+                                \App\Models\DriverNotification::create(['driver_id' => $oldDriverId, 'title' => $title, 'message' => $message]);
+                                logger()->info('BookingController: created DriverNotification for removal', ['driver_id' => $oldDriverId, 'booking_id' => $booking->id]);
+                            } else {
+                                logger()->info('BookingController: skipped duplicate DriverNotification for removal', ['driver_id' => $oldDriverId, 'booking_id' => $booking->id]);
+                            }
                         } catch (\Exception $e) {
                             logger()->warning('Failed to notify previous driver about reassignment: ' . $e->getMessage());
                         }
@@ -450,14 +460,31 @@ class BookingController extends Controller
             // Refresh model and clear any cached relation so subsequent views/queries see the change immediately
             $booking->refresh();
 
+            // Fire event for real-time updates
+            event(new \App\Events\BookingUpdated($booking, auth()->user(), $data));
+
             // If driver assignment changed and a driver was assigned, create a driver notification
             try {
                 if (array_key_exists('driver_id', $data) && $booking->driver_id && $oldDriverId != $booking->driver_id) {
-                    \App\Models\DriverNotification::create([
-                        'driver_id' => $booking->driver_id,
-                        'title' => 'New Job Assigned',
-                        'message' => 'You have been assigned booking #' . ($booking->booking_code ?? $booking->id)
-                    ]);
+                    // Prevent duplicate quick-fire assigned notifications
+                    $title = 'New Job Assigned';
+                    $message = 'You have been assigned booking #' . ($booking->booking_code ?? $booking->id);
+                    $recentWindow = 30; // seconds
+                    $exists = \App\Models\DriverNotification::where('driver_id', $booking->driver_id)
+                        ->where('title', $title)
+                        ->where('message', $message)
+                        ->where('created_at', '>=', now()->subSeconds($recentWindow))
+                        ->exists();
+                    if (! $exists) {
+                        \App\Models\DriverNotification::create([
+                            'driver_id' => $booking->driver_id,
+                            'title' => $title,
+                            'message' => $message
+                        ]);
+                        logger()->info('BookingController: created DriverNotification for assignment', ['driver_id' => $booking->driver_id, 'booking_id' => $booking->id]);
+                    } else {
+                        logger()->info('BookingController: skipped duplicate DriverNotification for assignment', ['driver_id' => $booking->driver_id, 'booking_id' => $booking->id]);
+                    }
                 }
             } catch (\Exception $e) {
                 logger()->warning('Failed to create driver notification: ' . $e->getMessage());

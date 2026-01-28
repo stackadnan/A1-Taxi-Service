@@ -59,16 +59,17 @@
                                 <span class="ml-2 text-gray-700">{{ $job->passengers_count }}</span>
                             </div>
                             @endif
-                            @if($job->total_price)
                             <div class="flex items-center text-sm">
                                 <i class="fas fa-euro-sign text-green-600 mr-2 w-4"></i>
                                 <span class="font-medium">Price:</span>
-                                <span class="ml-2 text-gray-700">€{{ number_format($job->total_price, 2) }}</span>
-                                @if($job->driver_price)
-                                <span class="ml-2 text-sm text-gray-500">(Would have earned: €{{ number_format($job->driver_price, 2) }})</span>
-                                @endif
-                            </div>
-                            @endif
+                                <span class="ml-2 text-gray-700">
+                                  @if($job->driver_price)
+                                    €{{ number_format($job->driver_price, 2) }}
+                                  @else
+                                    -
+                                  @endif
+                                </span>
+                            </div> 
                         </div>
 
                         @if($job->message_to_driver)

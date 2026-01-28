@@ -12,6 +12,9 @@ class AdminController extends Controller
 {
     public function index()
     {
+        // Log admin dashboard page load for debugging SSE / notification issues
+        try { \Log::info('AdminController:index served', ['user_id' => auth()->id(), 'route' => request()->path()]); } catch (\Exception $e) {}
+
         $today = Carbon::today();
 
         // quick status ids

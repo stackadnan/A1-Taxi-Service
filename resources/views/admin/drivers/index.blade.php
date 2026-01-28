@@ -21,10 +21,10 @@
     <div class="flex items-center justify-between">
       <div class="driver-tabs-row w-full">
         @php $activeTab = request('tab', 'active'); @endphp
-        <a href="?{{ http_build_query(array_merge(request()->except('page'), ['tab' => 'active'])) }}" class="driver-tab px-5 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $activeTab=='active' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}">Active</a>
-        <a href="?{{ http_build_query(array_merge(request()->except('page'), ['tab' => 'inactive'])) }}" class="driver-tab px-5 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $activeTab=='inactive' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}">Inactive</a>
-        <a href="?{{ http_build_query(array_merge(request()->except('page'), ['tab' => 'documents'])) }}" class="driver-tab px-5 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $activeTab=='documents' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}">Documents</a>
-        <a href="?{{ http_build_query(array_merge(request()->except('page'), ['tab' => 'status'])) }}" class="driver-tab px-5 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $activeTab=='status' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}">Track Driver</a>
+        <a href="?{{ http_build_query(array_merge(request()->except('page'), ['tab' => 'active'])) }}" data-tab="active" class="driver-tab px-5 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $activeTab=='active' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}">Active</a>
+        <a href="?{{ http_build_query(array_merge(request()->except('page'), ['tab' => 'inactive'])) }}" data-tab="inactive" class="driver-tab px-5 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $activeTab=='inactive' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}">Inactive</a>
+        <a href="?{{ http_build_query(array_merge(request()->except('page'), ['tab' => 'documents'])) }}" data-tab="documents" class="driver-tab px-5 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $activeTab=='documents' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}">Documents</a>
+        <a href="?{{ http_build_query(array_merge(request()->except('page'), ['tab' => 'status'])) }}" data-tab="status" class="driver-tab px-5 py-2 rounded-lg border text-sm font-medium focus:outline-none transition-all {{ $activeTab=='status' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-500 hover:text-indigo-700 hover:shadow-sm' }}">Track Driver</a>
         </div>
       </div>
 
@@ -78,12 +78,31 @@
     if (container) bindDriverListActions(container);
 
     // listen for modal success and refresh drivers list
-    window.refreshDrivers = function(){
-      var url = '{{ route('admin.drivers.index') }}?partial=1';
-      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(r){ return r.text(); }).then(function(html){ var cont = document.getElementById('drivers-container'); if (cont) { cont.innerHTML = html; bindDriverListActions(cont); } if (typeof window.showToast === 'function') window.showToast('Drivers updated'); }).catch(function(){ if (typeof window.showToast === 'function') window.showToast('Failed to refresh drivers'); });
+    window.refreshDrivers = function(driver){
+      var tab = (driver && driver.status) ? driver.status : '{{ request('tab', 'active') }}';
+      var url = '{{ route('admin.drivers.index') }}?partial=1&tab=' + encodeURIComponent(tab);
+      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(r){ return r.text(); }).then(function(html){ var cont = document.getElementById('drivers-container'); if (cont) { cont.innerHTML = html; bindDriverListActions(cont); } updateDriverTabs(tab); if (typeof window.showToast === 'function') window.showToast('Drivers updated'); }).catch(function(){ if (typeof window.showToast === 'function') window.showToast('Failed to refresh drivers'); });
     };
 
-    window.addEventListener('modal:success', function(e){ try { if (e && e.detail && e.detail.driver) window.refreshDrivers(); } catch(e){ console.warn('modal:success handler failed', e); } });
+    function updateDriverTabs(tab){
+      if (!tab) return;
+      document.querySelectorAll('.driver-tab').forEach(function(el){
+        try{
+          if (el.dataset && el.dataset.tab && el.dataset.tab === tab){
+            el.classList.add('bg-indigo-600','text-white','border-indigo-600','shadow-md');
+            el.classList.remove('bg-white','text-gray-700','border-gray-300','hover:bg-indigo-50','hover:border-indigo-500','hover:text-indigo-700','hover:shadow-sm');
+          } else {
+            el.classList.remove('bg-indigo-600','text-white','border-indigo-600','shadow-md');
+            el.classList.add('bg-white','text-gray-700','border-gray-300','hover:bg-indigo-50','hover:border-indigo-500','hover:text-indigo-700','hover:shadow-sm');
+          }
+        }catch(e){ console.warn('updateDriverTabs failed', e); }
+      });
+    }
+
+    if (!window._drivers_modal_success_attached) {
+      window._drivers_modal_success_attached = true;
+      window.addEventListener('modal:success', function(e){ try { if (e && e.detail && e.detail.driver) window.refreshDrivers(e.detail.driver); } catch(e){ console.warn('modal:success handler failed', e); } });
+    }
   })();
   </script>
 </div>

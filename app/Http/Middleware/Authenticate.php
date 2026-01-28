@@ -15,6 +15,12 @@ class Authenticate extends Middleware
      */
     protected function redirectTo($request)
     {
+        // For Server-Sent Events (SSE), never redirect - return null to trigger 401
+        if ($request->header('Accept') === 'text/event-stream' || 
+            $request->is('*/notifications/stream')) {
+            return null;
+        }
+
         if (! $request->expectsJson()) {
             // If the request targets an admin route, redirect to the admin login
             if ($request->is('admin/*') || $request->routeIs('admin.*')) {
