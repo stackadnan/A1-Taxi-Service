@@ -20,7 +20,9 @@ class Driver extends Authenticatable
         // Driver Info
         'driver_lives', 'driver_address', 'working_hours', 'bank_name', 'account_title', 'sort_code', 'account_number', 'driver_picture',
         // Vehicle Info
-        'passenger_capacity', 'luggage_capacity', 'vehicle_license_number', 'vehicle_pictures'
+        'passenger_capacity', 'luggage_capacity', 'vehicle_license_number', 'vehicle_pictures',
+        // Availability
+        'unavailable_from', 'unavailable_to'
     ];
 
     /**
@@ -40,6 +42,9 @@ class Driver extends Authenticatable
         'private_hire_vehicle_license_expiry' => 'date',
         'private_hire_vehicle_mot_expiry' => 'date',
         'vehicle_pictures' => 'array',
+        // Availability
+        'unavailable_from' => 'datetime',
+        'unavailable_to' => 'datetime',
     ];
 
     public function bookings()

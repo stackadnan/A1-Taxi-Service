@@ -259,8 +259,8 @@ class BookingController extends Controller
     {
         $statuses = BookingStatus::all();
         $vehicleTypes = ['Saloon','Business','MPV6','MPV8'];
-        // active drivers for assignment dropdown
-        $activeDrivers = Driver::where('status','active')->orderBy('name')->get(['id','name']);
+        // drivers for assignment dropdown - show active first, but include inactive so admin can see availability notes
+        $activeDrivers = Driver::orderByRaw("CASE WHEN status='active' THEN 0 ELSE 1 END, name")->get(['id','name','status','unavailable_from','unavailable_to']);
 
         if ($request->get('partial') || $request->ajax()) {
             return view('admin.bookings._edit', compact('booking','statuses','vehicleTypes','activeDrivers'));
@@ -298,7 +298,9 @@ class BookingController extends Controller
             'driver_id' => 'nullable',
             'driver_price' => 'nullable|numeric|min:0',
             'use_percentage' => 'nullable|boolean',
-            'driver_percentage' => 'nullable|numeric|min:0|max:100'  
+            'driver_percentage' => 'nullable|numeric|min:0|max:100',
+            'override_availability' => 'nullable|boolean'
+        
         ]);
 
         $wasJunk = false;
@@ -363,6 +365,65 @@ class BookingController extends Controller
                     $newDriverId = is_numeric($incoming) ? (int)$incoming : null;
                     $newDriver = $newDriverId ? Driver::find($newDriverId) : null;
 
+                    // If driver's unavailable window has already expired, reactivate them immediately so assignment can proceed
+                    try {
+                        if ($newDriver && method_exists($newDriver, 'reactivateIfExpired')) {
+                            if ($newDriver->reactivateIfExpired()) {
+                                // refresh instance
+                                $newDriver = $newDriver->fresh();
+                                logger()->info('BookingController: reactivated driver during assignment check', ['driver_id' => $newDriver->id]);
+
+                                // Record admin-triggered activity log
+                                try {
+                                    \DB::table('activity_logs')->insert([
+                                        'user_id' => auth()->id() ?? null,
+                                        'event' => 'driver_reactivated_by_admin',
+                                        'auditable_type' => 'driver',
+                                        'auditable_id' => $newDriver->id,
+                                        'changes' => json_encode(['booking_id' => $booking->id, 'reason' => 'expired unavailability and reactivated at assignment']),
+                                        'ip_address' => request()->ip() ?? null,
+                                        'created_at' => now(),
+                                        'updated_at' => now(),
+                                    ]);
+                                } catch (\Exception $e) { logger()->warning('Failed to record activity log for admin reactivation: ' . $e->getMessage()); }
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        logger()->warning('Failed to reactivate driver during assignment: ' . $e->getMessage());
+                    }
+
+                    // Check availability conflict: if driver is inactive and has an unavailable window overlapping pickup
+                    $override = isset($data['override_availability']) && $data['override_availability'];
+                    try {
+                        $pickupAt = null;
+                        if ($booking->pickup_date && $booking->pickup_time) {
+                            $pickupAt = \Carbon\Carbon::parse($booking->pickup_date . ' ' . $booking->pickup_time);
+                        }
+
+                        if ($newDriver && $newDriver->status === 'inactive' && $newDriver->unavailable_from && $newDriver->unavailable_to && $pickupAt && !$override) {
+                            $from = \Carbon\Carbon::parse($newDriver->unavailable_from);
+                            $to = \Carbon\Carbon::parse($newDriver->unavailable_to);
+                            if ($pickupAt->betweenIncluded($from, $to)) {
+                                // Return a conflict response for AJAX clients to present a confirmation dialog
+                                if ($request->ajax() || $request->wantsJson()) {
+                                    return response()->json([
+                                        'success' => false,
+                                        'conflict' => true,
+                                        'message' => 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString(),
+                                        'driver' => ['id' => $newDriver->id, 'name' => $newDriver->name],
+                                        'unavailable_from' => $from->toDateTimeString(),
+                                        'unavailable_to' => $to->toDateTimeString()
+                                    ], 200);
+                                } else {
+                                    // Non-Ajax path: redirect back with message
+                                    return redirect()->back()->with('error', 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString());
+                                }
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        logger()->warning('Availability check failed: ' . $e->getMessage());
+                    }
+
                     // If driver changed (including from assigned->assigned to different), clear previous driver's response
                     if ($oldDriverId && $newDriverId && $oldDriverId != $newDriverId) {
                         try {
@@ -389,8 +450,15 @@ class BookingController extends Controller
                     $booking->driver_id = $newDriverId;
                     $booking->driver_name = $newDriver ? $newDriver->name : null;
 
+                    // If the admin explicitly overrode availability, mark it in meta for auditing
+                    if ($override) {
+                        $meta = is_array($booking->meta) ? $booking->meta : [];
+                        $meta['assigned_despite_unavailability'] = true;
+                        $meta['assigned_despite_unavailability_at'] = now()->toDateTimeString();
+                    }
+
                     // Clear any previous driver response since this is a new or changed assignment
-                    $meta = is_array($booking->meta) ? $booking->meta : [];
+                    $meta = is_array($booking->meta) ? $booking->meta : $meta;
                     if (isset($meta['driver_response'])) unset($meta['driver_response']);
                     if (isset($meta['driver_response_at'])) unset($meta['driver_response_at']);
                     $meta['status_changed_at'] = now()->toDateTimeString();

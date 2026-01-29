@@ -201,6 +201,49 @@
         window.Laravel.driverAcceptedJobsUrl = '{{ route('driver.jobs.accepted') }}?partial=1';
         window.Laravel.driverDashboardCountsUrl = '{{ route('driver.dashboard.counts') }}';
 
+        // Map/Open directions helper (used by jobs/views)
+        (function(){
+            try {
+                if (window._driver_map_links_attached) return; window._driver_map_links_attached = true;
+
+                function openWithDestination(dest){
+                    var url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest) + '&travelmode=driving';
+                    window.open(url, '_blank');
+                }
+
+                document.addEventListener('click', function(e){
+                    try {
+                        var el = e.target && e.target.closest ? e.target.closest('.js-open-directions') : null;
+                        if (!el) return;
+                        e.preventDefault();
+
+                        var dest = el.dataset && el.dataset.destination;
+                        if (!dest) { if (typeof showNotification === 'function') showNotification('Address not available'); return; }
+
+                        if (!navigator.geolocation) {
+                            if (typeof showNotification === 'function') showNotification('Location unavailable — opening destination only');
+                            openWithDestination(dest);
+                            return;
+                        }
+
+                        if (typeof showNotification === 'function') showNotification('Requesting your location...');
+
+                        navigator.geolocation.getCurrentPosition(function(pos){
+                            try {
+                                var lat = pos.coords.latitude, lng = pos.coords.longitude;
+                                var url = 'https://www.google.com/maps/dir/?api=1&origin=' + lat + ',' + lng + '&destination=' + encodeURIComponent(dest) + '&travelmode=driving';
+                                window.open(url, '_blank');
+                            } catch (sce) { console.error('Failed to open maps with origin', sce); openWithDestination(dest); }
+                        }, function(err){
+                            console.warn('Geolocation failed or denied:', err);
+                            if (typeof showNotification === 'function') showNotification('Location permission denied — opening destination only');
+                            openWithDestination(dest);
+                        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+                    } catch (inner) { console.error('Driver map link handler error', inner); }
+                });
+            } catch (err) { console.error('Failed to initialize driver map links', err); }
+        })();
+
         let eventSource = null;
         let reconnectTimeout = null;
         let processedDriverNotificationIds = new Set(); // Track processed notifications

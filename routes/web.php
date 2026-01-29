@@ -164,5 +164,8 @@ Route::prefix('driver')->name('driver.')->group(function () {
         // Job actions
         Route::post('jobs/{booking}/accept', [DriverDashboardController::class, 'acceptJob'])->name('jobs.accept');
         Route::post('jobs/{booking}/decline', [DriverDashboardController::class, 'declineJob'])->name('jobs.decline');
+
+        // Availability
+        Route::post('availability', [DriverDashboardController::class, 'updateAvailability'])->name('availability.update');
     });
 });
