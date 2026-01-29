@@ -139,6 +139,38 @@ class DriverDashboardController extends Controller
     }
 
     /**
+     * Update driver availability/status
+     */
+    public function updateAvailability(Request $request)
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) return response()->json(['success' => false, 'message' => 'Not authenticated'], 401);
+
+        $data = $request->validate([
+            'status' => 'required|in:active,inactive',
+            'unavailable_from' => 'required_if:status,inactive|nullable|date',
+            'unavailable_to' => 'required_if:status,inactive|nullable|date|after:unavailable_from',
+        ]);
+
+        try {
+            $driver->status = $data['status'];
+            if ($data['status'] === 'inactive') {
+                $driver->unavailable_from = $data['unavailable_from'];
+                $driver->unavailable_to = $data['unavailable_to'];
+            } else {
+                $driver->unavailable_from = null;
+                $driver->unavailable_to = null;
+            }
+            $driver->save();
+
+            return response()->json(['success' => true, 'message' => 'Availability updated', 'driver' => [ 'status' => $driver->status, 'unavailable_from' => $driver->unavailable_from, 'unavailable_to' => $driver->unavailable_to ]]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update driver availability', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to update availability'], 500);
+        }
+    }
+
+    /**
      * Return unread driver notifications and mark them as delivered (is_read=true)
      */
     public function unreadNotifications()

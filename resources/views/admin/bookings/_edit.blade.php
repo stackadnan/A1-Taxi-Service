@@ -116,7 +116,15 @@
       <select name="driver_id" class="mt-1 block w-full border rounded p-2">
         <option value="__remove__">Remove Driver ⚠️</option>
         @foreach($activeDrivers as $drv)
-          <option value="{{ $drv->id }}" {{ (string)old('driver_id', $booking->driver_id) === (string)$drv->id ? 'selected' : '' }}>{{ $drv->name }}</option>
+          @php
+            // Only show name; if driver is inactive show a minimal '(Inactive)' marker (no datetime range)
+            $label = $drv->name;
+            if (($drv->status ?? '') !== 'active') {
+              //$label .= ' (Inactive)';
+              $label .= ' ';
+            }
+          @endphp
+          <option value="{{ $drv->id }}" {{ (string)old('driver_id', $booking->driver_id) === (string)$drv->id ? 'selected' : '' }}>{{ $label }}</option>
         @endforeach
       </select>
     </div>
@@ -134,6 +142,9 @@
         function hideModal(){ if (modal) modal.classList.add('hidden'); }
 
         select.addEventListener('change', function(e){
+          // when changing selection, clear any override flag from prior confirmation
+          var ov = document.querySelector('input[name="override_availability"]'); if (ov) ov.parentNode.removeChild(ov);
+
           if (this.value === '__remove__') {
             // open custom styled modal instead of native confirm
             showModal();
@@ -155,6 +166,48 @@
 
           } else {
             prev = this.value;
+
+            // On driver selection, proactively check availability and possibly auto-reactivate if window expired
+            try {
+              var driverId = this.value;
+              if (!driverId) return;
+              var url = '{{ url('admin/drivers') }}/' + driverId + '/check-availability';
+              fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept':'application/json' }, credentials: 'same-origin' }).then(function(r){ return r.json(); }).then(function(json){
+                if (!json || !json.success) return;
+                // If server reactivated the driver because unavailable_to passed
+                if (json.reactivated) {
+                  // Update option label to remove unavailable note (simple approach: reload options from server would be more thorough)
+                  var opt = select.querySelector('option[value="'+driverId+'"]');
+                  if (opt) {
+                    opt.textContent = json.driver.name + ' (Reactivated)';
+                  }
+                  if (typeof window.showToast === 'function') window.showToast('Driver reactivated (unavailability expired)');
+                  return;
+                }
+
+                // If still unavailable currently, show conflict modal and prevent selection
+                var now = json.now || null;
+                var from = json.unavailable_from || null; var to = json.unavailable_to || null;
+                if ((from && to) && now && now >= from && now <= to) {
+                  // show same modal as on save
+                  var confModal = document.getElementById('availability-conflict-modal');
+                  var msgEl = document.getElementById('availability-conflict-message');
+                  if (msgEl) msgEl.textContent = 'Selected driver is currently unavailable.';
+
+                  // inject comparison details
+                  var prevDetails = document.getElementById('availability-conflict-details'); if (prevDetails) prevDetails.remove();
+                  try {
+                    var details = document.createElement('div'); details.id = 'availability-conflict-details'; details.className = 'mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700';
+                    var pickupCol = document.createElement('div'); pickupCol.innerHTML = '<div class="font-medium text-gray-800">Now</div><div class="text-xs text-gray-600 mt-1">'+ (now || '') + '</div>';
+                    var availCol = document.createElement('div'); availCol.innerHTML = '<div class="font-medium text-gray-800">Unavailable</div><div class="text-xs text-gray-600 mt-1">' + (from || '') + ' &ndash; ' + (to || '') + '</div>';
+                    details.appendChild(pickupCol); details.appendChild(availCol);
+                    msgEl.parentNode.insertBefore(details, msgEl.nextSibling);
+                  } catch(e){ console.warn('Details insert failed', e); }
+
+                  if (confModal) { confModal.classList.remove('hidden'); var cbtn = confModal.querySelector('#availability-conflict-confirm'); if (cbtn && typeof cbtn.focus === 'function') cbtn.focus(); }
+                }
+              }).catch(function(err){ console.error('driver availability check failed', err); });
+            } catch(e){ console.error('driver select handler failed', e); }
           }
         });
 
@@ -179,11 +232,54 @@
       </div>
     </div>
 
+    <!-- Availability conflict modal (hidden by default) -->
+    <div id="availability-conflict-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+      <div class="fixed inset-0 bg-black opacity-40"></div>
+      <div class="bg-white rounded-lg shadow-lg z-60 w-full max-w-md p-6 mx-4">
+        <div class="flex items-start justify-between">
+          <h3 class="text-lg font-semibold">Driver Unavailable</h3>
+          <button type="button" class="text-gray-400 hover:text-gray-600" id="availability-conflict-close" aria-label="Close">✕</button>
+        </div>
+        <div class="mt-3 text-sm text-gray-700" id="availability-conflict-message">Selected driver is unavailable for the requested pickup time.</div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button type="button" id="availability-conflict-cancel" class="px-4 py-2 bg-white border rounded">Cancel</button>
+          <button type="button" id="availability-conflict-confirm" class="px-4 py-2 bg-red-600 text-white rounded">Assign Anyway</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       (function(){
         var close = document.getElementById('remove-driver-close');
         var modal = document.getElementById('remove-driver-modal');
         if (close && modal) close.addEventListener('click', function(){ modal.classList.add('hidden'); });
+
+        // availability conflict modal handlers
+        var confModal = document.getElementById('availability-conflict-modal');
+        var confCancel = confModal ? confModal.querySelector('#availability-conflict-cancel') : null;
+        var confConfirm = confModal ? confModal.querySelector('#availability-conflict-confirm') : null;
+        var confClose = confModal ? confModal.querySelector('#availability-conflict-close') : null;
+        if (confCancel && confModal) confCancel.addEventListener('click', function(){ confModal.classList.add('hidden'); });
+        if (confClose && confModal) confClose.addEventListener('click', function(){ confModal.classList.add('hidden'); });
+        if (confConfirm && confModal) confConfirm.addEventListener('click', function(){
+          // set override hidden input and submit via the real submit button (more reliable)
+          var form = document.getElementById('booking-edit-form');
+          var inp = document.querySelector('input[name="override_availability"]');
+          if (!inp) { inp = document.createElement('input'); inp.type='hidden'; inp.name='override_availability'; form.appendChild(inp); }
+          inp.value = '1';
+          confModal.classList.add('hidden');
+
+          // prevent duplicate clicks
+          try { confConfirm.disabled = true; } catch(e){}
+
+          // prefer clicking the submit button so the normal submit handler runs with the fresh DOM
+          var submitBtn = form.querySelector('button[type="submit"]');
+          if (submitBtn) {
+            submitBtn.click();
+          } else {
+            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+          }
+        });
       })();
     </script>
 
@@ -316,6 +412,46 @@
                   var ev = new CustomEvent('bookingMoved', { detail: { id: json.booking.id, to: json.moved_to } });
                   document.dispatchEvent(ev);
                 }
+
+              } else if (json && json.conflict) {
+                // Driver availability conflict - show modal and allow override
+                try {
+                  var confModal = document.getElementById('availability-conflict-modal');
+                  var msgEl = document.getElementById('availability-conflict-message');
+                  if (msgEl && json.message) {
+                    msgEl.textContent = json.message;
+                    // build a side-by-side comparison block for pickup vs unavailable window
+                    try {
+                      // remove previous details block if exists
+                      var prev = document.getElementById('availability-conflict-details'); if (prev) prev.remove();
+
+                      var details = document.createElement('div'); details.id = 'availability-conflict-details'; details.className = 'mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700';
+
+                      var pickupCol = document.createElement('div'); var up = json.pickup_at ? json.pickup_at : 'N/A';
+                      pickupCol.innerHTML = '<div class="font-medium text-gray-800">Pickup Time</div><div class="text-xs text-gray-600 mt-1">' + up + '</div>';
+
+                      var availCol = document.createElement('div');
+                      var from = json.unavailable_from ? json.unavailable_from : 'N/A';
+                      var to = json.unavailable_to ? json.unavailable_to : 'N/A';
+                      availCol.innerHTML = '<div class="font-medium text-gray-800">Driver Unavailable</div><div class="text-xs text-gray-600 mt-1">' + from + ' &ndash; ' + to + '</div>';
+
+                      details.appendChild(pickupCol);
+                      details.appendChild(availCol);
+
+                      msgEl.parentNode.insertBefore(details, msgEl.nextSibling);
+                    } catch(e){ console.warn('Failed to append unavailable details', e); }
+                  }
+
+                  if (confModal) {
+                    confModal.classList.remove('hidden');
+                    // focus confirm button for accessibility
+                    var cbtn = confModal.querySelector('#availability-conflict-confirm'); if (cbtn && typeof cbtn.focus === 'function') cbtn.focus();
+                  } else {
+                    if (typeof window.showAlert === 'function') window.showAlert('Driver Unavailable', json.message);
+                    else alert(json.message);
+                  }
+                } catch(e){ console.error('Failed to show availability conflict modal', e); if (typeof window.showAlert === 'function') window.showAlert('Update failed', json.message); else alert(json.message); }
+
               } else {
                 var msg = (json && json.message) ? json.message : 'Failed to update booking';
                 if (typeof window.showAlert === 'function') window.showAlert('Update failed', msg); else alert(msg);

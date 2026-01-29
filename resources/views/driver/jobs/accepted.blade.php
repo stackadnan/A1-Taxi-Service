@@ -39,12 +39,28 @@
                             <div class="flex items-center text-sm">
                                 <i class="fas fa-map-marker-alt text-green-500 mr-2 w-4"></i>
                                 <span class="font-medium">From:</span>
-                                <span class="ml-2 text-gray-700">{{ $job->pickup_address }}</span>
+                                <span class="ml-2 text-gray-700">
+                                  @if($job->pickup_address)
+                                    <a href="#" class="js-open-directions inline-flex items-center gap-1 text-indigo-600 hover:underline" data-destination="{{ $job->pickup_address }}" data-role="pickup" title="Open in Maps" aria-label="Open directions to pickup location">{{ $job->pickup_address }}
+                                      <svg class="ml-1 w-4 h-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1112 6.5 2.5 2.5 0 0112 11.5z"/></svg>
+                                    </a>
+                                  @else
+                                    -
+                                  @endif
+                                </span>
                             </div>
                             <div class="flex items-center text-sm">
                                 <i class="fas fa-map-marker-alt text-red-500 mr-2 w-4"></i>
                                 <span class="font-medium">To:</span>
-                                <span class="ml-2 text-gray-700">{{ $job->dropoff_address }}</span>
+                                <span class="ml-2 text-gray-700">
+                                  @if($job->dropoff_address)
+                                    <a href="#" class="js-open-directions inline-flex items-center gap-1 text-indigo-600 hover:underline" data-destination="{{ $job->dropoff_address }}" data-role="dropoff" title="Open in Maps" aria-label="Open directions to dropoff location">{{ $job->dropoff_address }}
+                                      <svg class="ml-1 w-4 h-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1112 6.5 2.5 2.5 0 0112 11.5z"/></svg>
+                                    </a>
+                                  @else
+                                    -
+                                  @endif
+                                </span>
                             </div>
                             @if($job->scheduled_at)
                             <div class="flex items-center text-sm">
