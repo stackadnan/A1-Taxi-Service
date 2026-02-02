@@ -26,8 +26,8 @@ class UserController extends Controller
 
     public function create()
     {
-        $allowed = ['Super Admin','Manager','Controller','Operator','Monitoring'];
-        $roles = Role::whereIn('name', $allowed)->get();
+        // Show all available roles so admins can pick any role when creating users
+        $roles = Role::orderBy('name')->get();
         return view('admin.users.create', compact('roles'));
     }
 
@@ -62,8 +62,8 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        $allowed = ['Super Admin','Manager','Controller','Operator','Monitoring'];
-        $roles = Role::whereIn('name', $allowed)->get();
+        // Show all available roles for editing users
+        $roles = Role::orderBy('name')->get();
         $user->load('roles');
         return view('admin.users.edit', compact('user','roles'));
     }
