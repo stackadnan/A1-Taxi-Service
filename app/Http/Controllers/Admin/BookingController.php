@@ -400,23 +400,43 @@ class BookingController extends Controller
                             $pickupAt = \Carbon\Carbon::parse($booking->pickup_date . ' ' . $booking->pickup_time);
                         }
 
-                        if ($newDriver && $newDriver->status === 'inactive' && $newDriver->unavailable_from && $newDriver->unavailable_to && $pickupAt && !$override) {
-                            $from = \Carbon\Carbon::parse($newDriver->unavailable_from);
-                            $to = \Carbon\Carbon::parse($newDriver->unavailable_to);
-                            if ($pickupAt->betweenIncluded($from, $to)) {
-                                // Return a conflict response for AJAX clients to present a confirmation dialog
+                        if ($newDriver && $newDriver->status === 'inactive' && !$override) {
+                            // If driver has an explicit unavailable window, only block when pickup falls inside it
+                            if ($newDriver->unavailable_from && $newDriver->unavailable_to && $pickupAt) {
+                                $from = \Carbon\Carbon::parse($newDriver->unavailable_from);
+                                $to = \Carbon\Carbon::parse($newDriver->unavailable_to);
+                                if ($pickupAt->betweenIncluded($from, $to)) {
+                                    // Return a conflict response for AJAX clients to present a confirmation dialog
+                                    if ($request->ajax() || $request->wantsJson()) {
+                                        return response()->json([
+                                            'success' => false,
+                                            'conflict' => true,
+                                            'message' => 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString(),
+                                            'driver' => ['id' => $newDriver->id, 'name' => $newDriver->name],
+                                            'unavailable_from' => $from->toIso8601String(),
+                                            'unavailable_to' => $to->toIso8601String(),
+                                            'pickup_at' => $pickupAt ? $pickupAt->toIso8601String() : null
+                                        ], 200);
+                                    } else {
+                                        // Non-Ajax path: redirect back with message
+                                        return redirect()->back()->with('error', 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString());
+                                    }
+                                }
+
+                            } else {
+                                // Driver is explicitly inactive with no window -> block assignment and show indefinite conflict
                                 if ($request->ajax() || $request->wantsJson()) {
                                     return response()->json([
                                         'success' => false,
                                         'conflict' => true,
-                                        'message' => 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString(),
+                                        'message' => 'Selected driver is currently inactive.',
                                         'driver' => ['id' => $newDriver->id, 'name' => $newDriver->name],
-                                        'unavailable_from' => $from->toDateTimeString(),
-                                        'unavailable_to' => $to->toDateTimeString()
+                                        'unavailable_from' => null,
+                                        'unavailable_to' => null,
+                                        'pickup_at' => $pickupAt ? $pickupAt->toIso8601String() : null
                                     ], 200);
                                 } else {
-                                    // Non-Ajax path: redirect back with message
-                                    return redirect()->back()->with('error', 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString());
+                                    return redirect()->back()->with('error', 'Selected driver is currently inactive.');
                                 }
                             }
                         }

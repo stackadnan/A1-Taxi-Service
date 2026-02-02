@@ -69,14 +69,20 @@ class Booking extends Model
                     $to = $driver->unavailable_to ? Carbon::parse($driver->unavailable_to) : null;
 
                     $isInactive = ($driver->status === 'inactive');
-                    $inRange = ($from && $to && $pickupAt && $pickupAt->betweenIncluded($from, $to));
+                    $hasWindow = ($from && $to);
+                    $inRange = ($hasWindow && $pickupAt && $pickupAt->betweenIncluded($from, $to));
 
                     // if override flag is set in meta, allow assignment
                     $meta = is_array($booking->meta) ? $booking->meta : [];
                     $override = isset($meta['assigned_despite_unavailability']) && $meta['assigned_despite_unavailability'];
 
-                    if (($isInactive || $inRange) && !$override) {
-                        // log full diagnostic before blocking
+                    // Block only when:
+                    // - driver is inactive without a specific unavailability window (global inactive), OR
+                    // - there is an unavailability window and the pickup falls within it.
+                    $shouldBlock = ((!$hasWindow && $isInactive) || ($hasWindow && $inRange));
+
+                    if ($shouldBlock && !$override) {
+                        // log full diagnostic before blocking, include reason
                         Log::warning('Booking save blocked: driver unavailable', [
                             'booking_id' => $booking->id ?? null,
                             'driver_id' => $driver->id,
@@ -85,6 +91,7 @@ class Booking extends Model
                             'unavailable_from' => $from ? $from->toDateTimeString() : null,
                             'unavailable_to' => $to ? $to->toDateTimeString() : null,
                             'override_flag' => $override,
+                            'blocked_reason' => (!$hasWindow && $isInactive) ? 'inactive' : 'unavailable_window',
                             'changed_by_user_id' => Auth::id() ?? null,
                             'stack' => collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8))->map(function($f){ return ($f['function'] ?? '') . '@' . ($f['file'] ?? '') . ':' . ($f['line'] ?? ''); })->take(6)->toArray(),
                         ]);
