@@ -112,6 +112,7 @@ class DriverController extends Controller
                     $labelMap = [
                         'in_progress' => ['On Route', 'green'],
                         'confirmed' => ['Confirmed', 'yellow'],
+                        'pob' => ['POB', 'orange'],
                         'new' => ['New', 'gray'],
                     ];
                     $label = $labelMap[$statusKey][0] ?? ucfirst(str_replace('_', ' ', $statusKey));
@@ -175,6 +176,130 @@ class DriverController extends Controller
         }
 
         return view('admin.drivers.show', compact('driver'));
+    }
+
+    /**
+     * Show live tracking page for driver
+     */
+    public function track(Driver $driver, \App\Models\Booking $booking)
+    {
+        // Ensure booking belongs to this driver
+        if ($booking->driver_id !== $driver->id) {
+            abort(403, 'This booking is not assigned to the selected driver.');
+        }
+
+        // Ensure booking is in trackable status (POB)
+        if (!$booking->status || $booking->status->name !== 'pob') {
+            abort(400, 'Driver tracking is only available for jobs in POB status.');
+        }
+
+        return view('admin.drivers.track', compact('driver', 'booking'));
+    }
+
+    /**
+     * Get driver's current location (API endpoint)
+     * If bookingId is 0 or booking not found, just return driver location (for non-POB tracking)
+     */
+    public function getLocation(Driver $driver, $bookingId = 0)
+    {
+        try {
+            // Try to find the booking if a valid booking ID is provided
+            $booking = null;
+            if ($bookingId && $bookingId > 0) {
+                $booking = \App\Models\Booking::find($bookingId);
+                
+                // Ensure booking belongs to this driver
+                if ($booking && $booking->driver_id !== $driver->id) {
+                    return response()->json(['error' => 'Unauthorized'], 403);
+                }
+            }
+
+            \Log::info('Getting driver location', [
+                'driver_id' => $driver->id,
+                'booking_id' => $booking ? $booking->id : 'none',
+                'booking_status' => $booking ? (optional($booking->status)->name) : 'no booking'
+            ]);
+
+            // Get driver's last known location from driver_locations table
+            $driverLocation = $driver->currentLocation;
+            
+            $location = null;
+            $lastUpdate = null;
+            
+            if ($driverLocation) {
+                $location = [
+                    'lat' => (float) $driverLocation->latitude,
+                    'lng' => (float) $driverLocation->longitude,
+                    'accuracy' => $driverLocation->accuracy,
+                ];
+                $lastUpdate = $driverLocation->updated_at->toDateTimeString();
+                \Log::info('Found real driver location', [
+                    'driver_id' => $driver->id,
+                    'lat' => $location['lat'],
+                    'lng' => $location['lng'],
+                    'updated_at' => $lastUpdate
+                ]);
+            } else {
+                \Log::warning('No location found for driver', ['driver_id' => $driver->id]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Driver location not available. Driver may not have shared location yet.'
+                ], 404);
+            }
+            
+            // Get booking destination - provide defaults if missing
+            $destination = [
+                'lat' => $booking ? ($booking->to_latitude ?? 51.5164) : null,
+                'lng' => $booking ? ($booking->to_longitude ?? -0.1276) : null,
+                'address' => $booking ? ($booking->to_address ?? 'London, UK') : null
+            ];
+            
+            // Get pickup location - provide defaults if missing
+            $pickup = [
+                'lat' => $booking ? ($booking->from_latitude ?? 51.5014) : null,
+                'lng' => $booking ? ($booking->from_longitude ?? -0.1419) : null,
+                'address' => $booking ? ($booking->from_address ?? 'Pickup Location, London, UK') : null
+            ];
+
+            return response()->json([
+                'success' => true,
+                'driver' => [
+                    'latitude' => $location['lat'],
+                    'longitude' => $location['lng'],
+                    'id' => $driver->id,
+                    'name' => $driver->name,
+                    'phone' => $driver->phone,
+                    'vehicle_plate' => $driver->vehicle_plate,
+                    'accuracy' => $location['accuracy'] ?? null,
+                    'heading' => $location['heading'] ?? null,
+                    'speed' => $location['speed'] ?? null
+                ],
+                'booking' => $booking ? [
+                    'id' => $booking->id,
+                    'booking_code' => $booking->booking_code,
+                    'status' => optional($booking->status)->name ?? 'unknown'
+                ] : null,
+                'pickup' => [
+                    'latitude' => $pickup['lat'],
+                    'longitude' => $pickup['lng'],
+                    'address' => $pickup['address']
+                ],
+                'destination' => [
+                    'latitude' => $destination['lat'],
+                    'longitude' => $destination['lng'],
+                    'address' => $destination['address']
+                ],
+                'last_update' => $lastUpdate
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting driver location', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'driver_id' => $driver->id ?? 'unknown',
+                'booking_id' => $bookingId ?? 'unknown'
+            ]);
+            return response()->json(['error' => 'Failed to get location: ' . $e->getMessage()], 500);
+        }
     }
 
     public function create(Request $request)

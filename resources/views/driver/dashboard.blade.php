@@ -13,7 +13,7 @@
     </div>
 
     <!-- Stats Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- New Jobs Card -->
         <a href="{{ route('driver.jobs.new') }}" class="block">
             <div class="stat-card new-jobs rounded-lg p-6 text-center job-card">
@@ -337,6 +337,107 @@
                 }).catch(function(err){ console.error(err); showToast('Error saving availability'); }).finally(function(){ saveBtn.disabled = false; statusSpan.textContent = ''; });
             });
         }
+    })();
+
+    // ========================================
+    // GPS Location Sharing
+    // ========================================
+    (function(){
+        let locationWatchId = null;
+        let locationInterval = null;
+
+        function startLocationSharing() {
+            if (!navigator.geolocation) {
+                console.log('Geolocation not supported by browser');
+                return;
+            }
+
+            console.log('Starting GPS location sharing from dashboard...');
+
+            // Get initial position
+            navigator.geolocation.getCurrentPosition(
+                sendLocationUpdate,
+                handleLocationError,
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+
+            // Watch for position changes
+            locationWatchId = navigator.geolocation.watchPosition(
+                sendLocationUpdate,
+                handleLocationError,
+                { enableHighAccuracy: true, maximumAge: 5000 }
+            );
+
+            // Also send location every 15 seconds as backup
+            locationInterval = setInterval(() => {
+                navigator.geolocation.getCurrentPosition(
+                    sendLocationUpdate,
+                    handleLocationError,
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            }, 15000);
+        }
+
+        function stopLocationSharing() {
+            if (locationWatchId !== null) {
+                navigator.geolocation.clearWatch(locationWatchId);
+                locationWatchId = null;
+            }
+            if (locationInterval !== null) {
+                clearInterval(locationInterval);
+                locationInterval = null;
+            }
+            console.log('Location sharing stopped');
+        }
+
+        function sendLocationUpdate(position) {
+            const data = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                heading: position.coords.heading,
+                speed: position.coords.speed
+            };
+
+            fetch('{{ route("driver.location.update") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    console.log('Location updated:', data.latitude.toFixed(4), data.longitude.toFixed(4));
+                }
+            })
+            .catch(error => {
+                console.error('Failed to send location:', error);
+            });
+        }
+
+        function handleLocationError(error) {
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    console.error('Location permission denied');
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    console.error('Location unavailable');
+                    break;
+                case error.TIMEOUT:
+                    console.error('Location request timeout');
+                    break;
+            }
+        }
+
+        // Start location sharing when page loads
+        setTimeout(startLocationSharing, 1000);
+
+        // Stop on page unload
+        window.addEventListener('beforeunload', stopLocationSharing);
     })();
 </script>
 @endsection

@@ -40,6 +40,9 @@ Route::name('admin.')->group(function () {
         Route::get('drivers', [\App\Http\Controllers\Admin\DriverController::class, 'index'])->name('drivers.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::get('drivers/create', [\App\Http\Controllers\Admin\DriverController::class, 'create'])->name('drivers.create')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.create');
         Route::post('drivers', [\App\Http\Controllers\Admin\DriverController::class, 'store'])->name('drivers.store')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.create');
+        // Driver tracking routes (must be before general {driver} routes)
+        Route::get('drivers/{driver}/track/{booking}', [\App\Http\Controllers\Admin\DriverController::class, 'track'])->name('drivers.track')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        Route::get('drivers/{driver}/location/{bookingId}', [\App\Http\Controllers\Admin\DriverController::class, 'getLocation'])->name('drivers.location')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::get('drivers/{driver}', [\App\Http\Controllers\Admin\DriverController::class, 'show'])->name('drivers.show')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::get('drivers/{driver}/edit', [\App\Http\Controllers\Admin\DriverController::class, 'edit'])->name('drivers.edit')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.edit');
         Route::put('drivers/{driver}', [\App\Http\Controllers\Admin\DriverController::class, 'update'])->name('drivers.update')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.edit');
@@ -164,8 +167,15 @@ Route::prefix('driver')->name('driver.')->group(function () {
         // Job actions
         Route::post('jobs/{booking}/accept', [DriverDashboardController::class, 'acceptJob'])->name('jobs.accept');
         Route::post('jobs/{booking}/decline', [DriverDashboardController::class, 'declineJob'])->name('jobs.decline');
+        Route::post('jobs/{booking}/pob', [DriverDashboardController::class, 'markAsProofOfBusiness'])->name('jobs.pob');
+        Route::post('jobs/{booking}/complete', [DriverDashboardController::class, 'markAsCompleted'])->name('jobs.complete');
+        Route::post('jobs/{booking}/complete', [DriverDashboardController::class, 'markAsCompleted'])->name('jobs.complete');
 
         // Availability
         Route::post('availability', [DriverDashboardController::class, 'updateAvailability'])->name('availability.update');
+        
+        // Location sharing
+        Route::post('location/update', [DriverDashboardController::class, 'updateLocation'])->name('location.update');
+        Route::get('location/status', [DriverDashboardController::class, 'getLocationStatus'])->name('location.status');
     });
 });

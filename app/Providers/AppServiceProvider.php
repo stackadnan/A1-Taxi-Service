@@ -33,6 +33,11 @@ class AppServiceProvider extends ServiceProvider
             \App\Listeners\SendDriverNotificationOnBookingUpdate::class,
         );
 
+        Event::listen(
+            \App\Events\BookingUpdated::class,
+            \App\Listeners\SendAdminNotificationOnBookingUpdate::class,
+        );
+
         // Share broadcasts globally for all admin views
         view()->composer('layouts.admin', function ($view) {
             $broadcasts = \App\Models\Broadcast::where(function($q){
