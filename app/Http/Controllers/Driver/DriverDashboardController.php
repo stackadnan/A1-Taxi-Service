@@ -53,7 +53,7 @@ class DriverDashboardController extends Controller
     }
 
     /**
-     * Get accepted jobs for the driver
+     * Get accepted jobs for the driver (includes POB status)
      */
     public function acceptedJobs()
     {
@@ -61,9 +61,12 @@ class DriverDashboardController extends Controller
         
         $jobs = $driver->bookings()
             ->whereHas('status', function($q) {
-                $q->where('name', 'confirmed');
+                $q->whereIn('name', ['confirmed','pob']);
             })
-            ->where('meta->driver_response', 'accepted')
+            ->where(function($q) {
+                $q->where('meta->driver_response', 'accepted')
+                  ->orWhereHas('status', function($sq) { $sq->where('name', 'pob'); });
+            })
             ->with(['status'])
             ->latest()
             ->paginate(10);
@@ -104,7 +107,7 @@ class DriverDashboardController extends Controller
             abort(403);
         }
 
-        // Allow viewing only if booking is accepted (meta driver_response = accepted and confirmed) or completed
+        // Allow viewing only if booking is accepted (meta driver_response = accepted and confirmed), POB status, or completed
         $statusName = optional($booking->status)->name;
         $driverResponse = $booking->meta['driver_response'] ?? null;
 
@@ -346,6 +349,263 @@ class DriverDashboardController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['error' => 'Failed to decline job: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Mark a job as Proof of Business (POB)
+     */
+    public function markAsProofOfBusiness(Request $request, Booking $booking)
+    {
+        try {
+            $driver = Auth::guard('driver')->user();
+            
+            \Log::info('Driver marking job as POB', [
+                'driver_id' => $driver->id,
+                'booking_id' => $booking->id,
+                'booking_driver_id' => $booking->driver_id
+            ]);
+            
+            if (!$driver) {
+                return response()->json(['error' => 'Driver not authenticated'], 401);
+            }
+            
+            if ($booking->driver_id !== $driver->id) {
+                \Log::warning('Unauthorized POB attempt', [
+                    'driver_id' => $driver->id,
+                    'booking_id' => $booking->id,
+                    'booking_driver_id' => $booking->driver_id
+                ]);
+                return response()->json(['error' => 'Unauthorized - This job is not assigned to you'], 403);
+            }
+
+            // Check if job is currently confirmed and accepted
+            $statusName = optional($booking->status)->name;
+            $driverResponse = $booking->meta['driver_response'] ?? null;
+            
+            if ($statusName !== 'confirmed' || $driverResponse !== 'accepted') {
+                return response()->json(['error' => 'Job must be confirmed and accepted before marking as POB'], 400);
+            }
+
+            // Get POB status
+            $pobStatus = \App\Models\BookingStatus::where('name', 'pob')->first();
+            if (!$pobStatus) {
+                return response()->json(['error' => 'POB status not found'], 500);
+            }
+
+            // Update booking status and meta
+            $meta = $booking->meta ?? [];
+            $meta['pob_marked_at'] = now()->toDateTimeString();
+            $meta['pob_marked_by_driver_id'] = $driver->id;
+            $meta['status_changed_at'] = now()->toDateTimeString();
+            
+            $booking->status_id = $pobStatus->id;
+            $booking->meta = $meta;
+            $booking->save();
+            
+            // Fire event for notifications and SSE
+            event(new \App\Events\BookingUpdated($booking, $driver, ['status_id' => $pobStatus->id, 'previous_status' => $statusName, 'action' => 'pob']));
+            
+            \Log::info('Job marked as POB successfully', [
+                'driver_id' => $driver->id,
+                'booking_id' => $booking->id
+            ]);
+    
+            // Return updated counts
+            $counts = [
+                'new' => $driver->getNewJobsCount(),
+                'accepted' => $driver->getAcceptedJobsCount(),
+                'completed' => $driver->getCompletedJobsCount(),
+                'declined' => $driver->getDeclinedJobsCount(),
+            ];
+    
+            return response()->json([
+                'success' => true, 
+                'message' => 'Job marked as POB successfully. You can now complete it.',
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error marking job as POB', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Failed to mark job as POB: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Mark a job as completed
+     */
+    public function markAsCompleted(Request $request, Booking $booking)
+    {
+        try {
+            $driver = Auth::guard('driver')->user();
+            
+            \Log::info('Driver marking job as completed', [
+                'driver_id' => $driver->id,
+                'booking_id' => $booking->id,
+                'booking_driver_id' => $booking->driver_id
+            ]);
+            
+            if (!$driver) {
+                return response()->json(['error' => 'Driver not authenticated'], 401);
+            }
+            
+            if ($booking->driver_id !== $driver->id) {
+                \Log::warning('Unauthorized completion attempt', [
+                    'driver_id' => $driver->id,
+                    'booking_id' => $booking->id,
+                    'booking_driver_id' => $booking->driver_id
+                ]);
+                return response()->json(['error' => 'Unauthorized - This job is not assigned to you'], 403);
+            }
+
+            // Check if job is currently in POB status
+            $statusName = optional($booking->status)->name;
+            
+            if ($statusName !== 'pob') {
+                return response()->json(['error' => 'Job must be in POB status before marking as completed'], 400);
+            }
+
+            // Get completed status
+            $completedStatus = \App\Models\BookingStatus::where('name', 'completed')->first();
+            if (!$completedStatus) {
+                return response()->json(['error' => 'Completed status not found'], 500);
+            }
+
+            // Update booking status and meta
+            $meta = $booking->meta ?? [];
+            $meta['completed_at'] = now()->toDateTimeString();
+            $meta['completed_by_driver_id'] = $driver->id;
+            $meta['status_changed_at'] = now()->toDateTimeString();
+            
+            $booking->status_id = $completedStatus->id;
+            $booking->meta = $meta;
+            $booking->save();
+            
+            // Fire event for notifications and SSE
+            event(new \App\Events\BookingUpdated($booking, $driver, ['status_id' => $completedStatus->id, 'previous_status' => $statusName, 'action' => 'completed']));
+            
+            \Log::info('Job marked as completed successfully', [
+                'driver_id' => $driver->id,
+                'booking_id' => $booking->id
+            ]);
+    
+            // Return updated counts
+            $counts = [
+                'new' => $driver->getNewJobsCount(),
+                'accepted' => $driver->getAcceptedJobsCount(),
+                'completed' => $driver->getCompletedJobsCount(),
+                'declined' => $driver->getDeclinedJobsCount(),
+            ];
+    
+            return response()->json([
+                'success' => true, 
+                'message' => 'Job completed successfully',
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error marking job as completed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Failed to complete job: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update driver's current location
+     */
+    public function updateLocation(Request $request)
+    {
+        try {
+            $driver = Auth::guard('driver')->user();
+            
+            if (!$driver) {
+                return response()->json(['error' => 'Driver not authenticated'], 401);
+            }
+
+            $request->validate([
+                'latitude' => 'required|numeric|between:-90,90',
+                'longitude' => 'required|numeric|between:-180,180',
+                'accuracy' => 'nullable|numeric',
+                'heading' => 'nullable|numeric|between:0,360',
+                'speed' => 'nullable|numeric|min:0'
+            ]);
+
+            // Update or create driver location in driver_locations table
+            \App\Models\DriverLocation::updateOrCreate(
+                ['driver_id' => $driver->id],
+                [
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'accuracy' => $request->accuracy ?? 0
+                ]
+            );
+
+            // Also update driver's last active time
+            $driver->last_active_at = now();
+            $driver->save();
+
+            \Log::info('Driver location updated', [
+                'driver_id' => $driver->id,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Location updated successfully',
+                'timestamp' => now()->toDateTimeString()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error updating driver location', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Failed to update location'], 500);
+        }
+    }
+
+    /**
+     * Get driver's location sharing status
+     */
+    public function getLocationStatus(Request $request)
+    {
+        try {
+            $driver = Auth::guard('driver')->user();
+            
+            if (!$driver) {
+                return response()->json(['error' => 'Driver not authenticated'], 401);
+            }
+
+            $meta = $driver->meta ?? [];
+            $currentLocation = $meta['current_location'] ?? null;
+            $lastUpdate = $meta['location_updated_at'] ?? null;
+            
+            // Check if driver has active POB jobs
+            $activePobJob = $driver->bookings()
+                ->whereHas('status', function($q) {
+                    $q->where('name', 'pob');
+                })
+                ->first();
+
+            return response()->json([
+                'success' => true,
+                'location_sharing_enabled' => !is_null($currentLocation),
+                'last_update' => $lastUpdate,
+                'has_active_pob_job' => !is_null($activePobJob),
+                'active_job' => $activePobJob ? [
+                    'id' => $activePobJob->id,
+                    'booking_code' => $activePobJob->booking_code,
+                    'to_address' => $activePobJob->to_address
+                ] : null
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error getting location status', [
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['error' => 'Failed to get location status'], 500);
         }
     }
 }

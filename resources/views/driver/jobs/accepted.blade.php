@@ -101,12 +101,39 @@
 
                     <!-- Status Info -->
                     <div class="text-center md:ml-6 space-y-2">
-                        <div class="bg-orange-100 rounded-lg p-4">
-                            <i class="fas fa-hourglass-half text-orange-500 text-2xl mb-2"></i>
-                            <p class="text-sm font-medium text-orange-800">In Progress</p>
-                            <p class="text-xs text-orange-600">Complete this job</p>
+                        @if($job->status && $job->status->name === 'pob')
+                            <div class="bg-yellow-100 rounded-lg p-4">
+                                <i class="fas fa-clipboard-check text-yellow-500 text-2xl mb-2"></i>
+                                <p class="text-sm font-medium text-yellow-800">POB Status</p>
+                                <p class="text-xs text-yellow-600">Ready to complete</p>
+                            </div>
+                        @else
+                            <div class="bg-orange-100 rounded-lg p-4">
+                                <i class="fas fa-hourglass-half text-orange-500 text-2xl mb-2"></i>
+                                <p class="text-sm font-medium text-orange-800">In Progress</p>
+                                <p class="text-xs text-orange-600">Mark as POB first</p>
+                            </div>
+                        @endif
+                        <div class="space-y-2">
+                            @if($job->status && $job->status->name === 'pob')
+                                <button 
+                                    onclick="markAsCompleted({{ $job->id }})" 
+                                    class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                    id="completed-btn-{{ $job->id }}"
+                                >
+                                    <i class="fas fa-flag-checkered mr-2"></i>Mark as Completed
+                                </button>
+                            @else
+                                <button 
+                                    onclick="markAsPOB({{ $job->id }})" 
+                                    class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                                    id="pob-btn-{{ $job->id }}"
+                                >
+                                    <i class="fas fa-check mr-2"></i>Mark as POB
+                                </button>
+                            @endif
+                            <a href="{{ route('driver.jobs.show', $job) }}" class="block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-center">View Full Details</a>
                         </div>
-                        <a href="{{ route('driver.jobs.show', $job) }}" class="block mt-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">View Full Details</a>
                     </div>
                 </div>
             </div>
@@ -130,3 +157,380 @@
     @endif
 </div>
 @endsection
+
+<script>
+// POB functionality - Global scope
+window.markAsPOB = function(bookingId) {
+    const btn = document.getElementById(`pob-btn-${bookingId}`);
+    if (!btn) {
+        console.error('POB button not found for booking:', bookingId);
+        return;
+    }
+    
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Marking as POB...';
+    
+    fetch('{{ route("driver.jobs.pob", ":bookingId") }}'.replace(':bookingId', bookingId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showNotification('Job marked as POB successfully! You can now complete it.', 'success');
+            
+            // Update the button to "Mark as Completed"
+            const jobCard = btn.closest('.bg-white');
+            if (jobCard) {
+                // Find the button container and update it
+                const buttonContainer = btn.parentElement;
+                buttonContainer.innerHTML = `
+                    <button 
+                        onclick="markAsCompleted(${bookingId})" 
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        id="completed-btn-${bookingId}"
+                    >
+                        <i class="fas fa-flag-checkered mr-2"></i>Mark as Completed
+                    </button>
+                    <a href="{{ route('driver.jobs.show', ':id') }}".replace(':id', bookingId) class="block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-center mt-2">View Full Details</a>
+                `;
+                
+                // Update status indicator
+                const statusDiv = jobCard.querySelector('.bg-orange-100');
+                if (statusDiv) {
+                    statusDiv.className = 'bg-yellow-100 rounded-lg p-4';
+                    statusDiv.innerHTML = `
+                        <i class="fas fa-clipboard-check text-yellow-500 text-2xl mb-2"></i>
+                        <p class="text-sm font-medium text-yellow-800">POB Status</p>
+                        <p class="text-xs text-yellow-600">Ready to complete</p>
+                    `;
+                }
+            }
+            
+            // Update counts in dashboard
+            if (data.counts && window.updateJobCounts) {
+                window.updateJobCounts(data.counts);
+            }
+        } else {
+            showNotification(data.error || 'Failed to mark job as POB', 'error');
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check mr-2"></i>Mark as POB';
+        }
+    })
+    .catch(error => {
+        console.error('POB Error:', error);
+        showNotification('Failed to mark job as POB', 'error');
+        // Reset button
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check mr-2"></i>Mark as POB';
+    });
+};
+
+// Completed functionality - Global scope
+window.markAsCompleted = function(bookingId) {
+    const btn = document.getElementById(`completed-btn-${bookingId}`);
+    if (!btn) {
+        console.error('Completed button not found for booking:', bookingId);
+        return;
+    }
+    
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Completing Job...';
+    
+    fetch('{{ route("driver.jobs.complete", ":bookingId") }}'.replace(':bookingId', bookingId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showNotification('Job completed successfully!', 'success');
+            
+            // Remove the job from the accepted jobs list
+            const jobCard = btn.closest('.bg-white');
+            if (jobCard) {
+                jobCard.style.transition = 'opacity 0.3s';
+                jobCard.style.opacity = '0';
+                setTimeout(() => {
+                    jobCard.remove();
+                    // Check if no more jobs
+                    const jobsList = document.getElementById('accepted-jobs-list');
+                    if (jobsList && jobsList.children.length === 0) {
+                        location.reload(); // Reload to show empty state
+                    }
+                }, 300);
+            }
+            
+            // Update counts in dashboard
+            if (data.counts && window.updateJobCounts) {
+                window.updateJobCounts(data.counts);
+            }
+        } else {
+            showNotification(data.error || 'Failed to complete job', 'error');
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-flag-checkered mr-2"></i>Mark as Completed';
+        }
+    })
+    .catch(error => {
+        console.error('Complete Error:', error);
+        showNotification('Failed to complete job', 'error');
+        // Reset button
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-flag-checkered mr-2"></i>Mark as Completed';
+    });
+};
+</script>
+
+@push('scripts')
+<script>
+// POB functionality
+function markAsPOB(bookingId) {
+    // Call the global function
+    window.markAsPOB(bookingId);
+}
+
+// Completed functionality
+function markAsCompleted(bookingId) {
+    // Call the global function
+    window.markAsCompleted(bookingId);
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' : 
+                type === 'error' ? 'fa-exclamation-circle' : 
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+// SSE for real-time updates
+let eventSource;
+
+function initializeSSE() {
+    if (typeof(EventSource) !== "undefined") {
+        eventSource = new EventSource('{{ route("driver.notifications.stream") }}');
+        
+        eventSource.onopen = function() {
+            console.log('SSE connection opened');
+        };
+        
+        eventSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'booking_updated' && data.action === 'pob') {
+                    showNotification('Job status updated to POB!', 'info');
+                }
+            } catch (e) {
+                console.error('Error parsing SSE data:', e);
+            }
+        };
+        
+        eventSource.onerror = function(event) {
+            console.error('SSE error:', event);
+            // Attempt to reconnect after 5 seconds
+            setTimeout(() => {
+                if (eventSource.readyState === EventSource.CLOSED) {
+                    initializeSSE();
+                }
+            }, 5000);
+        };
+    } else {
+        console.log('Your browser does not support server-sent events.');
+    }
+}
+
+// Global function to update job counts
+window.updateJobCounts = function(counts) {
+    try {
+        const elements = {
+            'new-jobs-count': counts.new,
+            'accepted-jobs-count': counts.accepted,
+            'completed-jobs-count': counts.completed,
+            'declined-jobs-count': counts.declined
+        };
+
+        Object.keys(elements).forEach(id => {
+            const element = document.getElementById(id);
+            if (element && elements[id] !== undefined) {
+                element.textContent = elements[id];
+            }
+        });
+
+        console.log('Job counts updated:', counts);
+    } catch (error) {
+        console.error('Error updating job counts:', error);
+    }
+};\n\n// Initialize SSE when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSSE();
+});
+
+// Cleanup SSE when page unloads
+window.addEventListener('beforeunload', function() {
+    if (eventSource) {
+        eventSource.close();
+    }
+    stopLocationSharing();
+});
+
+// ========================================
+// GPS Location Sharing
+// ========================================
+let locationWatchId = null;
+let locationInterval = null;
+let isLocationSharingEnabled = false;
+
+// Check if driver has active POB jobs and start location sharing
+function checkAndStartLocationSharing() {
+    // Check if there are any jobs with POB status on the page
+    const hasPobJobs = document.querySelector('.bg-yellow-100');
+    
+    if (hasPobJobs && !isLocationSharingEnabled) {
+        startLocationSharing();
+    }
+}
+
+function startLocationSharing() {
+    if (!navigator.geolocation) {
+        console.log('Geolocation not supported by browser');
+        return;
+    }
+
+    if (isLocationSharingEnabled) {
+        console.log('Location sharing already enabled');
+        return;
+    }
+
+    isLocationSharingEnabled = true;
+    console.log('Starting GPS location sharing...');
+
+    // Get initial position
+    navigator.geolocation.getCurrentPosition(
+        sendLocationUpdate,
+        handleLocationError,
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+
+    // Watch for position changes
+    locationWatchId = navigator.geolocation.watchPosition(
+        sendLocationUpdate,
+        handleLocationError,
+        { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+
+    // Also send location every 10 seconds as backup
+    locationInterval = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(
+            sendLocationUpdate,
+            handleLocationError,
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }, 10000);
+}
+
+function stopLocationSharing() {
+    if (locationWatchId !== null) {
+        navigator.geolocation.clearWatch(locationWatchId);
+        locationWatchId = null;
+    }
+    if (locationInterval !== null) {
+        clearInterval(locationInterval);
+        locationInterval = null;
+    }
+    isLocationSharingEnabled = false;
+    console.log('Location sharing stopped');
+}
+
+function sendLocationUpdate(position) {
+    const data = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        heading: position.coords.heading,
+        speed: position.coords.speed
+    };
+
+    fetch('{{ route("driver.location.update") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('Location updated:', data.latitude, data.longitude);
+        }
+    })
+    .catch(error => {
+        console.error('Failed to send location:', error);
+    });
+}
+
+function handleLocationError(error) {
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            console.error('Location permission denied');
+            break;
+        case error.POSITION_UNAVAILABLE:
+            console.error('Location unavailable');
+            break;
+        case error.TIMEOUT:
+            console.error('Location request timeout');
+            break;
+    }
+}
+
+// Initialize location sharing when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Start location sharing for all accepted jobs
+    // This allows admin to track driver even before POB
+    setTimeout(startLocationSharing, 1000);
+});
+
+
+</script>
+@endpush

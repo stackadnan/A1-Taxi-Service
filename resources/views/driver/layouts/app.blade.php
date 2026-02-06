@@ -358,6 +358,115 @@
         // Start SSE connection
         connectNotificationStream();
 
+        // ========================================
+        // GPS Location Sharing (Global for all driver pages)
+        // ========================================
+        (function(){
+            let driverLocationWatchId = null;
+            let driverLocationInterval = null;
+            let driverLocationSharingActive = false;
+
+            function startDriverLocationSharing() {
+                if (!navigator.geolocation) {
+                    console.log('Geolocation not supported by browser');
+                    return;
+                }
+
+                if (driverLocationSharingActive) {
+                    console.log('Driver location sharing already active');
+                    return;
+                }
+
+                driverLocationSharingActive = true;
+                console.log('Starting GPS location sharing...');
+
+                // Get initial position
+                navigator.geolocation.getCurrentPosition(
+                    sendDriverLocationUpdate,
+                    handleDriverLocationError,
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+
+                // Watch for position changes
+                driverLocationWatchId = navigator.geolocation.watchPosition(
+                    sendDriverLocationUpdate,
+                    handleDriverLocationError,
+                    { enableHighAccuracy: true, maximumAge: 5000 }
+                );
+
+                // Also send location every 15 seconds as backup
+                driverLocationInterval = setInterval(() => {
+                    navigator.geolocation.getCurrentPosition(
+                        sendDriverLocationUpdate,
+                        handleDriverLocationError,
+                        { enableHighAccuracy: true, timeout: 10000 }
+                    );
+                }, 15000);
+            }
+
+            function stopDriverLocationSharing() {
+                if (driverLocationWatchId !== null) {
+                    navigator.geolocation.clearWatch(driverLocationWatchId);
+                    driverLocationWatchId = null;
+                }
+                if (driverLocationInterval !== null) {
+                    clearInterval(driverLocationInterval);
+                    driverLocationInterval = null;
+                }
+                driverLocationSharingActive = false;
+                console.log('Driver location sharing stopped');
+            }
+
+            function sendDriverLocationUpdate(position) {
+                const data = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    heading: position.coords.heading,
+                    speed: position.coords.speed
+                };
+
+                fetch('{{ route("driver.location.update") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': window.Laravel.csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        console.log('Driver location updated:', data.latitude.toFixed(4), data.longitude.toFixed(4));
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to send driver location:', error);
+                });
+            }
+
+            function handleDriverLocationError(error) {
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        console.error('Driver location permission denied');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        console.error('Driver location unavailable');
+                        break;
+                    case error.TIMEOUT:
+                        console.error('Driver location request timeout');
+                        break;
+                }
+            }
+
+            // Start location sharing after a short delay to let page load
+            setTimeout(startDriverLocationSharing, 2000);
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', stopDriverLocationSharing);
+        })();
+
         // Cleanup on page unload
         window.addEventListener('beforeunload', function() {
             if (eventSource) eventSource.close();

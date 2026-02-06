@@ -19,6 +19,7 @@ return new class extends Migration
         DB::table('booking_statuses')->insert([
             ['name' => 'new', 'description' => 'New booking', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'confirmed', 'description' => 'Confirmed', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'pob', 'description' => 'Proof of Business', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'in_progress', 'description' => 'In progress', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'completed', 'description' => 'Completed', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'cancelled', 'description' => 'Cancelled', 'created_at' => now(), 'updated_at' => now()],

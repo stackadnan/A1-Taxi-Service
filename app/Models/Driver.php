@@ -52,6 +52,16 @@ class Driver extends Authenticatable
         return $this->hasMany(Booking::class, 'driver_id');
     }
 
+    public function locations()
+    {
+        return $this->hasMany(DriverLocation::class, 'driver_id');
+    }
+
+    public function currentLocation()
+    {
+        return $this->hasOne(DriverLocation::class, 'driver_id')->latest();
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -95,15 +105,32 @@ class Driver extends Authenticatable
     }
 
     /**
-     * Get accepted jobs count
+     * Get accepted jobs count (confirmed status with accepted response, excluding POB)
      */
     public function getAcceptedJobsCount()
     {
         return $this->bookings()
             ->whereHas('status', function($q) {
-                $q->where('name', 'confirmed');
+                $q->whereIn('name', ['confirmed', 'pob']);
             })
-            ->where('meta->driver_response', 'accepted')
+            ->where(function($q) {
+                $q->where('meta->driver_response', 'accepted')
+                  ->orWhereHas('status', function($sq) {
+                      $sq->where('name', 'pob');
+                  });
+            })
+            ->count();
+    }
+
+    /**
+     * Get POB (Proof of Business) jobs count
+     */
+    public function getPobJobsCount()
+    {
+        return $this->bookings()
+            ->whereHas('status', function($q) {
+                $q->where('name', 'pob');
+            })
             ->count();
     }
 
@@ -114,7 +141,7 @@ class Driver extends Authenticatable
     {
         return $this->bookings()
             ->whereHas('status', function($q) {
-                $q->where('name', 'completed');
+                $q->whereIn('name', ['completed', 'pob']);
             })
             ->count();
     }
@@ -131,4 +158,28 @@ class Driver extends Authenticatable
             ->where('meta->driver_response', 'declined')
             ->count();
     }
+
+    /**
+     * If unavailable_to is in the past, reactivate the driver and clear the window
+     * Returns true if driver was reactivated
+     */
+    public function reactivateIfExpired()
+    {
+        try {
+            if ($this->status === 'inactive' && $this->unavailable_to) {
+                $now = now();
+                if (\Carbon\Carbon::parse($this->unavailable_to)->lte($now)) {
+                    $this->status = 'active';
+                    $this->unavailable_from = null;
+                    $this->unavailable_to = null;
+                    $this->save();
+                    return true;
+                }
+            }
+        } catch (\Exception $e) {
+            logger()->warning('Failed to reactivateIfExpired: ' . $e->getMessage(), ['driver_id' => $this->id]);
+        }
+        return false;
+    }
 }
+
