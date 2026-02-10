@@ -118,6 +118,15 @@
       </header>
 
       <main class="p-6">
+        @if(session('success'))
+          <div class="mb-4 p-3 rounded bg-green-50 border border-green-200 text-green-800">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+          <div class="mb-4 p-3 rounded bg-red-50 border border-red-200 text-red-800">{{ session('error') }}</div>
+        @endif
+        @if(session('warning'))
+          <div class="mb-4 p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800">{{ session('warning') }}</div>
+        @endif
         @yield('content')
       </main>
 
@@ -486,7 +495,7 @@
           try { notificationButton.replaceWith(notificationButton.cloneNode(true)); } catch(e) { /* ignore */ }
           notificationButton = document.getElementById('notificationButton');
 
-          // Toggle notification dropdown
+          // Toggle notification dropdown (do NOT auto-open on SSE to avoid noisy UX)
           notificationButton.addEventListener('click', function(e) {
             e.preventDefault();
             notificationDropdown.classList.toggle('hidden');
@@ -494,6 +503,13 @@
               loadNotifications();
             }
           });
+
+          // Disable global toasts for admins (preference: no toasts)
+          try {
+            window.showToast = function(){ /* no-op */ };
+            window.showInlineToast = function(){ /* no-op */ };
+          } catch(e) {}
+
 
           // Close dropdown when clicking outside
           document.addEventListener('click', function(e) {
@@ -687,8 +703,9 @@
 
       // Load notifications from server
       function loadNotifications() {
-        fetch('{{ route("admin.notifications.unread") }}', {
+        fetch('{{ route("admin.notifications.unread") }}' + '?_=' + (new Date()).getTime(), {
           method: 'GET',
+          cache: 'no-store',
           headers: {
             'X-Requested-With': 'XMLHttpRequest',
             'Accept': 'application/json',
@@ -805,8 +822,7 @@
             try { if (typeof runInjectedScripts === 'function') runInjectedScripts(container); } catch(e){ console.error('runInjectedScripts failed', e); }
             try{ if (typeof attachPagination === 'function') attachPagination(container); if (typeof attachBookingViewButtons === 'function') attachBookingViewButtons(container); } catch(e){ console.error('attach handlers failed', e); }
 
-            // small visual cue
-            showInlineToast('Bookings updated', 1500);
+            // small visual cue removed per preference (no toasts)
 
             // Refresh tab badges counts
             try {
@@ -838,6 +854,7 @@
         
         fetch('{{ route("admin.notifications.mark-read") }}', {
           method: 'POST',
+          cache: 'no-store',
           headers: {
             'X-Requested-With': 'XMLHttpRequest',
             'Accept': 'application/json',
@@ -848,15 +865,25 @@
         .then(response => response.json())
         .then(data => {
           if (data.success) {
+            // Update UI immediately
             notificationBadge.classList.add('hidden');
             notificationList.innerHTML = '<div class="p-4 text-center text-gray-500">No new notifications</div>';
-            
+
+            // Also fetch fresh unread notifications to ensure consistency across tabs
+            try { if (typeof loadNotifications === 'function') loadNotifications(); } catch(e){}
+
             // Trigger refresh of the booking list if on dashboard or bookings page
             if (typeof refreshBookingsView === 'function') {
               refreshBookingsView();
             } else if (typeof refreshBookingList === 'function') {
               refreshBookingList();
             }
+
+            // Optionally refresh drivers status too
+            try { if (typeof refreshDrivers === 'function') refreshDrivers(); } catch(e){}
+
+            // Emit a custom event so other open tabs or components can react
+            try { document.dispatchEvent(new CustomEvent('notifications:markedRead', { detail: { userId: {{ json_encode(auth()->id()) }} } })); } catch(e){}
           }
         })
         .catch(error => {
@@ -924,13 +951,13 @@
               processedNotificationIds.add(notification.id);
               console.log('Processing NEW notification:', notification.id);
 
-              // Auto-open notification dropdown so admin sees it (only if UI exists)
+              // Do NOT auto-open the notification dropdown on SSE to prevent disruptive popups. Instead, just update badge and counts silently.
               try {
-                if (notificationDropdown && notificationDropdown.classList && notificationDropdown.classList.contains('hidden')) {
-                  notificationDropdown.classList.remove('hidden');
-                  loadNotifications();
+                if (notificationBadge) {
+                  // fetch unread count to update badge
+                  if (typeof loadNotifications === 'function') loadNotifications();
                 }
-              } catch (err) { console.warn('Failed to auto-open notification dropdown', err); }
+              } catch (err) { console.warn('Admin SSE: failed to refresh notifications silently', err); }
 
               // Do not show inline toast or native browser notification here — notifications are displayed in the dropdown only
               // (Previously: showInlineToast and new Notification were used for immediate feedback)
@@ -944,12 +971,13 @@
 
               // Update badge count (only if badge element exists)
               if (notificationBadge) {
-                fetch('{{ route("admin.notifications.unread") }}', {
+                fetch('{{ route("admin.notifications.unread") }}' + '?_=' + (new Date()).getTime(), {
                   headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                  }
+                  },
+                  cache: 'no-store'
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -965,6 +993,37 @@
               // Call refresh ONCE for this notification
               try {
                 var p = (typeof refreshBookingsView === 'function') ? refreshBookingsView() : ((typeof refreshBookingList === 'function') ? (refreshBookingList(), Promise.resolve()) : Promise.resolve());
+
+                // If notification indicates in-route or driver status change, refresh drivers list/status and bookings where relevant
+                try {
+                  var t = (notification.title || '').toString().toLowerCase();
+                  var m = (notification.message || '').toString().toLowerCase();
+
+                  // In Route -> update drivers
+                  if (t.indexOf('in route') !== -1 || m.indexOf('in route') !== -1 || t.indexOf('driver in route') !== -1) {
+                    if (typeof refreshDrivers === 'function') {
+                      try { refreshDrivers(); } catch(e){ console.warn('refreshDrivers failed', e); }
+                    } else if (document.getElementById('drivers-container')) {
+                      // fallback: fetch drivers partial for status tab
+                      fetch('{{ route("admin.drivers.index") }}?partial=1&tab=status', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                        .then(function(r){ return r.text(); }).then(function(html){ var cont = document.getElementById('drivers-container'); if (cont) { cont.innerHTML = html; try { if (typeof runInjectedScripts === 'function') runInjectedScripts(cont); } catch(e){} } }).catch(function(){ console.warn('Failed to refresh drivers on SSE'); });
+                    }
+                  }
+
+                  // POB or Completed -> refresh bookings and drivers so admin sees status change
+                  if (t.indexOf('pob') !== -1 || m.indexOf('pob') !== -1 || t.indexOf('marked as pob') !== -1 || t.indexOf('job completed') !== -1 || m.indexOf('job completed') !== -1 || t.indexOf('completed') !== -1) {
+                    try {
+                      // Refresh bookings pane to show updated status immediately
+                      if (typeof refreshBookingsView === 'function') try { refreshBookingsView(); } catch(e){ console.warn('refreshBookingsView failed', e); }
+
+                      // Also refresh drivers list/status for good measure
+                      if (typeof refreshDrivers === 'function') try { refreshDrivers(); } catch(e){ console.warn('refreshDrivers failed', e); }
+
+                      // Inline toast removed per preference; admin UI will refresh silently to reflect updates
+                    } catch (e) { console.warn('Admin SSE: bookings/drivers refresh for status change failed', e); }
+                  }
+                } catch(e){ console.warn('Admin SSE: driver refresh check failed', e); }
+
                 Promise.resolve(p).finally(function(){ 
                   __adminIsRefreshing = false; 
                   console.log('Admin refresh completed for notification:', notification.id);

@@ -22,6 +22,12 @@ class SendDriverNotificationOnBookingUpdate
             return;
         }
 
+        // If driver assignment changed, skip generic update notifications (assignment is handled separately)
+        if (isset($changes['driver_changed']) && $changes['driver_changed']) {
+            \Log::info('SendDriverNotificationOnBookingUpdate: skipping notifications due to driver_changed flag', ['driver_id' => $booking->driver_id, 'booking_id' => $booking->id]);
+            return;
+        }
+
         // Handle completed status change specifically
         if (isset($changes['action']) && $changes['action'] === 'completed') {
             $title = 'Job Status Updated';

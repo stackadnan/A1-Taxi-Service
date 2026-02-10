@@ -24,12 +24,47 @@ class DriverDashboardController extends Controller
         $completedJobsCount = $driver->getCompletedJobsCount();
         $declinedJobsCount = $driver->getDeclinedJobsCount();
 
+        // Count expired and expiring documents for this driver (15-day window)
+        $documentIssues = []; // will contain both 'expired' and 'expiring' items
+        $expiredDocs = [];
+        $expiringDocs = [];
+        $docs = [
+            'driving_license_expiry' => 'Driving License',
+            'private_hire_drivers_license_expiry' => 'Private Hire Drivers License',
+            'private_hire_vehicle_insurance_expiry' => 'Private Hire Vehicle Insurance',
+            'private_hire_vehicle_license_expiry' => 'Private Hire Vehicle License',
+            'private_hire_vehicle_mot_expiry' => 'Private Hire Vehicle MOT',
+        ];
+
+        $today = \Carbon\Carbon::today();
+        $cutoff = $today->copy()->addDays(15);
+
+        foreach ($docs as $field => $label) {
+            if ($driver->{$field}) {
+                try {
+                    $expiry = \Carbon\Carbon::parse($driver->{$field});
+                    if ($expiry->lt($today)) {
+                        $expiredDocs[] = ['field' => $field, 'label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expired'];
+                        $documentIssues[] = ['field' => $field, 'label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expired'];
+                    } elseif ($expiry->between($today, $cutoff)) {
+                        $expiringDocs[] = ['field' => $field, 'label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expiring'];
+                        $documentIssues[] = ['field' => $field, 'label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expiring'];
+                    }
+                } catch (\Exception $e) { /* ignore parse errors */ }
+            }
+        }
+
+        // Show combined count on the dashboard (expired + expiring)
+        $expiredDocsCount = count($documentIssues);
+        $expiringDocsCount = count($expiringDocs);
+
         return view('driver.dashboard', compact(
             'driver',
             'newJobsCount',
             'acceptedJobsCount',
             'completedJobsCount',
-            'declinedJobsCount'
+            'declinedJobsCount',
+            'expiredDocsCount'
         ));
     }
 
@@ -139,6 +174,105 @@ class DriverDashboardController extends Controller
             ->paginate(10);
 
         return view('driver.jobs.declined', compact('jobs', 'driver'));
+    }
+
+    /**
+     * Show driver's expired documents (self-service view)
+     */
+    public function expiredDocuments()
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) abort(403);
+
+        $documentIssues = [];
+        $expiredDocs = [];
+        $expiringDocs = [];
+        $docs = [
+            'driving_license_expiry' => 'Driving License',
+            'private_hire_drivers_license_expiry' => 'Private Hire Drivers License',
+            'private_hire_vehicle_insurance_expiry' => 'Private Hire Vehicle Insurance',
+            'private_hire_vehicle_license_expiry' => 'Private Hire Vehicle License',
+            'private_hire_vehicle_mot_expiry' => 'Private Hire Vehicle MOT',
+        ];
+
+        $today = \Carbon\Carbon::today();
+        $cutoff = $today->copy()->addDays(15);
+
+        foreach ($docs as $field => $label) {
+            if ($driver->{$field}) {
+                try {
+                    $expiry = \Carbon\Carbon::parse($driver->{$field});
+                    if ($expiry->lt($today)) {
+                        $expiredDocs[] = ['field' => $field, 'label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expired'];
+                        $documentIssues[] = ['field' => $field, 'label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expired'];
+                    } elseif ($expiry->between($today, $cutoff)) {
+                        $expiringDocs[] = ['field' => $field, 'label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expiring'];
+                        $documentIssues[] = ['field' => $field, 'label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expiring'];
+                    }
+                } catch (\Exception $e) { }
+            }
+        }
+
+        return view('driver.documents.expired', compact('driver', 'documentIssues', 'expiredDocs', 'expiringDocs'));
+    }
+
+    /**
+     * Show profile edit form for driver (self-service)
+     */
+    public function editProfile()
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) abort(403);
+        return view('driver.profile.edit', compact('driver'));
+    }
+
+    /**
+     * Update driver profile (self-service)
+     */
+    public function updateProfile(Request $request)
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) return redirect()->route('driver.dashboard')->with('error', 'Not authenticated');
+
+        $data = $request->validate([
+            'driving_license' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'driving_license_expiry' => 'nullable|date',
+            'private_hire_drivers_license' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'private_hire_drivers_license_expiry' => 'nullable|date',
+            'private_hire_vehicle_insurance' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'private_hire_vehicle_insurance_expiry' => 'nullable|date',
+            'private_hire_vehicle_license' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'private_hire_vehicle_license_expiry' => 'nullable|date',
+            'private_hire_vehicle_mot' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'private_hire_vehicle_mot_expiry' => 'nullable|date',
+            'name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255'
+        ]);
+
+        try {
+            // files
+            $docs = ['driving_license', 'private_hire_drivers_license', 'private_hire_vehicle_insurance', 'private_hire_vehicle_license', 'private_hire_vehicle_mot'];
+            foreach ($docs as $doc) {
+                if ($request->hasFile($doc)) {
+                    if ($driver->$doc && \Storage::disk('public')->exists($driver->$doc)) {
+                        \Storage::disk('public')->delete($driver->$doc);
+                    }
+                    $driver->$doc = $request->file($doc)->store('drivers/documents', 'public');
+                }
+            }
+
+            // expiries and basic fields
+            $fields = ['driving_license_expiry','private_hire_drivers_license_expiry','private_hire_vehicle_insurance_expiry','private_hire_vehicle_license_expiry','private_hire_vehicle_mot_expiry','name','phone','email'];
+            foreach ($fields as $f) { if (array_key_exists($f, $data)) $driver->$f = $data[$f]; }
+
+            $driver->save();
+
+            return redirect()->route('driver.documents.expired')->with('success', 'Profile updated');
+        } catch (\Exception $e) {
+            logger()->error('Failed to update driver profile: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to update profile');
+        }
     }
 
     /**
@@ -353,8 +487,110 @@ class DriverDashboardController extends Controller
     }
 
     /**
+     * Mark a job as In Route (driver is traveling to pickup location)
+     */
+    public function markAsInRoute(Request $request, Booking $booking)
+    {
+        try {
+            $driver = Auth::guard('driver')->user();
+            
+            \Log::info('Driver marking job as In Route', [
+                'driver_id' => $driver->id,
+                'booking_id' => $booking->id,
+                'booking_driver_id' => $booking->driver_id
+            ]);
+            
+            if (!$driver) {
+                return response()->json(['error' => 'Driver not authenticated'], 401);
+            }
+            
+            if ($booking->driver_id !== $driver->id) {
+                \Log::warning('Unauthorized In Route attempt', [
+                    'driver_id' => $driver->id,
+                    'booking_id' => $booking->id,
+                    'booking_driver_id' => $booking->driver_id
+                ]);
+                return response()->json(['error' => 'Unauthorized - This job is not assigned to you'], 403);
+            }
+
+            // Check if job is currently confirmed and accepted
+            $statusName = optional($booking->status)->name;
+            $driverResponse = $booking->meta['driver_response'] ?? null;
+            
+            if ($statusName !== 'confirmed' || $driverResponse !== 'accepted') {
+                return response()->json(['error' => 'Job must be confirmed and accepted before marking as In Route'], 400);
+            }
+
+            // Validate booking is scheduled for today
+            if ($booking->scheduled_at) {
+                $scheduledDate = \Carbon\Carbon::parse($booking->scheduled_at);
+                if (!$scheduledDate->isToday()) {
+                    $formattedDate = $scheduledDate->format('D, M j, Y \a\t g:i A');
+                    return response()->json([
+                        'error' => 'Cannot mark as In Route yet. Pickup is scheduled for ' . $formattedDate
+                    ], 400);
+                }
+            }
+
+            // Check if already in route
+            $meta = $booking->meta ?? [];
+            if (isset($meta['in_route']) && $meta['in_route'] === true) {
+                return response()->json(['error' => 'Job is already marked as In Route'], 400);
+            }
+
+            // Update booking meta to mark as in_route
+            $meta['in_route'] = true;
+            $meta['in_route_at'] = now()->toDateTimeString();
+            $meta['in_route_by_driver_id'] = $driver->id;
+            $meta['status_changed_at'] = now()->toDateTimeString();
+            
+            $booking->meta = $meta;
+            $booking->save();
+            
+            // Fire event for notifications and SSE
+            event(new \App\Events\DriverResponseUpdated($booking, $driver, 'in_route'));
+
+            // Also create an explicit admin notification as a fallback to ensure admins see the In Route update immediately
+            try {
+                $title = 'Driver In Route';
+                $message = sprintf('Driver %s is In Route for job #%s (to pickup at %s)', $driver->name, $booking->booking_code ?? $booking->id, $booking->pickup_address);
+                \App\Models\UserNotification::createForAdmins($title, $message);
+                \Log::info('DriverDashboardController: created admin notification for In Route', ['driver_id' => $driver->id, 'booking_id' => $booking->id]);
+            } catch (\Exception $e) {
+                \Log::warning('Failed to create admin notification for In Route: ' . $e->getMessage());
+            }
+            
+            \Log::info('Job marked as In Route successfully', [
+                'driver_id' => $driver->id,
+                'booking_id' => $booking->id
+            ]);
+    
+            // Return updated counts
+            $counts = [
+                'new' => $driver->getNewJobsCount(),
+                'accepted' => $driver->getAcceptedJobsCount(),
+                'completed' => $driver->getCompletedJobsCount(),
+                'declined' => $driver->getDeclinedJobsCount(),
+            ];
+    
+            return response()->json([
+                'success' => true, 
+                'message' => 'Marked as In Route. Admin can now track your journey to pickup.',
+                'counts' => $counts
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error marking job as In Route', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Failed to mark job as In Route: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Mark a job as Proof of Business (POB)
      */
+
     public function markAsProofOfBusiness(Request $request, Booking $booking)
     {
         try {
@@ -399,6 +635,12 @@ class DriverDashboardController extends Controller
             $meta['pob_marked_by_driver_id'] = $driver->id;
             $meta['status_changed_at'] = now()->toDateTimeString();
             
+            // Clear in_route flag since driver has now picked up passenger
+            if (isset($meta['in_route'])) {
+                $meta['in_route'] = false;
+                $meta['in_route_completed_at'] = now()->toDateTimeString();
+            }
+
             $booking->status_id = $pobStatus->id;
             $booking->meta = $meta;
             $booking->save();

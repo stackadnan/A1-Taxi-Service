@@ -18,18 +18,20 @@ class SendAdminNotificationOnDriverResponse
         $driver = $event->driver;
         $response = $event->response;
 
-        $title = $response === 'accepted' 
-            ? 'Driver Accepted Job' 
-            : 'Driver Rejected Job';
-
-        $message = sprintf(
-            'Driver %s has %s job #%s from %s to %s',
-            $driver->name,
-            $response === 'accepted' ? 'accepted' : 'rejected',
-            $booking->booking_code ?? $booking->id,
-            $booking->pickup_address,
-            $booking->dropoff_address
-        );
+        // Determine title and message depending on response type
+        if ($response === 'accepted') {
+            $title = 'Driver Accepted Job';
+            $message = sprintf('Driver %s has accepted job #%s from %s to %s', $driver->name, $booking->booking_code ?? $booking->id, $booking->pickup_address, $booking->dropoff_address);
+        } elseif ($response === 'in_route') {
+            $title = 'Driver In Route';
+            $message = sprintf('Driver %s is In Route for job #%s (to pickup at %s)', $driver->name, $booking->booking_code ?? $booking->id, $booking->pickup_address);
+        } elseif ($response === 'declined' || $response === 'rejected') {
+            $title = 'Driver Rejected Job';
+            $message = sprintf('Driver %s has rejected job #%s from %s to %s', $driver->name, $booking->booking_code ?? $booking->id, $booking->pickup_address, $booking->dropoff_address);
+        } else {
+            $title = 'Driver Response';
+            $message = sprintf('Driver %s updated response for job #%s', $driver->name, $booking->booking_code ?? $booking->id);
+        }
 
         // Log intention to create admin notifications
         \Log::info('SendAdminNotificationOnDriverResponse: creating notifications', [

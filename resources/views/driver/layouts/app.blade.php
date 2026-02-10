@@ -287,10 +287,17 @@
                         if (json && json.success && json.counts) {
                             updateCounts(json.counts);
 
-                            // If on accepted jobs page, refresh the list
+                            // Refresh the active jobs list depending on current page
                             if (window.location.pathname.indexOf('/driver/jobs/accepted') !== -1) {
                                 refreshAcceptedJobsList();
                             }
+                            if (window.location.pathname.indexOf('/driver/jobs/new') !== -1) {
+                                // If the driver is on the New Jobs page, refresh it so assigned/unassigned jobs are removed immediately
+                                refreshNewJobsList();
+                            }
+
+                            // Also refresh accepted list if a new job was accepted for robustness
+                            try { if (typeof refreshAcceptedJobsList === 'function') refreshAcceptedJobsList(); } catch(e) {}
                         }
                     }).catch(err => { console.error('Failed to refresh driver counts', err); })
                     .finally(function(){ 
@@ -353,6 +360,35 @@
                     }
                 })
                 .catch(err => { console.error('Failed to refresh accepted jobs list', err); });
+        }
+
+        function refreshNewJobsList() {
+            fetch(window.Laravel.driverNewJobsUrl, { headers: { 'Accept': 'text/html' } })
+                .then(r => r.text())
+                .then(html => {
+                    try {
+                        if (/<!doctype|<html|<body/i.test(html)) {
+                            console.warn('refreshNewJobsList: full page HTML detected, reloading');
+                            window.location.reload();
+                            return;
+                        }
+
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newContainer = doc.getElementById('jobs-list-container');
+                        if (newContainer) {
+                            const old = document.getElementById('jobs-list-container');
+                            if (old) old.innerHTML = newContainer.innerHTML;
+                        } else {
+                            // fallback: try replacing the whole page
+                            setTimeout(function(){ location.reload(); }, 300);
+                        }
+                    } catch (err) {
+                        console.error('Failed to parse/replace new jobs list - reloading', err);
+                        window.location.reload();
+                    }
+                })
+                .catch(err => { console.error('Failed to refresh new jobs list', err); });
         }
 
         // Start SSE connection

@@ -57,6 +57,20 @@
                 </div>
             </div>
         </a>
+
+        <!-- Expired / Expiring Documents Card -->
+        <a href="{{ route('driver.documents.expired') }}" class="block">
+            <div class="stat-card expired-docs rounded-lg p-6 text-center job-card">
+                <div class="flex flex-col items-center justify-center h-full">
+                    <i class="fas fa-file-alt text-3xl mb-3 opacity-90"></i>
+                    <h3 class="text-lg font-semibold mb-2">Expired / Expiring Documents</h3>
+                    <p id="expired-docs-count" class="text-3xl font-bold">{{ $expiredDocsCount ?? 0 }}</p>
+                    @if(isset($expiringDocsCount) && $expiringDocsCount > 0)
+                        <p class="mt-1 text-xs text-yellow-600">{{ $expiringDocsCount }} expiring soon</p>
+                    @endif
+                </div>
+            </div>
+        </a>
     </div>
 
     <!-- Quick Actions -->

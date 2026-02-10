@@ -18,6 +18,16 @@ Route::get('/', function() {
 // Provide a global 'login' route so Laravel helpers that expect route('login') work.
 Route::get('login', function(){ return redirect('/'); })->name('login');
 
+// Handle GET /logout — if someone lands here (e.g. after idle timeout or direct URL), just redirect to login
+Route::get('logout', function(){
+    if (auth()->check()) {
+        auth()->logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+    }
+    return redirect('/');
+});
+
 // Admin auth & dashboard
 Route::name('admin.')->group(function () {
     Route::middleware('guest')->group(function () {
@@ -43,6 +53,10 @@ Route::name('admin.')->group(function () {
         // Driver tracking routes (must be before general {driver} routes)
         Route::get('drivers/{driver}/track/{booking}', [\App\Http\Controllers\Admin\DriverController::class, 'track'])->name('drivers.track')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::get('drivers/{driver}/location/{bookingId}', [\App\Http\Controllers\Admin\DriverController::class, 'getLocation'])->name('drivers.location')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        // AJAX helper to check availability and documents
+        Route::get('drivers/{driver}/check-availability', [\App\Http\Controllers\Admin\DriverController::class, 'checkAvailability'])->name('drivers.check_availability')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        // Support older client URL that uses '/admin/drivers' base in JS
+        Route::get('admin/drivers/{driver}/check-availability', [\App\Http\Controllers\Admin\DriverController::class, 'checkAvailability'])->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::get('drivers/{driver}', [\App\Http\Controllers\Admin\DriverController::class, 'show'])->name('drivers.show')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::get('drivers/{driver}/edit', [\App\Http\Controllers\Admin\DriverController::class, 'edit'])->name('drivers.edit')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.edit');
         Route::put('drivers/{driver}', [\App\Http\Controllers\Admin\DriverController::class, 'update'])->name('drivers.update')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.edit');
@@ -145,6 +159,23 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::post('login', [DriverAuthController::class, 'login'])->name('login.post');
     });
 
+    // Driver self-service pages
+    Route::middleware('driver.auth')->group(function(){
+        Route::get('documents/expired', [\App\Http\Controllers\Driver\DriverDashboardController::class, 'expiredDocuments'])->name('documents.expired');
+        Route::get('profile/edit', [\App\Http\Controllers\Driver\DriverDashboardController::class, 'editProfile'])->name('profile.edit');
+        Route::put('profile', [\App\Http\Controllers\Driver\DriverDashboardController::class, 'updateProfile'])->name('profile.update');
+    });
+
+    // Handle GET /driver/logout — redirect to driver login
+    Route::get('logout', function(){
+        if (\Illuminate\Support\Facades\Auth::guard('driver')->check()) {
+            \Illuminate\Support\Facades\Auth::guard('driver')->logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+        }
+        return redirect()->route('driver.login');
+    });
+
     Route::middleware('driver.auth')->group(function () {
         Route::post('logout', [DriverAuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [DriverDashboardController::class, 'index'])->name('dashboard');
@@ -167,9 +198,11 @@ Route::prefix('driver')->name('driver.')->group(function () {
         // Job actions
         Route::post('jobs/{booking}/accept', [DriverDashboardController::class, 'acceptJob'])->name('jobs.accept');
         Route::post('jobs/{booking}/decline', [DriverDashboardController::class, 'declineJob'])->name('jobs.decline');
+        Route::post('jobs/{booking}/inroute', [DriverDashboardController::class, 'markAsInRoute'])->name('jobs.inroute');
         Route::post('jobs/{booking}/pob', [DriverDashboardController::class, 'markAsProofOfBusiness'])->name('jobs.pob');
         Route::post('jobs/{booking}/complete', [DriverDashboardController::class, 'markAsCompleted'])->name('jobs.complete');
         Route::post('jobs/{booking}/complete', [DriverDashboardController::class, 'markAsCompleted'])->name('jobs.complete');
+
 
         // Availability
         Route::post('availability', [DriverDashboardController::class, 'updateAvailability'])->name('availability.update');
