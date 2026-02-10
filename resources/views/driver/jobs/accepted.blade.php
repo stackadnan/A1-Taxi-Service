@@ -41,7 +41,7 @@
                                 <span class="font-medium">From:</span>
                                 <span class="ml-2 text-gray-700">
                                   @if($job->pickup_address)
-                                    <a href="#" class="js-open-directions inline-flex items-center gap-1 text-indigo-600 hover:underline" data-destination="{{ $job->pickup_address }}" data-role="pickup" title="Open in Maps" aria-label="Open directions to pickup location">{{ $job->pickup_address }}
+                                    <a href="javascript:void(0);" class="js-open-directions inline-flex items-center gap-1 text-indigo-600 hover:underline" data-destination="{{ $job->pickup_address }}" data-role="pickup" title="Open in Maps" aria-label="Open directions to pickup location">{{ $job->pickup_address }}
                                       <svg class="ml-1 w-4 h-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1112 6.5 2.5 2.5 0 0112 11.5z"/></svg>
                                     </a>
                                   @else
@@ -54,7 +54,7 @@
                                 <span class="font-medium">To:</span>
                                 <span class="ml-2 text-gray-700">
                                   @if($job->dropoff_address)
-                                    <a href="#" class="js-open-directions inline-flex items-center gap-1 text-indigo-600 hover:underline" data-destination="{{ $job->dropoff_address }}" data-role="dropoff" title="Open in Maps" aria-label="Open directions to dropoff location">{{ $job->dropoff_address }}
+                                    <a href="javascript:void(0);" class="js-open-directions inline-flex items-center gap-1 text-indigo-600 hover:underline" data-destination="{{ $job->dropoff_address }}" data-role="dropoff" title="Open in Maps" aria-label="Open directions to dropoff location">{{ $job->dropoff_address }}
                                       <svg class="ml-1 w-4 h-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1112 6.5 2.5 2.5 0 0112 11.5z"/></svg>
                                     </a>
                                   @else
@@ -127,7 +127,8 @@
                             @if($job->status && $job->status->name === 'pob')
                                 {{-- POB status: Show Complete button --}}
                                 <button 
-                                    onclick="markAsCompleted({{ $job->id }})" 
+                                    type="button"
+                                    onclick="event.preventDefault(); markAsCompleted({{ $job->id }});" 
                                     class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                                     id="completed-btn-{{ $job->id }}"
                                 >
@@ -136,7 +137,8 @@
                             @elseif(isset($job->meta['in_route']) && $job->meta['in_route'] === true)
                                 {{-- In Route status: Show POB button --}}
                                 <button 
-                                    onclick="markAsPOB({{ $job->id }})" 
+                                    type="button"
+                                    onclick="event.preventDefault(); markAsPOB({{ $job->id }});" 
                                     class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                                     id="pob-btn-{{ $job->id }}"
                                 >
@@ -161,7 +163,8 @@
                                 @if($isToday)
                                     {{-- Booking is today: Enable button --}}
                                     <button 
-                                        onclick="markAsInRoute({{ $job->id }})" 
+                                        type="button"
+                                        onclick="event.preventDefault(); markAsInRoute({{ $job->id }});" 
                                         class="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
                                         id="inroute-btn-{{ $job->id }}"
                                     >
@@ -257,7 +260,8 @@ window.markAsInRoute = function(bookingId) {
                 const buttonContainer = btn.parentElement;
                 buttonContainer.innerHTML = `
                     <button 
-                        onclick="markAsPOB(${bookingId})" 
+                        type="button"
+                        onclick="event.preventDefault(); markAsPOB(${bookingId});" 
                         class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                         id="pob-btn-${bookingId}"
                     >
@@ -320,7 +324,8 @@ window.markAsPOB = function(bookingId) {
                 const buttonContainer = btn.parentElement;
                 buttonContainer.innerHTML = `
                     <button 
-                        onclick="markAsCompleted(${bookingId})" 
+                        type="button"
+                        onclick="event.preventDefault(); markAsCompleted(${bookingId});" 
                         class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                         id="completed-btn-${bookingId}"
                     >
@@ -397,7 +402,14 @@ window.markAsCompleted = function(bookingId) {
                     // Check if no more jobs
                     const jobsList = document.getElementById('accepted-jobs-list');
                     if (jobsList && jobsList.children.length === 0) {
-                        location.reload(); // Reload to show empty state
+                        // Replace list with empty state (no full reload)
+                        jobsList.innerHTML = `
+                            <div class="bg-white rounded-lg shadow p-12 text-center">
+                                <i class="fas fa-clipboard-check text-gray-400 text-6xl mb-4"></i>
+                                <h3 class="text-xl font-semibold text-gray-900 mb-2">No Accepted Jobs</h3>
+                                <p class="text-gray-600">You don't have any accepted jobs at the moment.</p>
+                            </div>
+                        `;
                     }
                 }, 300);
             }
@@ -425,18 +437,6 @@ window.markAsCompleted = function(bookingId) {
 
 @push('scripts')
 <script>
-// POB functionality
-function markAsPOB(bookingId) {
-    // Call the global function
-    window.markAsPOB(bookingId);
-}
-
-// Completed functionality
-function markAsCompleted(bookingId) {
-    // Call the global function
-    window.markAsCompleted(bookingId);
-}
-
 // Notification system
 function showNotification(message, type = 'info') {
     // Create notification element
@@ -454,7 +454,7 @@ function showNotification(message, type = 'info') {
                 'fa-info-circle'
             } mr-2"></i>
             <span>${message}</span>
-            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+            <button onclick="event.preventDefault(); this.parentElement.parentElement.remove();" class="ml-4 text-white hover:text-gray-200">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -531,6 +531,20 @@ window.updateJobCounts = function(counts) {
 };\n\n// Initialize SSE when page loads
 document.addEventListener('DOMContentLoaded', function() {
     initializeSSE();
+    
+    // Handle direction links
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('.js-open-directions') || e.target.closest('.js-open-directions')) {
+            e.preventDefault();
+            const link = e.target.matches('.js-open-directions') ? e.target : e.target.closest('.js-open-directions');
+            const destination = link.dataset.destination;
+            if (destination) {
+                // Open in default maps app
+                const url = `https://www.google.com/maps/search/${encodeURIComponent(destination)}`;
+                window.open(url, '_blank');
+            }
+        }
+    });
 });
 
 // Cleanup SSE when page unloads
