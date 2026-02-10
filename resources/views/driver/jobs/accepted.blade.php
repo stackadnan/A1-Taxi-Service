@@ -102,20 +102,30 @@
                     <!-- Status Info -->
                     <div class="text-center md:ml-6 space-y-2">
                         @if($job->status && $job->status->name === 'pob')
+                            {{-- POB Status: Show yellow indicator and Complete button --}}
                             <div class="bg-yellow-100 rounded-lg p-4">
                                 <i class="fas fa-clipboard-check text-yellow-500 text-2xl mb-2"></i>
                                 <p class="text-sm font-medium text-yellow-800">POB Status</p>
                                 <p class="text-xs text-yellow-600">Ready to complete</p>
                             </div>
+                        @elseif(isset($job->meta['in_route']) && $job->meta['in_route'] === true)
+                            {{-- In Route Status: Show purple indicator and POB button --}}
+                            <div class="bg-purple-100 rounded-lg p-4">
+                                <i class="fas fa-route text-purple-500 text-2xl mb-2"></i>
+                                <p class="text-sm font-medium text-purple-800">In Route</p>
+                                <p class="text-xs text-purple-600">Heading to pickup</p>
+                            </div>
                         @else
+                            {{-- Accepted Status: Show orange indicator and In Route button --}}
                             <div class="bg-orange-100 rounded-lg p-4">
                                 <i class="fas fa-hourglass-half text-orange-500 text-2xl mb-2"></i>
-                                <p class="text-sm font-medium text-orange-800">In Progress</p>
-                                <p class="text-xs text-orange-600">Mark as POB first</p>
+                                <p class="text-sm font-medium text-orange-800">Accepted</p>
+                                <p class="text-xs text-orange-600">Ready to start</p>
                             </div>
                         @endif
                         <div class="space-y-2">
                             @if($job->status && $job->status->name === 'pob')
+                                {{-- POB status: Show Complete button --}}
                                 <button 
                                     onclick="markAsCompleted({{ $job->id }})" 
                                     class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -123,7 +133,8 @@
                                 >
                                     <i class="fas fa-flag-checkered mr-2"></i>Mark as Completed
                                 </button>
-                            @else
+                            @elseif(isset($job->meta['in_route']) && $job->meta['in_route'] === true)
+                                {{-- In Route status: Show POB button --}}
                                 <button 
                                     onclick="markAsPOB({{ $job->id }})" 
                                     class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
@@ -131,6 +142,49 @@
                                 >
                                     <i class="fas fa-check mr-2"></i>Mark as POB
                                 </button>
+                            @else
+                                {{-- Accepted status: Show In Route button --}}
+                                @php
+                                    // Check if booking is scheduled for today
+                                    // Use pickup_date + pickup_time if available, otherwise scheduled_at
+                                    $scheduledDate = null;
+                                    if ($job->pickup_date && $job->pickup_time) {
+                                        $scheduledDate = \Carbon\Carbon::parse($job->pickup_date->format('Y-m-d') . ' ' . $job->pickup_time);
+                                    } elseif ($job->scheduled_at) {
+                                        $scheduledDate = \Carbon\Carbon::parse($job->scheduled_at);
+                                    }
+                                    
+                                    $isToday = $scheduledDate ? $scheduledDate->isToday() : false;
+                                    $scheduledDateFormatted = $scheduledDate ? $scheduledDate->format('D, M j, Y \a\t g:i A') : 'Not scheduled';
+                                @endphp
+                                
+                                @if($isToday)
+                                    {{-- Booking is today: Enable button --}}
+                                    <button 
+                                        onclick="markAsInRoute({{ $job->id }})" 
+                                        class="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                                        id="inroute-btn-{{ $job->id }}"
+                                    >
+                                        <i class="fas fa-car mr-2"></i>Mark as In Route
+                                    </button>
+                                @else
+                                    {{-- Booking is not today: Disable button and show date --}}
+                                    <div class="space-y-2">
+                                        <button 
+                                            class="w-full px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed opacity-60"
+                                            disabled
+                                            title="Available on pickup day"
+                                        >
+                                            <i class="fas fa-car mr-2"></i>Mark as In Route
+                                        </button>
+                                        <div class="bg-blue-50 border border-blue-200 rounded p-2 text-xs">
+                                            <i class="fas fa-calendar-alt text-blue-600 mr-1"></i>
+                                            <span class="text-blue-800 font-medium">Pickup scheduled:</span>
+                                            <br>
+                                            <span class="text-blue-700">{{ $scheduledDateFormatted }}</span>
+                                        </div>
+                                    </div>
+                                @endif
                             @endif
                             <a href="{{ route('driver.jobs.show', $job) }}" class="block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-center">View Full Details</a>
                         </div>
@@ -159,6 +213,80 @@
 @endsection
 
 <script>
+// In Route functionality - Global scope
+window.markAsInRoute = function(bookingId) {
+    const btn = document.getElementById(`inroute-btn-${bookingId}`);
+    if (!btn) {
+        console.error('In Route button not found for booking:', bookingId);
+        return;
+    }
+    
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Marking as In Route...';
+    
+    fetch('{{ route("driver.jobs.inroute", ":bookingId") }}'.replace(':bookingId', bookingId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showNotification('Marked as In Route! Admin can now track your journey to pickup.', 'success');
+            
+            // Update the UI to show In Route status
+            const jobCard = btn.closest('.bg-white');
+            if (jobCard) {
+                // Update status indicator
+                const statusDiv = jobCard.querySelector('.bg-orange-100');
+                if (statusDiv) {
+                    statusDiv.className = 'bg-purple-100 rounded-lg p-4';
+                    statusDiv.innerHTML = `
+                        <i class="fas fa-route text-purple-500 text-2xl mb-2"></i>
+                        <p class="text-sm font-medium text-purple-800">In Route</p>
+                        <p class="text-xs text-purple-600">Heading to pickup</p>
+                    `;
+                }
+                
+                // Update button to POB
+                const buttonContainer = btn.parentElement;
+                buttonContainer.innerHTML = `
+                    <button 
+                        onclick="markAsPOB(${bookingId})" 
+                        class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        id="pob-btn-${bookingId}"
+                    >
+                        <i class="fas fa-check mr-2"></i>Mark as POB
+                    </button>
+                    <a href="{{ route('driver.jobs.show', ':id') }}".replace(':id', bookingId) class="block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-center mt-2">View Full Details</a>
+                `;
+            }
+            
+            // Update counts in dashboard
+            if (data.counts && window.updateJobCounts) {
+                window.updateJobCounts(data.counts);
+            }
+        } else {
+            showNotification(data.error || 'Failed to mark as In Route', 'error');
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-car mr-2"></i>Mark as In Route';
+        }
+    })
+    .catch(error => {
+        console.error('In Route Error:', error);
+        showNotification('Failed to mark as In Route', 'error');
+        // Reset button
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-car mr-2"></i>Mark as In Route';
+    });
+};
+
 // POB functionality - Global scope
 window.markAsPOB = function(bookingId) {
     const btn = document.getElementById(`pob-btn-${bookingId}`);

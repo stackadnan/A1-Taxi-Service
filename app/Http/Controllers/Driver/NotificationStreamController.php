@@ -51,7 +51,7 @@ class NotificationStreamController extends Controller
                         flush();
                         $lastId = $notification->id;
 
-                        // Mark as delivered so this won't be re-sent
+                        // Mark as delivered so this won't be re-sent on subsequent SSE loops or reconnects
                         try {
                             $notification->is_read = true;
                             $notification->read_at = now();

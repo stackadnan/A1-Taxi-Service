@@ -52,7 +52,7 @@ class DriverController extends Controller
                   });
             });
         } elseif ($tab === 'documents') {
-            $soon = \Carbon\Carbon::today()->addDays(30)->toDateString();
+            $soon = \Carbon\Carbon::today()->addDays(15)->toDateString();
             $query->where(function($qdoc) use ($soon){
                 $qdoc->whereNotNull('driving_license_expiry')->where('driving_license_expiry', '<=', $soon)
                      ->orWhere(function($q2) use ($soon){ $q2->whereNotNull('private_hire_drivers_license_expiry')->where('private_hire_drivers_license_expiry', '<=', $soon); })
@@ -81,7 +81,7 @@ class DriverController extends Controller
                     $expiry = $drv->{$expiryField} ?? null;
                     if ($expiry) {
                         $expiryDate = \Carbon\Carbon::parse($expiry);
-                        if ($expiryDate->lte($today->copy()->addDays(30))) {
+                        if ($expiryDate->lte($today->copy()->addDays(15))) {
                             $docs[] = ['field' => $field, 'label' => $label, 'expiry' => $expiryDate, 'status' => $expiryDate->lt($today) ? 'expired' : 'expiring'];
                         }
                     }
@@ -108,30 +108,76 @@ class DriverController extends Controller
                 $drv->current_booking = $currentBooking;
 
                 if ($currentBooking) {
+                    $meta = $currentBooking->meta ?? [];
+                    $isInRoute = isset($meta['in_route']) && $meta['in_route'] === true;
                     $statusKey = $currentBooking->status->name ?? 'in_progress';
-                    $labelMap = [
-                        'in_progress' => ['On Route', 'green'],
-                        'confirmed' => ['Confirmed', 'yellow'],
-                        'pob' => ['POB', 'orange'],
-                        'new' => ['New', 'gray'],
-                    ];
-                    $label = $labelMap[$statusKey][0] ?? ucfirst(str_replace('_', ' ', $statusKey));
-                    $color = $labelMap[$statusKey][1] ?? 'gray';
-                    $sinceFrom = $drv->last_assigned_at ?? $currentBooking->updated_at ?? $drv->last_active_at;
+                    
+                    // Priority: POB (actual status) > in_route (meta flag) > other statuses
+                    // This ensures POB status is shown correctly even if in_route flag wasn't cleared
+                    if ($statusKey === 'pob') {
+                        $label = 'POB';
+                        $color = 'orange';
+                        $sinceFrom = isset($meta['pob_marked_at']) ? $meta['pob_marked_at'] : ($currentBooking->updated_at ?? $drv->last_active_at);
+                    } elseif ($isInRoute) {
+                        $label = 'In Route';
+                        $color = 'purple';
+                        $sinceFrom = isset($meta['in_route_at']) ? $meta['in_route_at'] : ($currentBooking->updated_at ?? $drv->last_active_at);
+                    } else {
+                        $labelMap = [
+                            'in_progress' => ['On Route', 'green'],
+                            'confirmed' => ['Confirmed', 'yellow'],
+                            'new' => ['New', 'gray'],
+                        ];
+                        $label = $labelMap[$statusKey][0] ?? ucfirst(str_replace('_', ' ', $statusKey));
+                        $color = $labelMap[$statusKey][1] ?? 'gray';
+                        $sinceFrom = $drv->last_assigned_at ?? $currentBooking->updated_at ?? $drv->last_active_at;
+                    }
                 } else {
                     $label = 'Idle';
                     $color = 'yellow';
-                    $sinceFrom = $drv->last_active_at;
+
+                    // Show idle time since the driver's last completed booking if available,
+                    // otherwise fall back to driver's last_active_at
+                    $lastCompleted = \App\Models\Booking::where('driver_id', $drv->id)
+                        ->whereHas('status', function($q){ $q->where('name', 'completed'); })
+                        ->orderBy('updated_at', 'desc')
+                        ->first();
+
+                    // Debug log to check what we're finding
+                    if ($lastCompleted) {
+                        $meta = $lastCompleted->meta ?? [];
+                        $completed_at = $meta['completed_at'] ?? null;
+                        \Log::info("Driver {$drv->id} last completed booking found", [
+                            'booking_id' => $lastCompleted->id,
+                            'updated_at' => $lastCompleted->updated_at,
+                            'meta_completed_at' => $completed_at,
+                            'meta_keys' => array_keys($meta)
+                        ]);
+                        $sinceFrom = $completed_at ?? $lastCompleted->updated_at ?? $drv->last_active_at;
+                    } else {
+                        \Log::info("Driver {$drv->id} no completed bookings found, using last_active_at", [
+                            'last_active_at' => $drv->last_active_at
+                        ]);
+                        $sinceFrom = $drv->last_active_at;
+                    }
                 }
 
                 $sinceStr = '-';
                 if ($sinceFrom) {
-                    $sinceCarbon = \Carbon\Carbon::parse($sinceFrom);
-                    $diffSeconds = \Carbon\Carbon::now()->diffInSeconds($sinceCarbon);
-                    $h = floor($diffSeconds / 3600);
-                    $m = floor(($diffSeconds % 3600) / 60);
-                    $s = $diffSeconds % 60;
-                    $sinceStr = sprintf('%02d:%02d:%02d', $h, $m, $s);
+                    try {
+                        $sinceCarbon = \Carbon\Carbon::parse($sinceFrom);
+                        // Format as "HH:MM DD/MM/YYYY"
+                        $formatted = $sinceCarbon->format('H:i d/m/Y');
+
+                        // POB should be prefixed with "since ", In Route and Idle show just the timestamp
+                        if (isset($label) && $label === 'POB') {
+                            $sinceStr =$formatted;
+                        } else {
+                            $sinceStr = $formatted;
+                        }
+                    } catch (\Exception $e) {
+                        $sinceStr = '-';
+                    }
                 }
 
                 $drv->status_label = $label;
@@ -179,6 +225,67 @@ class DriverController extends Controller
     }
 
     /**
+     * Check availability and documents for a driver (AJAX helper used by booking edit UI)
+     */
+    public function checkAvailability(Request $request, Driver $driver)
+    {
+        $result = ['success' => true, 'driver' => ['id' => $driver->id, 'name' => $driver->name], 'now' => now()->toIso8601String()];
+
+        // Reactivate if window expired
+        try {
+            if (method_exists($driver, 'reactivateIfExpired')) {
+                if ($driver->reactivateIfExpired()) {
+                    $result['reactivated'] = true;
+                    $driver = $driver->fresh();
+                }
+            }
+        } catch (\Exception $e) {
+            logger()->warning('checkAvailability reactivate failed: ' . $e->getMessage(), ['driver_id' => $driver->id]);
+        }
+
+        // Include unavailable window if present
+        if ($driver->unavailable_from) $result['unavailable_from'] = $driver->unavailable_from;
+        if ($driver->unavailable_to) $result['unavailable_to'] = $driver->unavailable_to;
+
+        // Check for expired or soon-to-expire documents (15 day window)
+        try {
+            $docsList = [];
+            $docs = [
+                'driving_license_expiry' => 'Driving License',
+                'private_hire_drivers_license_expiry' => 'Private Hire Drivers License',
+                'private_hire_vehicle_insurance_expiry' => 'Private Hire Vehicle Insurance',
+                'private_hire_vehicle_license_expiry' => 'Private Hire Vehicle License',
+                'private_hire_vehicle_mot_expiry' => 'Private Hire Vehicle MOT',
+            ];
+            $today = \Carbon\Carbon::today();
+            $threshold = $today->copy()->addDays(15);
+            $hasExpired = false;
+
+            foreach ($docs as $field => $label) {
+                if ($driver->{$field}) {
+                    $expiry = \Carbon\Carbon::parse($driver->{$field});
+                    if ($expiry->lt($today)) {
+                        $docsList[] = ['label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expired'];
+                        $hasExpired = true;
+                    } elseif ($expiry->lte($threshold)) {
+                        $docsList[] = ['label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expiring'];
+                    }
+                }
+            }
+            if (!empty($docsList)) {
+                $result['documents'] = $docsList;
+                $result['has_expired'] = $hasExpired;
+                // Ensure we flag the driver status to the client as well
+                $result['status'] = $driver->status;
+            }
+        } catch (\Exception $e) {
+            logger()->warning('checkAvailability document check failed: ' . $e->getMessage(), ['driver_id' => $driver->id]);
+        }
+
+        return response()->json($result, 200);
+    }
+
+    /**
      * Show live tracking page for driver
      */
     public function track(Driver $driver, \App\Models\Booking $booking)
@@ -188,13 +295,18 @@ class DriverController extends Controller
             abort(403, 'This booking is not assigned to the selected driver.');
         }
 
-        // Ensure booking is in trackable status (POB)
-        if (!$booking->status || $booking->status->name !== 'pob') {
-            abort(400, 'Driver tracking is only available for jobs in POB status.');
+        // Check if booking is in trackable status (POB or in_route)
+        $meta = $booking->meta ?? [];
+        $isInRoute = isset($meta['in_route']) && $meta['in_route'] === true;
+        $isPob = $booking->status && $booking->status->name === 'pob';
+        
+        if (!$isPob && !$isInRoute) {
+            abort(400, 'Driver tracking is available for jobs in In Route or POB status.');
         }
 
         return view('admin.drivers.track', compact('driver', 'booking'));
     }
+
 
     /**
      * Get driver's current location (API endpoint)
@@ -261,8 +373,13 @@ class DriverController extends Controller
                 'address' => $booking ? ($booking->from_address ?? 'Pickup Location, London, UK') : null
             ];
 
+            // Check if booking is in "in_route" status (traveling to pickup)
+            $meta = $booking ? ($booking->meta ?? []) : [];
+            $isInRoute = isset($meta['in_route']) && $meta['in_route'] === true;
+
             return response()->json([
                 'success' => true,
+                'in_route' => $isInRoute,  // NEW: flag to indicate driver is traveling to pickup
                 'driver' => [
                     'latitude' => $location['lat'],
                     'longitude' => $location['lng'],
@@ -291,6 +408,7 @@ class DriverController extends Controller
                 ],
                 'last_update' => $lastUpdate
             ]);
+
         } catch (\Exception $e) {
             \Log::error('Error getting driver location', [
                 'error' => $e->getMessage(),

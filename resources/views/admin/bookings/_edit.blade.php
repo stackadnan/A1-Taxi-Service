@@ -165,11 +165,12 @@
             }
 
           } else {
-            prev = this.value;
+            // don't update 'prev' until server confirms assignment is allowed
+            var newSelection = this.value;
 
             // On driver selection, proactively check availability and possibly auto-reactivate if window expired
             try {
-              var driverId = this.value;
+              var driverId = newSelection;
               if (!driverId) return;
               var url = '{{ url('admin/drivers') }}/' + driverId + '/check-availability';
               fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept':'application/json' }, credentials: 'same-origin' }).then(function(r){ return r.json(); }).then(function(json){
@@ -182,6 +183,45 @@
                     opt.textContent = json.driver.name + ' (Reactivated)';
                   }
                   if (typeof window.showToast === 'function') window.showToast('Driver reactivated (unavailability expired)');
+                  // accept this selection as the new previous
+                  prev = newSelection;
+                  return;
+                }
+
+                // If the server reports documents (expired or expiring), show an appropriate popup
+                if (json.documents && Array.isArray(json.documents) && json.documents.length) {
+                  try {
+                    var confModal = document.getElementById('availability-conflict-modal');
+                    var msgEl = document.getElementById('availability-conflict-message');
+
+                    // detect if there are any expired documents
+                    var hasExpired = json.has_expired === true;
+
+                    if (msgEl) msgEl.textContent = hasExpired ? 'Selected driver has expired documents. Update them before assigning.' : 'Selected driver has documents that will expire soon. You may still assign if needed.';
+
+                    // insert a simple list of documents under the message (mark status)
+                    var prevDetails = document.getElementById('availability-conflict-details'); if (prevDetails) prevDetails.remove();
+                    var details = document.createElement('div'); details.id = 'availability-conflict-details'; details.className = 'mt-3 text-sm text-gray-700';
+                    json.documents.forEach(function(d){
+                      try {
+                        var row = document.createElement('div'); row.className = 'py-2 border-b last:border-b-0';
+                        var statusLabel = (d.status === 'expired') ? '<span class="text-xs text-red-600">Expired</span>' : '<span class="text-xs text-yellow-600">Expiring</span>';
+                        row.innerHTML = '<div class="font-medium text-gray-800">'+ (d.label || '') +'</div><div class="text-xs mt-1">'+ (d.expiry || '') + ' &nbsp; ' + statusLabel + '</div>';
+                        details.appendChild(row);
+                      } catch(e){ console.warn('Failed to append doc row', e); }
+                    });
+                    msgEl.parentNode.insertBefore(details, msgEl.nextSibling);
+
+                    if (confModal) { confModal.classList.remove('hidden'); var cbtn = confModal.querySelector('#availability-conflict-cancel'); if (cbtn && typeof cbtn.focus === 'function') cbtn.focus(); }
+
+                    // If there are expired docs, revert selection; if only expiring, accept selection
+                    if (hasExpired) {
+                      select.value = prev;
+                    } else {
+                      // accept this selection as the current valid selection
+                      prev = newSelection;
+                    }
+                  } catch(e){ console.warn('Failed to show docs popup', e); }
                   return;
                 }
 
@@ -205,6 +245,8 @@
                   } catch(e){ console.warn('Details insert failed', e); }
 
                   if (confModal) { confModal.classList.remove('hidden'); var cbtn = confModal.querySelector('#availability-conflict-confirm'); if (cbtn && typeof cbtn.focus === 'function') cbtn.focus(); }
+                  // accept this selection as the current valid selection (admin can override on save)
+                  prev = newSelection;
                 }
               }).catch(function(err){ console.error('driver availability check failed', err); });
             } catch(e){ console.error('driver select handler failed', e); }
@@ -243,10 +285,12 @@
         <div class="mt-3 text-sm text-gray-700" id="availability-conflict-message">Selected driver is unavailable for the requested pickup time.</div>
         <div class="mt-4 flex justify-end gap-2">
           <button type="button" id="availability-conflict-cancel" class="px-4 py-2 bg-white border rounded">Cancel</button>
-          <button type="button" id="availability-conflict-confirm" class="px-4 py-2 bg-red-600 text-white rounded">Assign Anyway</button>
+          <!-- <button type="button" id="availability-conflict-confirm" class="px-4 py-2 bg-red-600 text-white rounded">Assign Anyway</button> -->
         </div>
       </div>
     </div>
+
+
 
     <script>
       (function(){
@@ -283,8 +327,7 @@
       })();
     </script>
 
-    <div>
-      <label class="block text-sm font-medium text-gray-700">Use percentage</label>
+    <label class="block text-sm font-medium text-gray-700">Use percentage</label>
       <div class="flex items-center gap-3">
         <input type="hidden" name="use_percentage" value="0">
         <input id="driver-use-percent" type="checkbox" name="use_percentage" value="1" {{ (old('use_percentage', isset($booking->meta['driver_percentage']) ? '1' : '0') == '1') ? 'checked' : '' }} class="h-4 w-4">
@@ -400,10 +443,11 @@
                 else if (typeof window.showAlert === 'function') window.showAlert('Updated', message);
                 else alert(message);
 
-                // dispatch bookingUpdated so other parts (list rows) refresh in-place
-                if (json.booking) {
-                  var updateEvent = new CustomEvent('bookingUpdated', { detail: { booking: json.booking } });
-                  document.dispatchEvent(updateEvent);
+                // If server included a warning (assignment allowed but driver remains inactive), show it
+                if (json.warning) {
+                  if (typeof window.showToast === 'function') window.showToast(json.warning);
+                  else if (typeof window.showAlert === 'function') window.showAlert('Warning', json.warning);
+                  else alert(json.warning);
                 }
 
                 // optionally mark moved_to for client-side handling
@@ -420,6 +464,34 @@
                   var msgEl = document.getElementById('availability-conflict-message');
                   if (msgEl && json.message) {
                     msgEl.textContent = json.message;
+
+                    // If the server sent expired documents information, show a simple popup and list them
+                    if (json.documents && Array.isArray(json.documents) && json.documents.length) {
+                      try {
+                        var confModal = document.getElementById('availability-conflict-modal');
+                        var msgEl = document.getElementById('availability-conflict-message');
+                        if (msgEl) msgEl.textContent = 'Selected driver has expired documents. Update them before assigning.';
+
+                        // remove previous details block if exists
+                        var prev = document.getElementById('availability-conflict-details'); if (prev) prev.remove();
+
+                        var details = document.createElement('div'); details.id = 'availability-conflict-details'; details.className = 'mt-3 text-sm text-gray-700';
+
+                        json.documents.forEach(function(d){
+                          try {
+                            var row = document.createElement('div'); row.className = 'py-2 border-b last:border-b-0';
+                            row.innerHTML = '<div class="font-medium text-gray-800">'+ (d.label || '') +'</div><div class="text-xs text-red-600 mt-1">'+ (d.expiry || '') + ' Expired</div>';
+                            details.appendChild(row);
+                          } catch(e){ console.warn('Failed to append doc row', e); }
+                        });
+
+                        msgEl.parentNode.insertBefore(details, msgEl.nextSibling);
+
+                        if (confModal) { confModal.classList.remove('hidden'); var cbtn = confModal.querySelector('#availability-conflict-cancel'); if (cbtn && typeof cbtn.focus === 'function') cbtn.focus(); }
+                        return;
+                      } catch(e){ console.warn('Failed to show expired docs popup', e); }
+                    }
+
                     // build a side-by-side comparison block for pickup vs unavailable window
                     try {
                       // remove previous details block if exists

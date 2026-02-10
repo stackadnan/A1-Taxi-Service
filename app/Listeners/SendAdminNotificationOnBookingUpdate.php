@@ -57,7 +57,7 @@ class SendAdminNotificationOnBookingUpdate
             
             $title = 'Job Marked as POB';
             $message = sprintf(
-                '%s has marked job #%s as POB (Proof of Business). Status changed from %s to POB.',
+                '%s has marked job #%s as POB. Status changed from %s to POB.',
                 $driverName,
                 $booking->booking_code ?? $booking->id,
                 $changes['previous_status'] ?? 'confirmed'

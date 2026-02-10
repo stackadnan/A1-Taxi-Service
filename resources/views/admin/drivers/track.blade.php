@@ -126,6 +126,25 @@
         
         // Start real-time updates
         updateInterval = setInterval(loadTrackingData, 5000); // Update every 5 seconds
+
+        // Additionally, subscribe to admin SSE notifications so that in-route changes trigger an immediate AJAX refresh
+        try {
+            if (typeof(EventSource) !== 'undefined') {
+                var adminSse = new EventSource('{{ route('admin.notifications.stream') }}');
+                adminSse.addEventListener('notification', function(e){
+                    try {
+                        var note = JSON.parse(e.data);
+                        // If notification references this booking, refresh immediately
+                        if (note && note.message && (note.message.indexOf('#' + bookingId) !== -1 || note.message.indexOf('{{ $booking->booking_code ?? '' }}') !== -1)) {
+                            console.log('Track SSE: relevant notification received, refreshing tracking data');
+                            loadTrackingData();
+                        }
+                    } catch (err) { console.warn('Track SSE: failed to process notification', err); }
+                });
+
+                adminSse.onerror = function(err){ console.warn('Track SSE: error', err); adminSse.close(); };
+            }
+        } catch (e) { console.warn('Track SSE subscription failed', e); }
     }
 
     // Load tracking data from server
@@ -220,26 +239,45 @@
 
             // Remove existing route line if any
             if (routeControl) {
-                map.removeControl(routeControl);
+                map.removeLayer(routeControl);
             }
             
-            // Add route line from driver to destination
-            routeControl = L.polyline([driverPos, destination], {
-                color: '#4F46E5',
-                weight: 4,
-                opacity: 0.7,
-                dashArray: '10, 5'
-            }).addTo(map);
+            // Check if driver is in_route (traveling to pickup) or POB (passenger on board)
+            if (data.in_route) {
+                // IN ROUTE: Show purple route from driver to PICKUP location
+                routeControl = L.polyline([driverPos, pickup], {
+                    color: '#9333EA',  // Purple color for in-route
+                    weight: 4,
+                    opacity: 0.7,
+                    dashArray: '10, 5'
+                }).addTo(map);
 
-            // Calculate distance to destination
-            const distance = map.distance(driverPos, destination);
-            const distanceKm = (distance / 1000).toFixed(1);
-            document.getElementById('distance-info').textContent = `${distanceKm} km to destination`;
-            
-            // Set map view to show all markers
-            const allPoints = [pickup, destination, driverPos];
-            const bounds = L.latLngBounds(allPoints);
-            map.fitBounds(bounds, { padding: [20, 20] });
+                // Calculate distance to pickup
+                const distance = map.distance(driverPos, pickup);
+                const distanceKm = (distance / 1000).toFixed(1);
+                document.getElementById('distance-info').textContent = `${distanceKm} km to pickup`;
+                
+                // Fit bounds to show driver and pickup
+                const bounds = L.latLngBounds([driverPos, pickup]);
+                map.fitBounds(bounds, { padding: [50, 50] });
+            } else {
+                // POB: Show blue route from driver to DESTINATION
+                routeControl = L.polyline([driverPos, destination], {
+                    color: '#4F46E5',  // Blue color for POB
+                    weight: 4,
+                    opacity: 0.7,
+                    dashArray: '10, 5'
+                }).addTo(map);
+
+                // Calculate distance to destination
+                const distance = map.distance(driverPos, destination);
+                const distanceKm = (distance / 1000).toFixed(1);
+                document.getElementById('distance-info').textContent = `${distanceKm} km to destination`;
+                
+                // Fit bounds to show driver and destination
+                const bounds = L.latLngBounds([driverPos, destination]);
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
         } else {
             // No driver location, show route from pickup to destination
             document.getElementById('distance-info').textContent = 'Waiting for driver location...';
@@ -250,32 +288,41 @@
         }
         
         // Add legend explanation
-        updateLegend();
+        updateLegend(data.in_route);
     }
     
     // Add legend to explain markers
-    function updateLegend() {
-        if (!document.getElementById('map-legend')) {
-            const legend = L.control({ position: 'bottomright' });
-            legend.onAdd = function(map) {
-                const div = L.DomUtil.create('div', 'map-legend');
-                div.id = 'map-legend';
-                div.style.backgroundColor = 'white';
-                div.style.padding = '10px';
-                div.style.border = '2px solid #ccc';
-                div.style.borderRadius = '5px';
-                div.style.fontSize = '12px';
-                div.innerHTML = `
-                    <b>Live Tracking Legend:</b><br>
-                    <span style="color: green;">●</span> Pickup Location<br>
-                    <span style="color: red;">●</span> Drop-off Destination<br>
-                    <span style="color: blue;">●</span> Driver Live Location<br>
-                    <span style="color: #4F46E5;">━━</span> Route to Destination
-                `;
-                return div;
-            };
-            legend.addTo(map);
+    function updateLegend(isInRoute) {
+        // Remove existing legend if any
+        const existingLegend = document.getElementById('map-legend');
+        if (existingLegend) {
+            existingLegend.remove();
         }
+        
+        const legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'map-legend');
+            div.id = 'map-legend';
+            div.style.backgroundColor = 'white';
+            div.style.padding = '10px';
+            div.style.border = '2px solid #ccc';
+            div.style.borderRadius = '5px';
+            div.style.fontSize = '12px';
+            
+            const routeColor = isInRoute ? '#9333EA' : '#4F46E5';
+            const routeLabel = isInRoute ? 'Route to Pickup' : 'Route to Destination';
+            const modeLabel = isInRoute ? '(In Route to Pickup)' : '(POB - To Destination)';
+            
+            div.innerHTML = `
+                <b>Live Tracking ${modeLabel}:</b><br>
+                <span style="color: green;">●</span> Pickup Location<br>
+                <span style="color: red;">●</span> Drop-off Destination<br>
+                <span style="color: blue;">●</span> Driver Live Location<br>
+                <span style="color: ${routeColor};">━━</span> ${routeLabel}
+            `;
+            return div;
+        };
+        legend.addTo(map);
     }
 
     // Update last update time

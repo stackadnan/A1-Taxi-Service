@@ -69,15 +69,9 @@ class NotificationStreamController extends Controller
                         flush();
                         $lastId = $notification->id;
 
-                        // Mark notification as delivered so it is not re-sent on reconnects
-                        try {
-                            $notification->is_read = true;
-                            $notification->read_at = now();
-                            $notification->save();
-                            \Log::info('AdminNotificationStreamController: marked as delivered', ['user_id' => $user->id, 'notification_id' => $notification->id]);
-                        } catch (\Exception $e) {
-                            \Log::warning('AdminNotificationStreamController: failed to mark delivered', ['error' => $e->getMessage(), 'notification_id' => $notification->id]);
-                        }
+                        // NOTE: Do not mark as read here — marking is done explicitly when admin opens/marks notifications
+                        // This ensures the unread endpoint still returns the notification for the dropdown when the client fetches it.
+                        \Log::info('AdminNotificationStreamController: notification sent (not marked read)', ['user_id' => $user->id, 'notification_id' => $notification->id]);
                     }
                 }
 

@@ -400,43 +400,111 @@ class BookingController extends Controller
                             $pickupAt = \Carbon\Carbon::parse($booking->pickup_date . ' ' . $booking->pickup_time);
                         }
 
-                        if ($newDriver && $newDriver->status === 'inactive' && !$override) {
-                            // If driver has an explicit unavailable window, only block when pickup falls inside it
-                            if ($newDriver->unavailable_from && $newDriver->unavailable_to && $pickupAt) {
-                                $from = \Carbon\Carbon::parse($newDriver->unavailable_from);
-                                $to = \Carbon\Carbon::parse($newDriver->unavailable_to);
-                                if ($pickupAt->betweenIncluded($from, $to)) {
-                                    // Return a conflict response for AJAX clients to present a confirmation dialog
-                                    if ($request->ajax() || $request->wantsJson()) {
-                                        return response()->json([
-                                            'success' => false,
-                                            'conflict' => true,
-                                            'message' => 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString(),
-                                            'driver' => ['id' => $newDriver->id, 'name' => $newDriver->name],
-                                            'unavailable_from' => $from->toIso8601String(),
-                                            'unavailable_to' => $to->toIso8601String(),
-                                            'pickup_at' => $pickupAt ? $pickupAt->toIso8601String() : null
-                                        ], 200);
-                                    } else {
-                                        // Non-Ajax path: redirect back with message
-                                        return redirect()->back()->with('error', 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString());
-                                    }
+                        if ($newDriver && !$override) {
+                            $assignmentWarning = null;
+// Check driver documents: expired and expiring soon (15-day window)
+                    try {
+                        $docsList = [];
+                        $docs = [
+                            'driving_license_expiry' => 'Driving License',
+                            'private_hire_drivers_license_expiry' => 'Private Hire Drivers License',
+                            'private_hire_vehicle_insurance_expiry' => 'Private Hire Vehicle Insurance',
+                            'private_hire_vehicle_license_expiry' => 'Private Hire Vehicle License',
+                            'private_hire_vehicle_mot_expiry' => 'Private Hire Vehicle MOT',
+                        ];
+                        $today = \Carbon\Carbon::today();
+                        $threshold = $today->copy()->addDays(15);
+                        $hasExpired = false;
+
+                        foreach ($docs as $field => $label) {
+                            if ($newDriver->{$field}) {
+                                $expiry = \Carbon\Carbon::parse($newDriver->{$field});
+                                if ($expiry->lt($today)) {
+                                    $docsList[] = ['label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expired'];
+                                    $hasExpired = true;
+                                } elseif ($expiry->lte($threshold)) {
+                                    $docsList[] = ['label' => $label, 'expiry' => $expiry->toDateString(), 'status' => 'expiring'];
+                                }
+                            }
+                        }
+
+                        if (!empty($docsList)) {
+                            if ($request->ajax() || $request->wantsJson()) {
+                                return response()->json([
+                                    'success' => false,
+                                    'conflict' => true,
+                                    'message' => $hasExpired ? 'Selected driver has expired documents that must be updated before assigning.' : 'Selected driver has documents that will expire soon.',
+                                    'driver' => ['id' => $newDriver->id, 'name' => $newDriver->name],
+                                    'documents' => $docsList,
+                                    'has_expired' => $hasExpired
+                                ], 200);
+                            } else {
+                                // For non-AJAX form submission: only block when there are expired docs.
+                                $msg = $hasExpired ? 'Selected driver has expired documents that must be updated before assigning.' : 'Selected driver has documents that will expire soon.';
+                                if ($hasExpired) {
+                                    return redirect()->back()->with('error', $msg);
+                                } else {
+                                    // Expiring-only: allow assignment to proceed but notify admin
+                                    try { session()->flash('warning', $msg); } catch (\Exception $e) { /* ignore session issues */ }
+                                }
+                            }
+                        }
+                            } catch (\Exception $e) {
+                                logger()->warning('Document expiry check failed: ' . $e->getMessage());
+                            }
+
+                            // If driver is explicitly inactive, also check their unavailable window
+                            if ($newDriver->status === 'inactive') {
+                                // Re-check whether any documents are still expired — admin may have updated documents but not changed status yet
+                                $expiryFields = ['driving_license_expiry', 'private_hire_drivers_license_expiry', 'private_hire_vehicle_insurance_expiry', 'private_hire_vehicle_license_expiry', 'private_hire_vehicle_mot_expiry'];
+                                $hasExpiredDocs = false;
+                                $today = \Carbon\Carbon::today();
+                                foreach ($expiryFields as $ef) {
+                                    if ($newDriver->{$ef} && \Carbon\Carbon::parse($newDriver->{$ef})->lt($today)) { $hasExpiredDocs = true; break; }
                                 }
 
-                            } else {
-                                // Driver is explicitly inactive with no window -> block assignment and show indefinite conflict
-                                if ($request->ajax() || $request->wantsJson()) {
-                                    return response()->json([
-                                        'success' => false,
-                                        'conflict' => true,
-                                        'message' => 'Selected driver is currently inactive.',
-                                        'driver' => ['id' => $newDriver->id, 'name' => $newDriver->name],
-                                        'unavailable_from' => null,
-                                        'unavailable_to' => null,
-                                        'pickup_at' => $pickupAt ? $pickupAt->toIso8601String() : null
-                                    ], 200);
+                                // If there are no expired documents, allow assignment to proceed even though status is still 'inactive'
+                                if (! $hasExpiredDocs) {
+                                    try { session()->flash('warning', 'Driver documents were updated; assignment is allowed though the driver remains marked as inactive.'); } catch (\Exception $e) { /* ignore */ }
                                 } else {
-                                    return redirect()->back()->with('error', 'Selected driver is currently inactive.');
+                                    // If driver has an explicit unavailable window, only block when pickup falls inside it
+                                    if ($newDriver->unavailable_from && $newDriver->unavailable_to && $pickupAt) {
+                                        $from = \Carbon\Carbon::parse($newDriver->unavailable_from);
+                                        $to = \Carbon\Carbon::parse($newDriver->unavailable_to);
+                                        if ($pickupAt->betweenIncluded($from, $to)) {
+                                            // Return a conflict response for AJAX clients to present a confirmation dialog
+                                            if ($request->ajax() || $request->wantsJson()) {
+                                                return response()->json([
+                                                    'success' => false,
+                                                    'conflict' => true,
+                                                    'message' => 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString(),
+                                                    'driver' => ['id' => $newDriver->id, 'name' => $newDriver->name],
+                                                    'unavailable_from' => $from->toIso8601String(),
+                                                    'unavailable_to' => $to->toIso8601String(),
+                                                    'pickup_at' => $pickupAt ? $pickupAt->toIso8601String() : null
+                                                ], 200);
+                                            } else {
+                                                // Non-Ajax path: redirect back with message
+                                                return redirect()->back()->with('error', 'Selected driver is unavailable between ' . $from->toDayDateTimeString() . ' and ' . $to->toDayDateTimeString());
+                                            }
+                                        }
+
+                                    } else {
+                                        // Driver is explicitly inactive with no window -> block assignment and show indefinite conflict
+                                        if ($request->ajax() || $request->wantsJson()) {
+                                            return response()->json([
+                                                'success' => false,
+                                                'conflict' => true,
+                                                'message' => 'Selected driver is currently inactive.',
+                                                'driver' => ['id' => $newDriver->id, 'name' => $newDriver->name],
+                                                'unavailable_from' => null,
+                                                'unavailable_to' => null,
+                                                'pickup_at' => $pickupAt ? $pickupAt->toIso8601String() : null
+                                            ], 200);
+                                        } else {
+                                            return redirect()->back()->with('error', 'Selected driver is currently inactive.');
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -548,7 +616,8 @@ class BookingController extends Controller
             // Refresh model and clear any cached relation so subsequent views/queries see the change immediately
             $booking->refresh();
 
-            // Fire event for real-time updates
+            // Fire event for real-time updates. Include a driver_changed flag so listeners can avoid duplicate notifications.
+            $data['driver_changed'] = (isset($oldDriverId) && $oldDriverId != $booking->driver_id) || (!isset($oldDriverId) && $booking->driver_id);
             event(new \App\Events\BookingUpdated($booking, auth()->user(), $data));
 
             // If driver assignment changed and a driver was assigned, create a driver notification
@@ -590,12 +659,18 @@ class BookingController extends Controller
         }
 
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'booking' => $booking, 'moved_to' => ($wasJunk ? 'junk' : null)], 200);
+            $resp = ['success' => true, 'booking' => $booking, 'moved_to' => ($wasJunk ? 'junk' : null)];
+            if (isset($assignmentWarning) && $assignmentWarning) $resp['warning'] = $assignmentWarning;
+            return response()->json($resp, 200);
         }
 
         // For non-AJAX updates, stay on the edit page and show a toast/alert instead of redirecting to the show page.
         $flashMsg = $wasJunk ? 'Booking moved to Junk' : 'Booking updated';
-        return redirect()->back()->with('success', $flashMsg)->with('moved_to', ($wasJunk ? 'junk' : null));
+        $redir = redirect()->back()->with('success', $flashMsg)->with('moved_to', ($wasJunk ? 'junk' : null));
+        if (isset($assignmentWarning) && $assignmentWarning) {
+            try { $redir = $redir->with('warning', $assignmentWarning); } catch (\Exception $e) { /* ignore */ }
+        }
+        return $redir;
     }
 
     /**
