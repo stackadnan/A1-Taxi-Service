@@ -289,15 +289,18 @@
 
                             // Refresh the active jobs list depending on current page
                             if (window.location.pathname.indexOf('/driver/jobs/accepted') !== -1) {
-                                refreshAcceptedJobsList();
+                                // Skip refresh on accepted jobs page - handled by individual AJAX calls
+                                console.log('On accepted jobs page - skipping SSE refresh to prevent conflicts with AJAX updates');
                             }
                             if (window.location.pathname.indexOf('/driver/jobs/new') !== -1) {
                                 // If the driver is on the New Jobs page, refresh it so assigned/unassigned jobs are removed immediately
                                 refreshNewJobsList();
                             }
 
-                            // Also refresh accepted list if a new job was accepted for robustness
-                            try { if (typeof refreshAcceptedJobsList === 'function') refreshAcceptedJobsList(); } catch(e) {}
+                            // Skip general refresh on accepted jobs page to prevent conflicts with AJAX
+                            if (window.location.pathname.indexOf('/driver/jobs/accepted') === -1) {
+                                try { if (typeof refreshAcceptedJobsList === 'function') refreshAcceptedJobsList(); } catch(e) {}
+                            }
                         }
                     }).catch(err => { console.error('Failed to refresh driver counts', err); })
                     .finally(function(){ 
@@ -337,10 +340,9 @@
                 .then(r => r.text())
                 .then(html => {
                     try {
-                        // If the response is a full HTML page (login/error), reload the page
+                        // If the response is a full HTML page (login/error), skip refresh
                         if (/<!doctype|<html|<body/i.test(html)) {
-                            console.warn('refreshAcceptedJobsList: full page HTML detected, reloading');
-                            window.location.reload();
+                            console.warn('refreshAcceptedJobsList: full page HTML detected, skipping refresh');
                             return;
                         }
 
@@ -351,12 +353,12 @@
                             const old = document.getElementById('accepted-jobs-container');
                             if (old) old.innerHTML = newContainer.innerHTML;
                         } else {
-                            // fallback to full reload
-                            setTimeout(function(){ location.reload(); }, 300);
+                            // Skip reload fallback - let AJAX handle updates
+                            console.log('Could not find accepted-jobs-container, skipping update');
                         }
                     } catch (err) {
-                        console.error('Failed to parse/replace accepted jobs list - reloading', err);
-                        window.location.reload();
+                        console.error('Failed to parse/replace accepted jobs list', err);
+                        // Skip reload fallback - let AJAX handle updates
                     }
                 })
                 .catch(err => { console.error('Failed to refresh accepted jobs list', err); });
@@ -368,8 +370,7 @@
                 .then(html => {
                     try {
                         if (/<!doctype|<html|<body/i.test(html)) {
-                            console.warn('refreshNewJobsList: full page HTML detected, reloading');
-                            window.location.reload();
+                            console.warn('refreshNewJobsList: full page HTML detected, skipping refresh');
                             return;
                         }
 
@@ -380,12 +381,12 @@
                             const old = document.getElementById('jobs-list-container');
                             if (old) old.innerHTML = newContainer.innerHTML;
                         } else {
-                            // fallback: try replacing the whole page
-                            setTimeout(function(){ location.reload(); }, 300);
+                            // Skip reload fallback
+                            console.log('Could not find jobs-list-container, skipping update');
                         }
                     } catch (err) {
-                        console.error('Failed to parse/replace new jobs list - reloading', err);
-                        window.location.reload();
+                        console.error('Failed to parse/replace new jobs list', err);
+                        // Skip reload fallback
                     }
                 })
                 .catch(err => { console.error('Failed to refresh new jobs list', err); });

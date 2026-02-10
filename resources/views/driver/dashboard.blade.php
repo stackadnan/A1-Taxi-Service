@@ -60,13 +60,14 @@
 
         <!-- Expired / Expiring Documents Card -->
         <a href="{{ route('driver.documents.expired') }}" class="block">
-            <div class="stat-card expired-docs rounded-lg p-6 text-center job-card">
+            @php $docCount = $expiredDocsCount ?? 0; @endphp
+            <div class="stat-card expired-docs rounded-lg p-6 text-center job-card {{ $docCount > 0 ? 'bg-red-500 text-white' : (isset($expiringDocsCount) && $expiringDocsCount > 0 ? 'bg-yellow-50' : '') }}">
                 <div class="flex flex-col items-center justify-center h-full">
-                    <i class="fas fa-file-alt text-3xl mb-3 opacity-90"></i>
-                    <h3 class="text-lg font-semibold mb-2">Expired / Expiring Documents</h3>
-                    <p id="expired-docs-count" class="text-3xl font-bold">{{ $expiredDocsCount ?? 0 }}</p>
+                    <i class="fas fa-file-alt text-3xl mb-3 {{ $docCount > 0 ? 'text-white' : 'text-gray-600 opacity-90' }}"></i>
+                    <h3 class="text-lg font-semibold mb-2 {{ $docCount > 0 ? 'text-white' : 'text-gray-900' }}">Expired / Expiring Documents</h3>
+                    <p id="expired-docs-count" class="text-3xl font-bold {{ $docCount > 0 ? 'text-white' : 'text-gray-900' }}">{{ $docCount }}</p>
                     @if(isset($expiringDocsCount) && $expiringDocsCount > 0)
-                        <p class="mt-1 text-xs text-yellow-600">{{ $expiringDocsCount }} expiring soon</p>
+                        <p class="mt-1 text-xs {{ $docCount > 0 ? 'text-red-100' : 'text-yellow-600' }}">{{ $expiringDocsCount }} expiring soon</p>
                     @endif
                 </div>
             </div>
@@ -171,11 +172,10 @@
 
 @section('scripts')
 <script>
-    // Auto-refresh dashboard every 30 seconds if there are new jobs
+    // Auto-refresh disabled - using real-time SSE updates instead
     @if($newJobsCount > 0)
-    setTimeout(() => {
-        location.reload();
-    }, 30000);
+    // Real-time updates via SSE - no need for periodic refresh
+    console.log('Dashboard has {{ $newJobsCount }} new jobs - using SSE for real-time updates');
     @endif
 
     // Availability controls

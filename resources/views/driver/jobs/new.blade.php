@@ -179,7 +179,14 @@ function acceptJob(jobId) {
                 // Check if no jobs left
                 const container = document.getElementById('jobs-list-container');
                 if (container && container.children.length === 0) {
-                    location.reload(); // Show empty state
+                    // Show empty state without reload
+                    container.innerHTML = `
+                        <div class="bg-white rounded-lg shadow p-12 text-center">
+                            <i class="fas fa-clipboard-list text-gray-400 text-6xl mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">No New Jobs</h3>
+                            <p class="text-gray-600">All jobs have been processed. Check back later for new opportunities.</p>
+                        </div>
+                    `;
                 }
             }, 300);
         } else {
@@ -241,7 +248,14 @@ function declineJob(jobId) {
                 // Check if no jobs left
                 const container = document.getElementById('jobs-list-container');
                 if (container && container.children.length === 0) {
-                    location.reload(); // Show empty state
+                    // Show empty state without reload
+                    container.innerHTML = `
+                        <div class="bg-white rounded-lg shadow p-12 text-center">
+                            <i class="fas fa-clipboard-list text-gray-400 text-6xl mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">No New Jobs</h3>
+                            <p class="text-gray-600">All jobs have been processed. Check back later for new opportunities.</p>
+                        </div>
+                    `;
                 }
             }, 300);
         } else {
