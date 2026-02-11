@@ -51,16 +51,42 @@ try {
     
     $app = require_once __DIR__.'/../bootstrap/app.php';
     
-    echo "<div class='info'>Getting Kernel...</div><br>";
+    echo "<div class='info'>Bootstrapping HTTP Kernel...</div><br>";
+    flush();
+    
+    // Clear any cached config first
+    $configPath = __DIR__.'/../bootstrap/cache/config.php';
+    if (file_exists($configPath)) {
+        unlink($configPath);
+        echo "<div class='info'>✓ Cleared config cache</div><br>";
+        flush();
+    }
+    
+    $servicesPath = __DIR__.'/../bootstrap/cache/services.php';
+    if (file_exists($servicesPath)) {
+        unlink($servicesPath);
+        echo "<div class='info'>✓ Cleared services cache</div><br>";
+        flush();
+    }
+    
+    $packagesPath = __DIR__.'/../bootstrap/cache/packages.php';
+    if (file_exists($packagesPath)) {
+        unlink($packagesPath);
+        echo "<div class='info'>✓ Cleared packages cache</div><br>";
+        flush();
+    }
+    
+    echo "<div class='info'>Bootstrapping application...</div><br>";
     flush();
     
     $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+    $kernel->bootstrap();
     
     echo "<div class='info'>Testing database connection...</div><br>";
     flush();
     
-    // Test DB connection first
-    $app->make('db')->connection()->getPdo();
+    // Test DB connection
+    \Illuminate\Support\Facades\DB::connection()->getPdo();
     echo "<div class='success'>✓ Database connection successful!</div><br>";
     flush();
 
