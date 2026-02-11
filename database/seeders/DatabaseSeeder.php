@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
             \Database\Seeders\AdminUserSeeder::class,
             \Database\Seeders\RoleUsersSeeder::class,
             \Database\Seeders\BroadcastSeeder::class,
+            \Database\Seeders\ZoneCsvSeeder::class,
         ]);
     }
 }
