@@ -42,10 +42,10 @@ try {
     $kernel->call('migrate', ['--force' => true]);
     echo "<pre>" . htmlspecialchars($kernel->output()) . "</pre>";
     
-    // Optional: Run seeders (uncomment if needed)
-    // echo "<div class='info'>Running seeders...</div><br>";
-    // $kernel->call('db:seed', ['--force' => true]);
-    // echo "<pre>" . htmlspecialchars($kernel->output()) . "</pre>";
+    // Run seeders
+    echo "<div class='info'>Running seeders...</div><br>";
+    $kernel->call('db:seed', ['--force' => true]);
+    echo "<pre>" . htmlspecialchars($kernel->output()) . "</pre>";
     
     // Clear caches
     echo "<div class='info'>Clearing caches...</div><br>";
