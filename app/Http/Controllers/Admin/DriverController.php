@@ -125,7 +125,7 @@ class DriverController extends Controller
                     } else {
                         $labelMap = [
                             'in_progress' => ['On Route', 'green'],
-                            'confirmed' => ['Confirmed', 'yellow'],
+                            'confirmed' => ['Accepted', 'yellow'],
                             'new' => ['New', 'gray'],
                         ];
                         $label = $labelMap[$statusKey][0] ?? ucfirst(str_replace('_', ' ', $statusKey));
