@@ -28,16 +28,21 @@ try {
     
     echo "<div class='info'>Optimizing database tables...</div><br>";
     
-    // Get all tables
-    $tables = \Illuminate\Support\Facades\DB::select('SHOW TABLES');
-    $dbName = env('DB_DATABASE');
+    // Get all tables - use a more reliable method
+    $tablesResult = \Illuminate\Support\Facades\DB::select('SHOW TABLES');
     
-    foreach ($tables as $table) {
-        $tableName = $table->{"Tables_in_{$dbName}"};
+    foreach ($tablesResult as $tableObj) {
+        // Convert object to array to get first value (table name)
+        $tableArray = (array) $tableObj;
+        $tableName = array_values($tableArray)[0];
         
-        // Optimize each table
-        \Illuminate\Support\Facades\DB::statement("OPTIMIZE TABLE `{$tableName}`");
-        echo "<div class='success'>✓ Optimized table: {$tableName}</div>";
+        try {
+            // Optimize each table
+            \Illuminate\Support\Facades\DB::statement("OPTIMIZE TABLE `{$tableName}`");
+            echo "<div class='success'>✓ Optimized table: {$tableName}</div>";
+        } catch (Exception $e) {
+            echo "<div class='error'>✗ Failed to optimize {$tableName}: " . $e->getMessage() . "</div>";
+        }
     }
     
     echo "<br><div class='info'>Adding performance indexes...</div><br>";
