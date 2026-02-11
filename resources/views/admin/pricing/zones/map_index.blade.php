@@ -27,12 +27,15 @@
   /* overlay for blurring outside the UK - uses backdrop-filter; fallback will show semi-transparent wash */
   .uk-mask-overlay { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 
-  /* Scroll behaviour for zones list when many items */
-  /* Constrain to a sensible max so scroll appears reliably when items > 5 */
-  #zones-list-ul.zones-list-scroll { overflow-y: auto !important; max-height: min(260px, calc(100vh - 14rem)); }
+  /* Sidebar layout: fixed header + scrollable list that fills remaining height */
+  #zones-list-sidebar { display: flex; flex-direction: column; }
+  #zones-list-sidebar .sidebar-header { flex: 0 0 auto; }
+  #zones-list-ul { flex: 1 1 auto; overflow-y: auto; max-height: none; padding: 0.5rem; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.18) transparent; }
+
   /* Thin, subtle scrollbar for supported browsers */
-  #zones-list-ul.zones-list-scroll::-webkit-scrollbar { width: 8px; }
-  #zones-list-ul.zones-list-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.16); border-radius: 6px; }
+  #zones-list-ul::-webkit-scrollbar { width: 8px; }
+  #zones-list-ul::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 6px; }
+  #zones-list-ul::-webkit-scrollbar-track { background: transparent; }
 
   /* Hide the default Leaflet draw toolbar inside the main map — we provide a header button instead */
   #zones-map .leaflet-draw { display: none !important; }
@@ -51,8 +54,8 @@
   @include('admin.pricing._tabs') 
 
   <!-- Sidebar List (fixed overlay, outside map to avoid clipping and stacking issues) -->
-  <div id="zones-list-sidebar" class="fixed top-20 right-6 h-[calc(100vh-6rem)] w-64 bg-white shadow-lg overflow-y-auto transform translate-x-full transition-transform duration-300 border-l border-gray-200" style="z-index:99999; pointer-events:auto;">
-      <div class="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
+  <div id="zones-list-sidebar" class="fixed top-20 right-6 h-[calc(100vh-6rem)] w-64 bg-white shadow-lg transform translate-x-full transition-transform duration-300 border-l border-gray-200" style="z-index:99999; pointer-events:auto;">
+      <div class="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50 sidebar-header">
           <h3 class="font-semibold text-gray-700">All Zones</h3>
           <button id="close-zones-list-btn" class="text-gray-500 hover:text-red-500 text-lg font-bold px-2">&times;</button>
       </div>
@@ -1098,13 +1101,8 @@
                         listUl.appendChild(li);
                     });
 
-                    // add scroll behaviour when more than 5 items
-                    var liCount = listUl.children.length || 0;
-                    if (liCount > 5) {
-                        listUl.classList.add('zones-list-scroll');
-                    } else {
-                        listUl.classList.remove('zones-list-scroll');
-                    }
+                    // list is now a flex-fill container so no special class is required for scroll behaviour
+                    // the list will scroll naturally when it exceeds the sidebar height
                 }
 
                 // Toggle Events
