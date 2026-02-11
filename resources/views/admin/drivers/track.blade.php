@@ -53,7 +53,11 @@
                     <i class="fas fa-clipboard-list text-lg"></i>
                     <div>
                         <p class="font-semibold">{{ $booking->booking_code }}</p>
-                        <p class="text-sm opacity-90">{{ $booking->status->name ?? 'Unknown' }} Status</p>
+                        @php
+                            $statusName = optional($booking->status)->name;
+                            $statusLabel = $statusName === 'confirmed' ? 'Accepted' : ($statusName ? ucwords(str_replace('_', ' ', $statusName)) : 'Unknown');
+                        @endphp
+                        <p class="text-sm opacity-90">{{ $statusLabel }} Status</p>
                     </div>
                 </div>
                 
