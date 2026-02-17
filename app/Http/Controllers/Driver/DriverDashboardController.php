@@ -138,7 +138,7 @@ class DriverDashboardController extends Controller
         }
 
         // Ensure booking is assigned to this driver
-        if ($booking->driver_id !== $driver->id) {
+        if ((int) $booking->driver_id !== (int) $driver->id) {
             abort(403);
         }
 
@@ -374,7 +374,7 @@ class DriverDashboardController extends Controller
                 return response()->json(['error' => 'Driver not authenticated'], 401);
             }
             
-            if ($booking->driver_id !== $driver->id) {
+            if ((int) $booking->driver_id !== (int) $driver->id) {
                 // Detailed logging to help debug production 403s (temporary)
                 \Log::warning('Unauthorized job accept attempt', [
                     'driver_id' => $driver->id,
@@ -449,7 +449,7 @@ class DriverDashboardController extends Controller
                 return response()->json(['error' => 'Driver not authenticated'], 401);
             }
             
-            if ($booking->driver_id !== $driver->id) {
+            if ((int) $booking->driver_id !== (int) $driver->id) {
                 \Log::warning('Unauthorized job decline attempt', [
                     'driver_id' => $driver->id,
                     'booking_id' => $booking->id,
@@ -514,7 +514,7 @@ class DriverDashboardController extends Controller
                 return response()->json(['error' => 'Driver not authenticated'], 401);
             }
             
-            if ($booking->driver_id !== $driver->id) {
+            if ((int) $booking->driver_id !== (int) $driver->id) {
                 \Log::warning('Unauthorized In Route attempt', [
                     'driver_id' => $driver->id,
                     'booking_id' => $booking->id,
@@ -616,7 +616,7 @@ class DriverDashboardController extends Controller
                 return response()->json(['error' => 'Driver not authenticated'], 401);
             }
             
-            if ($booking->driver_id !== $driver->id) {
+            if ((int) $booking->driver_id !== (int) $driver->id) {
                 \Log::warning('Unauthorized POB attempt', [
                     'driver_id' => $driver->id,
                     'booking_id' => $booking->id,
@@ -703,7 +703,7 @@ class DriverDashboardController extends Controller
                 return response()->json(['error' => 'Driver not authenticated'], 401);
             }
             
-            if ($booking->driver_id !== $driver->id) {
+            if ((int) $booking->driver_id !== (int) $driver->id) {
                 \Log::warning('Unauthorized completion attempt', [
                     'driver_id' => $driver->id,
                     'booking_id' => $booking->id,

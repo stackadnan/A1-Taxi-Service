@@ -291,7 +291,7 @@ class DriverController extends Controller
     public function track(Driver $driver, \App\Models\Booking $booking)
     {
         // Ensure booking belongs to this driver
-        if ($booking->driver_id !== $driver->id) {
+        if ((int) $booking->driver_id !== (int) $driver->id) {
             abort(403, 'This booking is not assigned to the selected driver.');
         }
 
@@ -321,7 +321,7 @@ class DriverController extends Controller
                 $booking = \App\Models\Booking::find($bookingId);
                 
                 // Ensure booking belongs to this driver
-                if ($booking && $booking->driver_id !== $driver->id) {
+                if ($booking && (int) $booking->driver_id !== (int) $driver->id) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
             }
