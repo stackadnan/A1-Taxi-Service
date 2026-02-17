@@ -13,7 +13,7 @@ class PricingZone extends Model
     protected $fillable = [
         'from_zone_id','to_zone_id',
         'saloon_price','business_price','mpv6_price','mpv8_price',
-        'pricing_mode','status'
+        'status'
     ];
 
     protected $casts = [

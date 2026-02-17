@@ -21,7 +21,6 @@
           <th class="p-2">Business</th>
           <th class="p-2">MPV6</th>
           <th class="p-2">MPV8</th>
-          <th class="p-2">Mode</th>
           <th class="p-2">Status</th>
           <th class="p-2">Actions</th>
         </tr>
@@ -36,7 +35,6 @@
           <td class="p-2">{{ $item->business_price ?? '-' }}</td>
           <td class="p-2">{{ $item->mpv6_price ?? '-' }}</td>
           <td class="p-2">{{ $item->mpv8_price ?? '-' }}</td>
-          <td class="p-2">{{ $item->pricing_mode ?? '-' }}</td>
           <td class="p-2">{{ ucfirst($item->status) }}</td>
           <td class="p-2">
             @if(auth()->check() && auth()->user()->hasPermission('pricing.edit'))
@@ -46,22 +44,23 @@
           </td>
         </tr>
         @empty
-        <tr><td class="p-4" colspan="10">No records found</td></tr>
+        <tr><td class="p-4" colspan="9">No records found</td></tr>
         @endforelse
       </tbody>
     </table>
   </div>
 
   <div class="mt-4">
-    {{ $items->withQueryString()->links() }}
+    {{ $items->appends(request()->except('partial'))->fragment('zone')->links() }}
   </div>
 </div>
 
 <script>
 // Attach modal open handlers for pre-rendered zones list
+// NOTE: pagination and search are handled by the parent tab loader (index.blade.php) to avoid double-binding
 (function(){
   var createBtn = document.getElementById('zones-create-button');
-  if (createBtn) createBtn.addEventListener('click', function(e){ e.preventDefault(); if (typeof window.openPostcodeModal === 'function') { window.openPostcodeModal(createBtn.getAttribute('href'), createBtn.dataset.title || 'Add Zone Price'); } else { window.location = createBtn.getAttribute('href'); } });
-  document.querySelectorAll('.zones-edit-button').forEach(function(btn){ btn.addEventListener('click', function(e){ e.preventDefault(); if (typeof window.openPostcodeModal === 'function') { window.openPostcodeModal(btn.getAttribute('href'), 'Edit Zone Price'); } else { window.location = btn.getAttribute('href'); } }); });
+  if (createBtn) createBtn.addEventListener('click', function(e){ e.preventDefault(); if (typeof window.openZoneModal === 'function') { window.openZoneModal(createBtn.getAttribute('href'), createBtn.dataset.title || 'Add Zone Price'); } else { window.location = createBtn.getAttribute('href'); } });
+  document.querySelectorAll('.zones-edit-button').forEach(function(btn){ btn.addEventListener('click', function(e){ e.preventDefault(); if (typeof window.openZoneModal === 'function') { window.openZoneModal(btn.getAttribute('href'), 'Edit Zone Price'); } else { window.location = btn.getAttribute('href'); } }); });
 })();
 </script>

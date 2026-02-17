@@ -41,16 +41,6 @@
     </div>
 
     <div>
-      <label class="block text-sm">Pricing Mode</label>
-      <select name="pricing_mode" class="w-full border rounded p-2">
-        <option value="">Select mode</option>
-        <option value="flat" @if(isset($item) && $item->pricing_mode == 'flat') selected @endif>Flat</option>
-        <option value="distance" @if(isset($item) && $item->pricing_mode == 'distance') selected @endif>Distance</option>
-        <option value="zone" @if(isset($item) && $item->pricing_mode == 'zone') selected @endif>Zone</option>
-      </select>
-    </div>
-
-    <div>
       <label class="block text-sm">Status</label>
       <select name="status" class="w-full border rounded p-2">
         <option value="active" @if(isset($item) && $item->status == 'active') selected @endif>Active</option>
