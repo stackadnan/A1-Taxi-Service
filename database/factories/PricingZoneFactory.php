@@ -22,7 +22,6 @@ class PricingZoneFactory extends Factory
             'business_price' => $this->faker->randomFloat(2, 0, 150),
             'mpv6_price' => $this->faker->randomFloat(2, 0, 200),
             'mpv8_price' => $this->faker->randomFloat(2, 0, 250),
-            'pricing_mode' => $this->faker->randomElement(['flat','distance','zone']),
             'status' => 'active'
         ];
     }

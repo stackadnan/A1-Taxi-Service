@@ -894,7 +894,6 @@ class ZoneController extends Controller
             'business_price' => 'nullable|numeric|min:0',
             'mpv6_price' => 'nullable|numeric|min:0',
             'mpv8_price' => 'nullable|numeric|min:0',
-            'pricing_mode' => 'nullable|string',
             'status' => 'required|in:active,inactive'
         ]);
 
@@ -944,7 +943,6 @@ class ZoneController extends Controller
             'business_price' => 'nullable|numeric|min:0',
             'mpv6_price' => 'nullable|numeric|min:0',
             'mpv8_price' => 'nullable|numeric|min:0',
-            'pricing_mode' => 'nullable|string',
             'status' => 'required|in:active,inactive'
         ]);
 

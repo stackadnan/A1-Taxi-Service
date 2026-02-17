@@ -384,15 +384,73 @@
             var container = document.getElementById('zone-container');
             container.innerHTML = html;
 
-            var addBtn = container.querySelector('#zones-create-button');
-            if (addBtn) addBtn.addEventListener('click', function(e){ e.preventDefault(); openZoneModal(addBtn.getAttribute('href'), addBtn.dataset.title || 'Add Zone Price'); });
+            // Attach handlers for buttons, search, delete and pagination links inside the zones container
+            function attachZoneHandlers(container) {
+              var addBtn = container.querySelector('#zones-create-button');
+              if (addBtn) addBtn.addEventListener('click', function(e){ e.preventDefault(); openZoneModal(addBtn.getAttribute('href'), addBtn.dataset.title || 'Add Zone Price'); });
 
-            // edit handlers for zone rows
-            container.querySelectorAll('.zones-edit-button').forEach(function(btn){ btn.addEventListener('click', function(e){ e.preventDefault(); openZoneModal(btn.getAttribute('href'), 'Edit Zone Price'); }); });
+              var searchForm = container.querySelector('#zones-search-form');
+              if (searchForm && !searchForm.dataset.bound) {
+                searchForm.dataset.bound = '1';
+                searchForm.addEventListener('submit', function(e){
+                  e.preventDefault();
+                  var fd = new FormData(searchForm);
+                  loadZones(fd.get('q'));
+                });
+              }
 
-            container.querySelectorAll('.zones-edit-button').forEach(function(btn){ btn.addEventListener('click', function(e){ e.preventDefault(); openZoneModal(btn.getAttribute('href'), 'Edit Zone Price'); }); });
+              container.querySelectorAll('.zones-edit-button').forEach(function(btn){ btn.addEventListener('click', function(e){ e.preventDefault(); openZoneModal(btn.getAttribute('href'), 'Edit Zone Price'); }); });
 
-            container.querySelectorAll('form').forEach(function(form){ attachDeleteHandler(form); });
+              container.querySelectorAll('form').forEach(function(form){ attachDeleteHandler(form); });
+
+              // enhanced pagination links: replace content via AJAX, preserve scroll/height and re-attach handlers
+              container.querySelectorAll('.pagination a').forEach(function(a){
+                if (a.dataset.ajaxAttached) return; a.dataset.ajaxAttached = '1';
+                a.addEventListener('click', function(e){
+                  e.preventDefault(); e.stopImmediatePropagation();
+                  var href = a.getAttribute('href'); if (!href) return;
+
+                  var zoneContainer = document.getElementById('zone-container') || container;
+                  var prevHeight = zoneContainer.offsetHeight;
+                  var prevTop = zoneContainer.getBoundingClientRect().top + window.scrollY;
+                  var prevScrollY = window.scrollY;
+
+                  // lock height and fade to reduce perceptible jump
+                  zoneContainer.style.minHeight = prevHeight + 'px';
+                  zoneContainer.style.transition = 'opacity 180ms';
+                  zoneContainer.style.opacity = '0.6';
+
+                  fetch(href + (href.indexOf('?') === -1 ? '?partial=1' : '&partial=1'), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                    .then(function(r){ if (!r.ok) return r.text().then(function(t){ throw new Error('Failed to load ('+r.status+')'); }); return r.text(); })
+                    .then(function(html){
+                      zoneContainer.innerHTML = html;
+                      try { runInjectedScripts(zoneContainer); } catch(e){}
+                      attachZoneHandlers(zoneContainer);
+
+                      // keep the zone container at the same viewport position
+                      var newTop = zoneContainer.getBoundingClientRect().top + window.scrollY;
+                      try { window.scrollTo(0, Math.max(0, prevScrollY + (newTop - prevTop))); } catch(e){}
+
+                      zoneContainer.style.minHeight = '';
+                      zoneContainer.style.opacity = '1';
+
+                      // update URL but remove internal partial flag
+                      try {
+                        var cleanHref = href.replace(/[?&]partial=1(&|$)/, '$1').replace(/&$/,'');
+                        history.replaceState(null, '', cleanHref);
+                      } catch(e){}
+                    }).catch(function(err){
+                      console.error('Zones pagination load failed', err);
+                      zoneContainer.style.minHeight = '';
+                      zoneContainer.style.opacity = '1';
+                    });
+                });
+              });
+            }
+
+            // initial handler attachment for the freshly-injected content
+            try { runInjectedScripts(container); } catch(e){}
+            attachZoneHandlers(container);
 
           }).catch(function(err){
             console.error('Load zones error', err);
@@ -421,6 +479,72 @@
 
         var t = document.querySelector('[data-tab="zone"]');
         t.addEventListener('click', function(){ if (!loaded) { loadZones(); loaded=true; } });
+
+        // Capture-phase interceptor for zone pagination links: prevents full-page navigations
+        // and forces an AJAX partial load when the Zones tab is active (or the link lives inside the container).
+        document.addEventListener('click', function(e){
+          // ignore modified/middle clicks and already-prevented events
+          if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          var a = e.target.closest('a[href]');
+          if (!a) return;
+          // ignore links explicitly targeting new windows
+          if (a.target && a.target !== '' && a.target !== '_self') return;
+
+          var href = a.getAttribute('href');
+          if (!href) return;
+
+          // quick detection for zone-index links (absolute or relative)
+          var isZoneLink = (a.pathname && a.pathname.indexOf('/pricing/zones') !== -1) || (href.indexOf('/pricing/zones') !== -1);
+          if (!isZoneLink) return;
+
+          // only intercept when zone tab is active or link is inside the zone container
+          var zoneTabEl = document.querySelector('[data-tab="zone"]');
+          var zoneTabActive = zoneTabEl && zoneTabEl.getAttribute('aria-selected') === 'true';
+          if (!zoneTabActive && !a.closest('#zone-container')) return;
+
+          // if the anchor was already marked as handled, let its handler run
+          if (a.dataset.ajaxAttached) return;
+
+          e.preventDefault();
+
+          var zoneContainer = document.getElementById('zone-container');
+          if (!zoneContainer) return;
+
+          var prevHeight = zoneContainer.offsetHeight;
+          var prevTop = zoneContainer.getBoundingClientRect().top + window.scrollY;
+          var prevScrollY = window.scrollY;
+          zoneContainer.style.minHeight = prevHeight + 'px';
+          zoneContainer.style.transition = 'opacity 180ms';
+          zoneContainer.style.opacity = '0.6';
+
+          var fetchUrl = href + (href.indexOf('?') === -1 ? '?partial=1' : '&partial=1');
+          a.dataset.ajaxAttached = '1';
+
+          fetch(fetchUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+            .then(function(r){ if (!r.ok) return r.text().then(function(t){ throw new Error('Failed to load ('+r.status+')'); }); return r.text(); })
+            .then(function(html){
+              zoneContainer.innerHTML = html;
+              try { runInjectedScripts(zoneContainer); } catch(e){}
+              try { attachZoneHandlers(zoneContainer); } catch(e){}
+
+              var newTop = zoneContainer.getBoundingClientRect().top + window.scrollY;
+              try { window.scrollTo(0, Math.max(0, prevScrollY + (newTop - prevTop))); } catch(e){}
+
+              zoneContainer.style.minHeight = '';
+              zoneContainer.style.opacity = '1';
+
+              try {
+                // prefer keeping the user on the pricing page tab; ensure fragment is present
+                var cleanHref = href.replace(/[?&]partial=1(&|$)/, '$1').replace(/&$/,'');
+                if (cleanHref.indexOf('#') === -1) cleanHref = cleanHref + '#zone';
+                history.replaceState(null, '', cleanHref);
+              } catch(e){}
+            }).catch(function(err){
+              console.error('Zones pagination (captured) failed', err);
+              zoneContainer.style.minHeight = '';
+              zoneContainer.style.opacity = '1';
+            });
+        }, true);
       })();
       </script>
     </section>
