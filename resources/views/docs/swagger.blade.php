@@ -14,7 +14,8 @@
   <script>
     window.onload = function() {
       const ui = SwaggerUIBundle({
-        url: '/openapi.yaml',
+        // use relative path so the UI works when app is served from a subdirectory
+        url: 'openapi.yaml',
         dom_id: '#swagger-ui',
         presets: [
           SwaggerUIBundle.presets.apis,
