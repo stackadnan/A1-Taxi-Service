@@ -208,9 +208,8 @@ paths:
                   success:
                     type: boolean
                   zone:
-                    oneOf:
-                      - $ref: '#/components/schemas/Zone'
-                      - type: 'null'
+                    $ref: '#/components/schemas/Zone'
+                    nullable: true
   /bookings/directions:
     post:
       tags: [Bookings]
