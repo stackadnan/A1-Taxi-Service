@@ -375,11 +375,21 @@ class DriverDashboardController extends Controller
             }
             
             if ($booking->driver_id !== $driver->id) {
+                // Detailed logging to help debug production 403s (temporary)
                 \Log::warning('Unauthorized job accept attempt', [
                     'driver_id' => $driver->id,
                     'booking_id' => $booking->id,
-                    'booking_driver_id' => $booking->driver_id
+                    'booking_driver_id' => $booking->driver_id,
+                    'session_id' => session()->getId(),
+                    'ip' => $request->ip(),
+                    'headers' => [
+                        'referer' => $request->headers->get('referer'),
+                        'user_agent' => $request->headers->get('user-agent'),
+                        'cookie' => $request->headers->get('cookie'),
+                        'x_csrf_token' => $request->header('X-CSRF-TOKEN')
+                    ]
                 ]);
+
                 return response()->json(['error' => 'Unauthorized - This job is not assigned to you'], 403);
             }
     
