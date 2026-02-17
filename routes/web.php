@@ -20,6 +20,26 @@ Route::get('docs', function() {
     return view('docs.swagger');
 })->name('docs');
 
+// Temporary: clear Laravel caches via browser (token-protected). REMOVE after use.
+Route::get('_tools/clear-caches/{token}', function ($token) {
+    // one-time token (change/remove after use)
+    $ONE_TIME_TOKEN = '9f7b4b2c2d5e6a1b8c3d4e5f6a7b8c9d';
+    if (!hash_equals($ONE_TIME_TOKEN, $token)) {
+        abort(404);
+    }
+
+    try {
+        \Artisan::call('config:clear');
+        \Artisan::call('route:clear');
+        \Artisan::call('view:clear');
+        \Artisan::call('cache:clear');
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+
+    return response()->json(['success' => true, 'message' => 'Caches cleared (temporary route).']);
+});
+
 // Provide a global 'login' route so Laravel helpers that expect route('login') work.
 Route::get('login', function(){ return redirect('/'); })->name('login');
 
