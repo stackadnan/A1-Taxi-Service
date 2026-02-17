@@ -1,0 +1,309 @@
+openapi: 3.0.1
+info:
+  title: Executive Airport Cars — Public API
+  version: 1.0.0
+  description: API for quoting prices, zone lookup, directions and manual bookings (admin).
+servers:
+  - url: https://admin.executiveairportcars.com
+    description: Production admin API
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Zone:
+      type: object
+      properties:
+        id:
+          type: integer
+        zone_name:
+          type: string
+      required: [id, zone_name]
+    DirectionsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        polyline:
+          type: string
+          nullable: true
+        distance:
+          type: integer
+          description: distance in meters
+        duration:
+          type: integer
+          description: duration in seconds
+    AppliedCharge:
+      type: object
+      properties:
+        type:
+          type: string
+        zone:
+          type: string
+        amount:
+          type: number
+          format: float
+    Pricing:
+      type: object
+      properties:
+        id:
+          type: integer
+        base_saloon_price:
+          type: number
+        base_business_price:
+          type: number
+        base_mpv6_price:
+          type: number
+        base_mpv8_price:
+          type: number
+        saloon_price:
+          type: number
+        business_price:
+          type: number
+        mpv6_price:
+          type: number
+        mpv8_price:
+          type: number
+        selected_price:
+          type: number
+          nullable: true
+        airport_charges:
+          type: number
+          format: float
+        applied_charges:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedCharge'
+    QuoteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        pricing_type:
+          type: string
+          description: zone | postcode | mileage
+        pricing:
+          $ref: '#/components/schemas/Pricing'
+        pickup_zone:
+          $ref: '#/components/schemas/Zone'
+          nullable: true
+        dropoff_zone:
+          $ref: '#/components/schemas/Zone'
+          nullable: true
+        mileage:
+          type: object
+          properties:
+            start_mile:
+              type: number
+            end_mile:
+              type: number
+              nullable: true
+            is_fixed:
+              type: boolean
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        booking_code:
+          type: string
+        passenger_name:
+          type: string
+        phone:
+          type: string
+        pickup_address:
+          type: string
+        dropoff_address:
+          type: string
+        pickup_date:
+          type: string
+          format: date
+        pickup_time:
+          type: string
+        vehicle_type:
+          type: string
+        total_price:
+          type: number
+          format: float
+        status_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+paths:
+  /pricing/zones/quote:
+    post:
+      tags: [Pricing]
+      summary: Quote price for given pickup/drop coordinates
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pickup_lat, pickup_lon, dropoff_lat, dropoff_lon]
+              properties:
+                pickup_lat:
+                  type: number
+                pickup_lon:
+                  type: number
+                dropoff_lat:
+                  type: number
+                dropoff_lon:
+                  type: number
+                vehicle_type:
+                  type: string
+                pickup_postcode:
+                  type: string
+                dropoff_postcode:
+                  type: string
+                distance_miles:
+                  type: number
+      responses:
+        '200':
+          description: Pricing object with prices for all vehicle types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+        '422':
+          description: Validation or route/distance error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+  /pricing/zones/lookup:
+    post:
+      tags: [Pricing]
+      summary: Lookup which Zone contains a lat/lon point
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lat, lon]
+              properties:
+                lat:
+                  type: number
+                lon:
+                  type: number
+      responses:
+        '200':
+          description: Zone found or null
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  zone:
+                    oneOf:
+                      - $ref: '#/components/schemas/Zone'
+                      - type: 'null'
+  /bookings/directions:
+    post:
+      tags: [Bookings]
+      summary: Server-side directions (polyline, distance, duration)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pickup_lat, pickup_lon, dropoff_lat, dropoff_lon]
+              properties:
+                pickup_lat:
+                  type: number
+                pickup_lon:
+                  type: number
+                dropoff_lat:
+                  type: number
+                dropoff_lon:
+                  type: number
+      responses:
+        '200':
+          description: Directions result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectionsResponse'
+        '422':
+          description: Failed to compute route
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+  /bookings/manual:
+    post:
+      tags: [Bookings]
+      summary: Create a manual booking (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [passenger_name, phone, pickup_date, pickup_time]
+              properties:
+                pickup_address:
+                  type: string
+                dropoff_address:
+                  type: string
+                passenger_name:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                pickup_date:
+                  type: string
+                  format: date
+                pickup_time:
+                  type: string
+                vehicle_type:
+                  type: string
+                booking_charges:
+                  type: number
+      responses:
+        '201':
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  booking:
+                    $ref: '#/components/schemas/Booking'
+        '500':
+          description: Server error creating booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+security:
+  - bearerAuth: []

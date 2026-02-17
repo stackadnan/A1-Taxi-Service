@@ -15,6 +15,11 @@ Route::get('/', function() {
     return app(AuthController::class)->showLoginForm();
 })->name('admin.login');
 
+// Swagger UI for API documentation (serves public/openapi.yaml)
+Route::get('docs', function() {
+    return view('docs.swagger');
+})->name('docs');
+
 // Provide a global 'login' route so Laravel helpers that expect route('login') work.
 Route::get('login', function(){ return redirect('/'); })->name('login');
 
