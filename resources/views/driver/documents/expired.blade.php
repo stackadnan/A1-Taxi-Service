@@ -4,11 +4,7 @@
 
 @section('content')
 <div class="bg-white rounded-lg shadow p-6">
-<<<<<<< HEAD
-    <a href="{{ url()->previous() ?: route('driver.dashboard') }}" class="px-3 py-2 bg-gray-200 rounded inline-flex items-center mb-4">&larr; Back</a>
-=======
   <a href="{{ url()->previous() ?: route('driver.dashboard') }}" class="px-3 py-2 bg-gray-200 rounded inline-flex items-center mb-4">&larr; Back</a>
->>>>>>> 97be0faa709f4b51a867a2d4ac601735f9f92ade
   <h1 class="text-2xl font-bold mb-4">Expired & Expiring Documents</h1>
 
   @php
