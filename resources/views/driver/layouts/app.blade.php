@@ -44,8 +44,13 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
     <!-- Navigation Header -->
+<<<<<<< HEAD
     <nav class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+=======
+    <nav class="bg-white shadow-sm border-b border-gray-200 pt-4 sm:pt-0" style="padding-top: env(safe-area-inset-top, 0px);">
+        <div class="max-w-7xl mx-auto mt-5 px-4 sm:px-6 lg:px-8">
+>>>>>>> 97be0faa709f4b51a867a2d4ac601735f9f92ade
             <div class="flex justify-between items-center h-16">
                 <!-- Logo/Title -->
                 <div class="flex items-center">
@@ -59,7 +64,11 @@
                     <span class="text-sm text-gray-600">{{ auth('driver')->user()->name }}</span>
                     <form action="{{ route('driver.logout') }}" method="POST" class="inline">
                         @csrf
+<<<<<<< HEAD
                         <button type="submit" class="text-gray-600 hover:text-gray-800 text-sm">
+=======
+                        <button type="submit" class="text-gray-600 hover:text-gray-800 text-sm px-3 py-2 rounded">
+>>>>>>> 97be0faa709f4b51a867a2d4ac601735f9f92ade
                             <i class="fas fa-sign-out-alt mr-1"></i> Logout
                         </button>
                     </form>
