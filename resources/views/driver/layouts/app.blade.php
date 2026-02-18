@@ -395,25 +395,6 @@
         // Start SSE connection
         connectNotificationStream();
 
-        // Also fetch any pending unread driver notifications once on page load.
-        // The controller will mark them read so they won't show again when opening other tabs.
-        (function(){
-            try {
-                fetch(window.Laravel.driverNotificationsUrl, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': window.Laravel.csrfToken } })
-                    .then(r => r.json())
-                    .then(json => {
-                        if (!json || !Array.isArray(json.notifications)) return;
-                        json.notifications.forEach(function(n){
-                            if (!processedDriverNotificationIds.has(n.id)) {
-                                processedDriverNotificationIds.add(n.id);
-                                if (typeof showNotification === 'function') showNotification(n.message, 'success');
-                            }
-                        });
-                    })
-                    .catch(err => { console.warn('Failed to fetch unread driver notifications', err); });
-            } catch(e) { console.warn('Unread notifications fetch aborted', e); }
-        })();
-
         // ========================================
         // GPS Location Sharing (Global for all driver pages)
         // ========================================
