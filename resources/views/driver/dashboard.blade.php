@@ -60,14 +60,22 @@
 
         <!-- Expired / Expiring Documents Card -->
         <a href="{{ route('driver.documents.expired') }}" class="block">
-            @php $docCount = $expiredDocsCount ?? 0; @endphp
-            <div class="stat-card expired-docs rounded-lg p-6 text-center job-card {{ $docCount > 0 ? 'bg-red-500 text-white' : (isset($expiringDocsCount) && $expiringDocsCount > 0 ? 'bg-yellow-50' : '') }}">
+            @php
+                $docCount = $expiredDocsCount ?? 0;
+                $expiringCount = $expiringDocsCount ?? 0;
+                $allClear = $docCount === 0 && $expiringCount === 0;
+            @endphp
+            <div class="stat-card expired-docs rounded-lg p-6 text-center job-card {{ $docCount > 0 ? 'bg-red-500 text-white' : ($expiringCount > 0 ? 'bg-yellow-50' : 'bg-green-50') }}">
                 <div class="flex flex-col items-center justify-center h-full">
-                    <i class="fas fa-file-alt text-3xl mb-3 {{ $docCount > 0 ? 'text-white' : 'text-gray-600 opacity-90' }}"></i>
-                    <h3 class="text-lg font-semibold mb-2 {{ $docCount > 0 ? 'text-white' : 'text-gray-900' }}">Expired / Expiring Documents</h3>
-                    <p id="expired-docs-count" class="text-3xl font-bold {{ $docCount > 0 ? 'text-white' : 'text-gray-900' }}">{{ $docCount }}</p>
-                    @if(isset($expiringDocsCount) && $expiringDocsCount > 0)
-                        <p class="mt-1 text-xs {{ $docCount > 0 ? 'text-red-100' : 'text-yellow-600' }}">{{ $expiringDocsCount }} expiring soon</p>
+                    <i class="fas {{ $allClear ? 'fa-check-circle text-green-500' : 'fa-file-alt' }} text-3xl mb-3 {{ $docCount > 0 ? 'text-white' : ($allClear ? '' : 'text-gray-600 opacity-90') }}"></i>
+                    <h3 class="text-lg font-semibold mb-2 {{ $docCount > 0 ? 'text-white' : ($allClear ? 'text-green-700' : 'text-gray-900') }}">
+                        {{ $allClear ? 'All Documents Clear' : 'Expired / Expiring Documents' }}
+                    </h3>
+                    @if(!$allClear)
+                        <p id="expired-docs-count" class="text-3xl font-bold {{ $docCount > 0 ? 'text-white' : 'text-gray-900' }}">{{ $docCount }}</p>
+                        @if($expiringCount > 0)
+                            <p class="mt-1 text-xs {{ $docCount > 0 ? 'text-red-100' : 'text-yellow-600' }}">{{ $expiringCount }} expiring soon</p>
+                        @endif
                     @endif
                 </div>
             </div>
