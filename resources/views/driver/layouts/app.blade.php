@@ -7,8 +7,20 @@
     <title>{{ config('app.name', 'Airport Services') }} - Driver Portal</title>
     
     <!-- TailwindCSS -->
+    <script>tailwind = { darkMode: 'class' }</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
+    <!-- Dark mode: apply class before paint to avoid flash -->
+    <script>
+        (function(){
+            try {
+                if (localStorage.getItem('driverTheme') === 'dark' ||
+                    (!localStorage.getItem('driverTheme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch(e){}
+        })();
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -69,11 +81,84 @@
         .docs-clear    { --bg-color: #16A34A; --bg-color-end: #0D9488; box-shadow: 0 6px 20px rgba(22,163,74,0.35); }
         .docs-warning  { --bg-color: #D97706; --bg-color-end: #B45309; box-shadow: 0 6px 20px rgba(217,119,6,0.35); }
         .docs-danger   { --bg-color: #DC2626; --bg-color-end: #9F1239; box-shadow: 0 6px 20px rgba(220,38,38,0.4); }
+
+        /* ===== DARK MODE ===== */
+        html.dark body  { background-color: #0f172a; color: #e2e8f0; }
+        html.dark main  { background-color: #0f172a; }
+
+        /* Nav */
+        html.dark nav                        { background-color: #1e293b !important; border-color: #334155 !important; }
+        html.dark nav h1                     { color: #e2e8f0 !important; }
+        html.dark nav span                   { color: #cbd5e1 !important; }
+        html.dark #theme-toggle              { border-color: #475569 !important; color: #94a3b8 !important; }
+        html.dark #theme-toggle:hover        { background-color: #334155 !important; color: #e2e8f0 !important; }
+        html.dark nav button[type="submit"]  { color: #94a3b8 !important; }
+        html.dark nav button[type="submit"]:hover { color: #e2e8f0 !important; }
+
+        /* Surfaces */
+        html.dark .bg-white                  { background-color: #1e293b !important; }
+        html.dark .bg-gray-50                { background-color: #162032 !important; }
+        html.dark .bg-gray-100               { background-color: #0f172a !important; }
+
+        /* Text — all grays get lighter in dark mode not darker */
+        html.dark .text-gray-900             { color: #f1f5f9 !important; }
+        html.dark .text-gray-800             { color: #e2e8f0 !important; }
+        html.dark .text-gray-700             { color: #cbd5e1 !important; }
+        html.dark .text-gray-600             { color: #94a3b8 !important; }
+        html.dark .text-gray-500             { color: #94a3b8 !important; }
+        html.dark .text-gray-400             { color: #64748b !important; }
+
+        /* Borders */
+        html.dark .border                    { border-color: #334155 !important; }
+        html.dark .border-gray-200           { border-color: #334155 !important; }
+        html.dark .border-gray-100           { border-color: #1e293b !important; }
+
+        /* Driver info — icon tile backgrounds */
+        html.dark .bg-indigo-100             { background-color: #1e1b4b !important; }
+        html.dark .bg-green-100              { background-color: #052e16 !important; }
+        html.dark .bg-blue-100               { background-color: #0c1a2e !important; }
+        html.dark .bg-purple-100             { background-color: #2d0a4e !important; }
+        html.dark .bg-yellow-100             { background-color: #2d1a00 !important; }
+
+        /* Driver info — icon colors brighter so they pop on dark tiles */
+        html.dark .text-indigo-500           { color: #818cf8 !important; }
+        html.dark .text-green-500            { color: #34d399 !important; }
+        html.dark .text-blue-500             { color: #60a5fa !important; }
+        html.dark .text-purple-500           { color: #a78bfa !important; }
+        html.dark .text-yellow-500           { color: #fbbf24 !important; }
+
+        /* Section label colours inside driver info */
+        html.dark .text-green-700            { color: #4ade80 !important; }
+
+        /* Availability toggle buttons — unselected */
+        html.dark .driver-avail-btn          { background-color: #1e293b !important; border-color: #475569 !important; color: #94a3b8 !important; }
+        /* Active selected */
+        html.dark .driver-avail-btn.border-green-500 { background-color: #052e16 !important; border-color: #22c55e !important; color: #4ade80 !important; }
+        /* Inactive selected */
+        html.dark .driver-avail-btn.border-red-400   { background-color: #450a0a !important; border-color: #f87171 !important; color: #fca5a5 !important; }
+
+        /* Availability inner icon circles */
+        html.dark .driver-avail-btn .text-green-500  { color: #22c55e !important; }
+        html.dark .driver-avail-btn .text-red-400    { color: #f87171 !important; }
+
+        /* Inputs */
+        html.dark input[type="datetime-local"] { background-color: #0f172a !important; border-color: #475569 !important; color: #e2e8f0 !important; }
+
+        /* Flash messages — direct children of #page-content */
+        html.dark #page-content > .bg-green-100 { background-color: #052e16 !important; border-color: #166534 !important; color: #86efac !important; }
+        html.dark #page-content > .bg-red-100   { background-color: #450a0a !important; border-color: #991b1b !important; color: #fca5a5 !important; }
+
+        /* Quick action card + driver info availability section background */
+        html.dark .bg-gray-50.rounded-xl     { background-color: #0f172a !important; }
+        html.dark .bg-gray-50.rounded-xl.border { border-color: #1e293b !important; }
+
+        /* Theme toggle transition */
+        #theme-toggle { transition: background 0.2s, color 0.2s; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <!-- Navigation Header -->
-    <nav class="bg-white shadow-sm border-b border-gray-200 pt-4 sm:pt-0" style="padding-top: env(safe-area-inset-top, 0px);">
+    <nav class="bg-white shadow-sm border-b border-gray-200 pt-4 sm:pt-0 sticky top-0 z-50" style="padding-top: env(safe-area-inset-top, 0px);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <!-- Logo/Title -->
@@ -84,8 +169,15 @@
                 </div>
                 
                 <!-- User Menu -->
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-600">{{ auth('driver')->user()->name }}</span>
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm text-gray-600 hidden sm:inline">{{ auth('driver')->user()->name }}</span>
+
+                    <!-- Dark / Light Toggle -->
+                    <button id="theme-toggle" title="Toggle dark/light mode"
+                        class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none">
+                        <i id="theme-icon" class="fas fa-moon text-sm"></i>
+                    </button>
+
                     <form action="{{ route('driver.logout') }}" method="POST" class="inline">
                         @csrf
                         <button type="submit" class="text-gray-600 hover:text-gray-800 text-sm px-3 py-2 rounded">
@@ -538,6 +630,34 @@
             if (eventSource) eventSource.close();
             if (reconnectTimeout) clearTimeout(reconnectTimeout);
         });
+
+        // ===== Dark / Light Mode Toggle =====
+        (function(){
+            var html = document.documentElement;
+            var btn  = document.getElementById('theme-toggle');
+            var icon = document.getElementById('theme-icon');
+
+            function applyTheme(dark){
+                if (dark) {
+                    html.classList.add('dark');
+                    icon.classList.replace('fa-moon', 'fa-sun');
+                    btn.title = 'Switch to Light Mode';
+                } else {
+                    html.classList.remove('dark');
+                    icon.classList.replace('fa-sun', 'fa-moon');
+                    btn.title = 'Switch to Dark Mode';
+                }
+            }
+
+            // Set correct icon on load
+            applyTheme(html.classList.contains('dark'));
+
+            btn.addEventListener('click', function(){
+                var isDark = !html.classList.contains('dark');
+                try { localStorage.setItem('driverTheme', isDark ? 'dark' : 'light'); } catch(e){}
+                applyTheme(isDark);
+            });
+        })();
     </script>
     
     @yield('scripts')
