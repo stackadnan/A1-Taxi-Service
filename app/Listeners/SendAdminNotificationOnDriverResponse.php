@@ -25,6 +25,9 @@ class SendAdminNotificationOnDriverResponse
         } elseif ($response === 'in_route') {
             $title = 'Driver In Route';
             $message = sprintf('Driver %s is In Route for job #%s (to pickup at %s)', $driver->name, $booking->booking_code ?? $booking->id, $booking->pickup_address);
+        } elseif ($response === 'arrived_at_pickup') {
+            $title = 'Driver Arrived at Pickup';
+            $message = sprintf('Driver %s has arrived at the pickup location for job #%s (%s)', $driver->name, $booking->booking_code ?? $booking->id, $booking->pickup_address);
         } elseif ($response === 'declined' || $response === 'rejected') {
             $title = 'Driver Rejected Job';
             $message = sprintf('Driver %s has rejected job #%s from %s to %s', $driver->name, $booking->booking_code ?? $booking->id, $booking->pickup_address, $booking->dropoff_address);

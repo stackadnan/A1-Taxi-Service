@@ -224,6 +224,7 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::post('jobs/{booking}/accept', [DriverDashboardController::class, 'acceptJob'])->name('jobs.accept');
         Route::post('jobs/{booking}/decline', [DriverDashboardController::class, 'declineJob'])->name('jobs.decline');
         Route::post('jobs/{booking}/inroute', [DriverDashboardController::class, 'markAsInRoute'])->name('jobs.inroute');
+        Route::post('jobs/{booking}/arrived', [DriverDashboardController::class, 'markAsArrivedAtPickup'])->name('jobs.arrived');
         Route::post('jobs/{booking}/pob', [DriverDashboardController::class, 'markAsProofOfBusiness'])->name('jobs.pob');
         Route::post('jobs/{booking}/complete', [DriverDashboardController::class, 'markAsCompleted'])->name('jobs.complete');
         Route::post('jobs/{booking}/complete', [DriverDashboardController::class, 'markAsCompleted'])->name('jobs.complete');

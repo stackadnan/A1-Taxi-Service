@@ -598,6 +598,97 @@ class DriverDashboardController extends Controller
     }
 
     /**
+     * Mark a job as Arrived at Pickup (driver has arrived at the pickup location)
+     */
+    public function markAsArrivedAtPickup(Request $request, Booking $booking)
+    {
+        try {
+            $driver = Auth::guard('driver')->user();
+
+            \Log::info('Driver marking job as Arrived at Pickup', [
+                'driver_id' => $driver->id,
+                'booking_id' => $booking->id,
+            ]);
+
+            if (!$driver) {
+                return response()->json(['error' => 'Driver not authenticated'], 401);
+            }
+
+            if ((int) $booking->driver_id !== (int) $driver->id) {
+                return response()->json(['error' => 'Unauthorized - This job is not assigned to you'], 403);
+            }
+
+            // Must be confirmed & accepted and already In Route
+            $statusName    = optional($booking->status)->name;
+            $driverResponse = $booking->meta['driver_response'] ?? null;
+
+            if ($statusName !== 'confirmed' || $driverResponse !== 'accepted') {
+                return response()->json(['error' => 'Job must be confirmed and accepted before marking as Arrived'], 400);
+            }
+
+            $meta = $booking->meta ?? [];
+
+            if (empty($meta['in_route']) || $meta['in_route'] !== true) {
+                return response()->json(['error' => 'Job must be In Route before marking as Arrived at Pickup'], 400);
+            }
+
+            if (!empty($meta['arrived_at_pickup'])) {
+                return response()->json(['error' => 'Job is already marked as Arrived at Pickup'], 400);
+            }
+
+            // Update meta
+            $meta['arrived_at_pickup']              = true;
+            $meta['arrived_at_pickup_at']           = now()->toDateTimeString();
+            $meta['arrived_at_pickup_by_driver_id'] = $driver->id;
+            $meta['status_changed_at']              = now()->toDateTimeString();
+
+            $booking->meta = $meta;
+            $booking->save();
+
+            // Fire event for SSE / notifications
+            event(new \App\Events\DriverResponseUpdated($booking, $driver, 'arrived_at_pickup'));
+
+            // Create explicit admin notification
+            try {
+                $title   = 'Driver Arrived at Pickup';
+                $message = sprintf(
+                    'Driver %s has arrived at the pickup location for job #%s (%s)',
+                    $driver->name,
+                    $booking->booking_code ?? $booking->id,
+                    $booking->pickup_address
+                );
+                \App\Models\UserNotification::createForAdmins($title, $message);
+            } catch (\Exception $e) {
+                \Log::warning('Failed to create admin notification for Arrived at Pickup: ' . $e->getMessage());
+            }
+
+            \Log::info('Job marked as Arrived at Pickup successfully', [
+                'driver_id'  => $driver->id,
+                'booking_id' => $booking->id,
+            ]);
+
+            $counts = [
+                'new'       => $driver->getNewJobsCount(),
+                'accepted'  => $driver->getAcceptedJobsCount(),
+                'completed' => $driver->getCompletedJobsCount(),
+                'declined'  => $driver->getDeclinedJobsCount(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Marked as Arrived at Pickup. Admin has been notified.',
+                'counts'  => $counts,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error marking job as Arrived at Pickup', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to mark as Arrived at Pickup: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Mark a job as Proof of Business (POB)
      */
 

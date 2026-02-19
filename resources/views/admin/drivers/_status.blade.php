@@ -31,7 +31,7 @@
           </td>
           <td class="p-2">{{ $d->status_since }}</td>
           <td class="p-2">
-            @if($d->current_booking && ($d->status_label === 'POB' || $d->status_label === 'In Route'))
+            @if($d->current_booking && ($d->status_label === 'POB' || $d->status_label === 'In Route' || $d->status_label === 'Arrived'))
               <button 
                 onclick="startInlineTracking({{ $d->id }}, {{ $d->current_booking->id }}, '{{ $d->name }}', '{{ $d->current_booking->booking_code }}', '{{ $d->status_label }}')" 
                 class="{{ $d->status_label === 'In Route' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700' }} text-white px-3 py-1 rounded text-sm flex items-center gap-1"

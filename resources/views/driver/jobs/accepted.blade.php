@@ -102,21 +102,28 @@
                     <!-- Status Info -->
                     <div class="text-center md:ml-6 space-y-2">
                         @if($job->status && $job->status->name === 'pob')
-                            {{-- POB Status: Show yellow indicator and Complete button --}}
+                            {{-- POB Status --}}
                             <div class="bg-yellow-100 rounded-lg p-4">
                                 <i class="fas fa-clipboard-check text-yellow-500 text-2xl mb-2"></i>
                                 <p class="text-sm font-medium text-yellow-800">POB Status</p>
                                 <p class="text-xs text-yellow-600">Ready to complete</p>
                             </div>
+                        @elseif(isset($job->meta['arrived_at_pickup']) && $job->meta['arrived_at_pickup'] === true)
+                            {{-- Arrived at Pickup Status --}}
+                            <div class="bg-blue-100 rounded-lg p-4">
+                                <i class="fas fa-map-marker-alt text-blue-600 text-2xl mb-2"></i>
+                                <p class="text-sm font-medium text-blue-800">Arrived at Pickup</p>
+                                <p class="text-xs text-blue-600">Waiting for passenger</p>
+                            </div>
                         @elseif(isset($job->meta['in_route']) && $job->meta['in_route'] === true)
-                            {{-- In Route Status: Show purple indicator and POB button --}}
+                            {{-- In Route Status --}}
                             <div class="bg-purple-100 rounded-lg p-4">
                                 <i class="fas fa-route text-purple-500 text-2xl mb-2"></i>
                                 <p class="text-sm font-medium text-purple-800">In Route</p>
                                 <p class="text-xs text-purple-600">Heading to pickup</p>
                             </div>
                         @else
-                            {{-- Accepted Status: Show orange indicator and In Route button --}}
+                            {{-- Accepted Status --}}
                             <div class="bg-orange-100 rounded-lg p-4">
                                 <i class="fas fa-hourglass-half text-orange-500 text-2xl mb-2"></i>
                                 <p class="text-sm font-medium text-orange-800">Accepted</p>
@@ -134,8 +141,8 @@
                                 >
                                     <i class="fas fa-flag-checkered mr-2"></i>Mark as Completed
                                 </button>
-                            @elseif(isset($job->meta['in_route']) && $job->meta['in_route'] === true)
-                                {{-- In Route status: Show POB button --}}
+                            @elseif(isset($job->meta['arrived_at_pickup']) && $job->meta['arrived_at_pickup'] === true)
+                                {{-- Arrived at Pickup status: Show POB button --}}
                                 <button 
                                     type="button"
                                     onclick="event.preventDefault(); markAsPOB({{ $job->id }});" 
@@ -143,6 +150,16 @@
                                     id="pob-btn-{{ $job->id }}"
                                 >
                                     <i class="fas fa-check mr-2"></i>Mark as POB
+                                </button>
+                            @elseif(isset($job->meta['in_route']) && $job->meta['in_route'] === true)
+                                {{-- In Route status: Show Arrived at Pickup button --}}
+                                <button 
+                                    type="button"
+                                    onclick="event.preventDefault(); markAsArrived({{ $job->id }});" 
+                                    class="w-full px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 transition-colors"
+                                    id="arrived-btn-{{ $job->id }}"
+                                >
+                                    <i class="fas fa-map-marker-alt mr-2"></i>Arrived to Pickup
                                 </button>
                             @else
                                 {{-- Accepted status: Show In Route button --}}
@@ -256,16 +273,16 @@ window.markAsInRoute = function(bookingId) {
                     `;
                 }
                 
-                // Update button to POB
+                // Update button to Arrived at Pickup
                 const buttonContainer = btn.parentElement;
                 buttonContainer.innerHTML = `
                     <button 
                         type="button"
-                        onclick="event.preventDefault(); markAsPOB(${bookingId});" 
-                        class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                        id="pob-btn-${bookingId}"
+                        onclick="event.preventDefault(); markAsArrived(${bookingId});" 
+                        class="w-full px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 transition-colors"
+                        id="arrived-btn-${bookingId}"
                     >
-                        <i class="fas fa-check mr-2"></i>Mark as POB
+                        <i class="fas fa-map-marker-alt mr-2"></i>Arrived to Pickup
                     </button>
                     <a href="{{ route('driver.jobs.show', ':id') }}".replace(':id', bookingId) class="block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-center mt-2">View Full Details</a>
                 `;
@@ -288,6 +305,75 @@ window.markAsInRoute = function(bookingId) {
         // Reset button
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-car mr-2"></i>Mark as In Route';
+    });
+};
+
+// Arrived at Pickup functionality - Global scope
+window.markAsArrived = function(bookingId) {
+    const btn = document.getElementById(`arrived-btn-${bookingId}`);
+    if (!btn) {
+        console.error('Arrived button not found for booking:', bookingId);
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Marking as Arrived...';
+
+    fetch('{{ route("driver.jobs.arrived", ":bookingId") }}'.replace(':bookingId', bookingId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Arrived at pickup! Admin has been notified.', 'success');
+
+            const jobCard = btn.closest('.bg-white');
+            if (jobCard) {
+                // Update status badge
+                const statusDiv = jobCard.querySelector('.bg-purple-100');
+                if (statusDiv) {
+                    statusDiv.className = 'bg-blue-100 rounded-lg p-4';
+                    statusDiv.innerHTML = `
+                        <i class="fas fa-map-marker-alt text-blue-600 text-2xl mb-2"></i>
+                        <p class="text-sm font-medium text-blue-800">Arrived at Pickup</p>
+                        <p class="text-xs text-blue-600">Waiting for passenger</p>
+                    `;
+                }
+
+                // Update button to Mark as POB
+                const buttonContainer = btn.parentElement;
+                buttonContainer.innerHTML = `
+                    <button 
+                        type="button"
+                        onclick="event.preventDefault(); markAsPOB(${bookingId});" 
+                        class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        id="pob-btn-${bookingId}"
+                    >
+                        <i class="fas fa-check mr-2"></i>Mark as POB
+                    </button>
+                    <a href="{{ route('driver.jobs.show', ':id') }}".replace(':id', bookingId) class="block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-center mt-2">View Full Details</a>
+                `;
+            }
+
+            if (data.counts && window.updateJobCounts) {
+                window.updateJobCounts(data.counts);
+            }
+        } else {
+            showNotification(data.error || 'Failed to mark as Arrived', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Arrived to Pickup';
+        }
+    })
+    .catch(error => {
+        console.error('Arrived Error:', error);
+        showNotification('Failed to mark as Arrived', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Arrived to Pickup';
     });
 };
 
@@ -334,8 +420,8 @@ window.markAsPOB = function(bookingId) {
                     <a href="{{ route('driver.jobs.show', ':id') }}".replace(':id', bookingId) class="block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-center mt-2">View Full Details</a>
                 `;
                 
-                // Update status indicator
-                const statusDiv = jobCard.querySelector('.bg-orange-100');
+                // Update status indicator (could be orange=accepted, purple=in_route, blue=arrived)
+                const statusDiv = jobCard.querySelector('.bg-orange-100, .bg-purple-100, .bg-blue-100');
                 if (statusDiv) {
                     statusDiv.className = 'bg-yellow-100 rounded-lg p-4';
                     statusDiv.innerHTML = `

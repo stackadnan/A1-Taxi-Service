@@ -109,15 +109,19 @@ class DriverController extends Controller
 
                 if ($currentBooking) {
                     $meta = $currentBooking->meta ?? [];
-                    $isInRoute = isset($meta['in_route']) && $meta['in_route'] === true;
+                    $isInRoute        = isset($meta['in_route']) && $meta['in_route'] === true;
+                    $isArrivedPickup  = isset($meta['arrived_at_pickup']) && $meta['arrived_at_pickup'] === true;
                     $statusKey = $currentBooking->status->name ?? 'in_progress';
                     
-                    // Priority: POB (actual status) > in_route (meta flag) > other statuses
-                    // This ensures POB status is shown correctly even if in_route flag wasn't cleared
+                    // Priority: POB > arrived_at_pickup > in_route > other
                     if ($statusKey === 'pob') {
                         $label = 'POB';
                         $color = 'orange';
                         $sinceFrom = isset($meta['pob_marked_at']) ? $meta['pob_marked_at'] : ($currentBooking->updated_at ?? $drv->last_active_at);
+                    } elseif ($isArrivedPickup) {
+                        $label = 'Arrived';
+                        $color = 'blue';
+                        $sinceFrom = isset($meta['arrived_at_pickup_at']) ? $meta['arrived_at_pickup_at'] : ($currentBooking->updated_at ?? $drv->last_active_at);
                     } elseif ($isInRoute) {
                         $label = 'In Route';
                         $color = 'purple';
@@ -295,13 +299,14 @@ class DriverController extends Controller
             abort(403, 'This booking is not assigned to the selected driver.');
         }
 
-        // Check if booking is in trackable status (POB or in_route)
+        // Check if booking is in trackable status (POB, arrived_at_pickup, or in_route)
         $meta = $booking->meta ?? [];
-        $isInRoute = isset($meta['in_route']) && $meta['in_route'] === true;
+        $isInRoute       = isset($meta['in_route']) && $meta['in_route'] === true;
+        $isArrivedPickup = isset($meta['arrived_at_pickup']) && $meta['arrived_at_pickup'] === true;
         $isPob = $booking->status && $booking->status->name === 'pob';
         
-        if (!$isPob && !$isInRoute) {
-            abort(400, 'Driver tracking is available for jobs in In Route or POB status.');
+        if (!$isPob && !$isInRoute && !$isArrivedPickup) {
+            abort(400, 'Driver tracking is available for jobs in In Route, Arrived at Pickup, or POB status.');
         }
 
         return view('admin.drivers.track', compact('driver', 'booking'));
@@ -373,13 +378,15 @@ class DriverController extends Controller
                 'address' => $booking ? ($booking->from_address ?? 'Pickup Location, London, UK') : null
             ];
 
-            // Check if booking is in "in_route" status (traveling to pickup)
+            // Check if booking is in "in_route" or "arrived_at_pickup" status
             $meta = $booking ? ($booking->meta ?? []) : [];
-            $isInRoute = isset($meta['in_route']) && $meta['in_route'] === true;
+            $isInRoute       = isset($meta['in_route']) && $meta['in_route'] === true;
+            $isArrivedPickup = isset($meta['arrived_at_pickup']) && $meta['arrived_at_pickup'] === true;
 
             return response()->json([
                 'success' => true,
-                'in_route' => $isInRoute,  // NEW: flag to indicate driver is traveling to pickup
+                'in_route'          => $isInRoute,
+                'arrived_at_pickup' => $isArrivedPickup,
                 'driver' => [
                     'latitude' => $location['lat'],
                     'longitude' => $location['lng'],
