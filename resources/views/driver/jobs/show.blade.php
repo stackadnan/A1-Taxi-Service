@@ -47,11 +47,11 @@
         <div><strong>Notes to driver:</strong> {{ $job->message_to_driver ?? '-' }}</div>
       </div>
 
-      <h3 class="text-lg font-semibold mt-4 mb-2">Status</h3>
+      <!-- <h3 class="text-lg font-semibold mt-4 mb-2">Status</h3>
       <div class="text-sm text-gray-800">
         <div><strong>Status:</strong> {{ optional($job->status)->name ?? '-' }}</div>
         <div><strong>Driver response:</strong> {{ $job->meta['driver_response'] ?? '-' }}</div>
-      </div>
+      </div> -->
 
     </div>
   </div>
