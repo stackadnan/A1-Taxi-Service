@@ -21,25 +21,54 @@
         }
         
         .job-card {
-            transition: all 0.3s ease;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
         
         .job-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
         }
-        
+
         .stat-card {
-            background: linear-gradient(135deg, var(--bg-color), var(--bg-color-end));
+            background: linear-gradient(145deg, var(--bg-color), var(--bg-color-end));
             border: none;
             color: white;
-            min-height: 120px;
+            min-height: 130px;
+            position: relative;
+            overflow: hidden;
         }
-        
-        .new-jobs { --bg-color: #2563eb; --bg-color-end: #1d4ed8; }
-        .accepted-jobs { --bg-color: #f59e0b; --bg-color-end: #d97706; }
-        .completed-jobs { --bg-color: #10b981; --bg-color-end: #059669; }
-        .declined-jobs { --bg-color: #ef4444; --bg-color-end: #dc2626; }
+
+        /* Subtle sheen overlay */
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -40%;
+            left: -40%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .stat-card .stat-icon-wrap {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            backdrop-filter: blur(4px);
+        }
+
+        .new-jobs      { --bg-color: #4F46E5; --bg-color-end: #7C3AED; box-shadow: 0 6px 20px rgba(79,70,229,0.4); }
+        .accepted-jobs { --bg-color: #F59E0B; --bg-color-end: #EF6C00; box-shadow: 0 6px 20px rgba(245,158,11,0.4); }
+        .completed-jobs{ --bg-color: #059669; --bg-color-end: #0D9488; box-shadow: 0 6px 20px rgba(5,150,105,0.4); }
+        .declined-jobs { --bg-color: #DC2626; --bg-color-end: #9F1239; box-shadow: 0 6px 20px rgba(220,38,38,0.4); }
+        .docs-clear    { --bg-color: #16A34A; --bg-color-end: #0D9488; box-shadow: 0 6px 20px rgba(22,163,74,0.35); }
+        .docs-warning  { --bg-color: #D97706; --bg-color-end: #B45309; box-shadow: 0 6px 20px rgba(217,119,6,0.35); }
+        .docs-danger   { --bg-color: #DC2626; --bg-color-end: #9F1239; box-shadow: 0 6px 20px rgba(220,38,38,0.4); }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">

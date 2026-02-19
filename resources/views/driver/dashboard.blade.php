@@ -5,172 +5,242 @@
 @section('content')
 <div class="space-y-6">
     <!-- Welcome Header -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">
-            Welcome, {{ $driver->name }}!
-        </h1>
-        <p class="text-gray-600">Here's your job overview for today</p>
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-lg px-6 py-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center ring-2 ring-white/30 shrink-0">
+            <i class="fas fa-user text-white text-xl"></i>
+        </div>
+        <div>
+            <h1 class="text-xl font-bold text-white leading-tight">Welcome back, {{ $driver->name }}!</h1>
+            <p class="text-indigo-200 text-sm mt-0.5">Here's your job overview for today</p>
+        </div>
     </div>
 
     <!-- Stats Cards Grid -->
+    @php
+        $docCount     = $expiredDocsCount ?? 0;
+        $expiringCount = $expiringDocsCount ?? 0;
+        $allClear     = $docCount === 0 && $expiringCount === 0;
+        $docTheme     = $docCount > 0 ? 'docs-danger' : ($expiringCount > 0 ? 'docs-warning' : 'docs-clear');
+        $docIcon      = $allClear ? 'fa-shield-alt' : ($docCount > 0 ? 'fa-exclamation-triangle' : 'fa-file-alt');
+        $docLabel     = $allClear ? 'All Documents Clear' : 'Expiring Documents';
+    @endphp
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+
         <!-- New Jobs Card -->
         <a href="{{ route('driver.jobs.new') }}" class="block">
-            <div class="stat-card new-jobs rounded-lg p-6 text-center job-card">
+            <div class="stat-card new-jobs rounded-2xl p-5 text-center job-card">
                 <div class="flex flex-col items-center justify-center h-full">
-                    <i class="fas fa-bell text-3xl mb-3 opacity-90"></i>
-                    <h3 class="text-lg font-semibold mb-2">New Jobs</h3>
-                    <p id="new-jobs-count" class="text-3xl font-bold">{{ $newJobsCount }}</p>
+                    <div class="stat-icon-wrap">
+                        <i class="fas fa-bell text-white text-2xl"></i>
+                    </div>
+                    <p class="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">New Jobs</p>
+                    <p id="new-jobs-count" class="text-4xl font-extrabold text-white leading-none">{{ $newJobsCount }}</p>
                 </div>
             </div>
         </a>
 
         <!-- Accepted Jobs Card -->
         <a href="{{ route('driver.jobs.accepted') }}" class="block">
-            <div class="stat-card accepted-jobs rounded-lg p-6 text-center job-card">
+            <div class="stat-card accepted-jobs rounded-2xl p-5 text-center job-card">
                 <div class="flex flex-col items-center justify-center h-full">
-                    <i class="fas fa-check-circle text-3xl mb-3 opacity-90"></i>
-                    <h3 class="text-lg font-semibold mb-2">Accepted Jobs</h3>
-                    <p id="accepted-jobs-count" class="text-3xl font-bold">{{ $acceptedJobsCount }}</p>
+                    <div class="stat-icon-wrap">
+                        <i class="fas fa-check-circle text-white text-2xl"></i>
+                    </div>
+                    <p class="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">Accepted</p>
+                    <p id="accepted-jobs-count" class="text-4xl font-extrabold text-white leading-none">{{ $acceptedJobsCount }}</p>
                 </div>
             </div>
         </a>
 
         <!-- Completed Jobs Card -->
         <a href="{{ route('driver.jobs.completed') }}" class="block">
-            <div class="stat-card completed-jobs rounded-lg p-6 text-center job-card">
+            <div class="stat-card completed-jobs rounded-2xl p-5 text-center job-card">
                 <div class="flex flex-col items-center justify-center h-full">
-                    <i class="fas fa-trophy text-3xl mb-3 opacity-90"></i>
-                    <h3 class="text-lg font-semibold mb-2">Completed Jobs</h3>
-                    <p id="completed-jobs-count" class="text-3xl font-bold">{{ $completedJobsCount }}</p>
+                    <div class="stat-icon-wrap">
+                        <i class="fas fa-trophy text-white text-2xl"></i>
+                    </div>
+                    <p class="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">Completed</p>
+                    <p id="completed-jobs-count" class="text-4xl font-extrabold text-white leading-none">{{ $completedJobsCount }}</p>
                 </div>
             </div>
         </a>
 
         <!-- Declined Jobs Card -->
         <a href="{{ route('driver.jobs.declined') }}" class="block">
-            <div class="stat-card declined-jobs rounded-lg p-6 text-center job-card">
+            <div class="stat-card declined-jobs rounded-2xl p-5 text-center job-card">
                 <div class="flex flex-col items-center justify-center h-full">
-                    <i class="fas fa-times-circle text-3xl mb-3 opacity-90"></i>
-                    <h3 class="text-lg font-semibold mb-2">Jobs Declined</h3>
-                    <p id="declined-jobs-count" class="text-3xl font-bold">{{ $declinedJobsCount }}</p>
+                    <div class="stat-icon-wrap">
+                        <i class="fas fa-times-circle text-white text-2xl"></i>
+                    </div>
+                    <p class="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">Declined</p>
+                    <p id="declined-jobs-count" class="text-4xl font-extrabold text-white leading-none">{{ $declinedJobsCount }}</p>
                 </div>
             </div>
         </a>
 
-        <!-- Expired / Expiring Documents Card -->
+        <!-- Documents Card -->
         <a href="{{ route('driver.documents.expired') }}" class="block">
-            @php
-                $docCount = $expiredDocsCount ?? 0;
-                $expiringCount = $expiringDocsCount ?? 0;
-                $allClear = $docCount === 0 && $expiringCount === 0;
-            @endphp
-            <div class="stat-card expired-docs rounded-lg p-6 text-center job-card {{ $docCount > 0 ? 'bg-red-500 text-white' : ($expiringCount > 0 ? 'bg-yellow-50' : 'bg-green-50') }}">
+            <div class="stat-card {{ $docTheme }} rounded-2xl p-5 text-center job-card">
                 <div class="flex flex-col items-center justify-center h-full">
-                    <i class="fas {{ $allClear ? 'fa-check-circle text-green-500' : 'fa-file-alt' }} text-3xl mb-3 {{ $docCount > 0 ? 'text-white' : ($allClear ? '' : 'text-gray-600 opacity-90') }}"></i>
-                    <h3 class="text-lg font-semibold mb-2 {{ $docCount > 0 ? 'text-white' : ($allClear ? 'text-green-700' : 'text-gray-900') }}">
-                        {{ $allClear ? 'All Documents Clear' : 'Expired / Expiring Documents' }}
-                    </h3>
+                    <div class="stat-icon-wrap">
+                        <i class="fas {{ $docIcon }} text-white text-2xl"></i>
+                    </div>
+                    <p class="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">{{ $docLabel }}</p>
                     @if(!$allClear)
-                        <p id="expired-docs-count" class="text-3xl font-bold {{ $docCount > 0 ? 'text-white' : 'text-gray-900' }}">{{ $docCount }}</p>
-                        @if($expiringCount > 0)
-                            <p class="mt-1 text-xs {{ $docCount > 0 ? 'text-red-100' : 'text-yellow-600' }}">{{ $expiringCount }} expiring soon</p>
+                        <p id="expired-docs-count" class="text-4xl font-extrabold text-white leading-none">{{ $docCount ?: $expiringCount }}</p>
+                        @if($docCount > 0 && $expiringCount > 0)
+                            <p class="mt-1 text-xs text-white/70">+{{ $expiringCount }} expiring soon</p>
                         @endif
                     @endif
                 </div>
             </div>
         </a>
+
     </div>
 
     <!-- Quick Actions -->
     @if($newJobsCount > 0)
-    <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-xl font-semibold text-gray-900 mb-4">
-            <i class="fas fa-bolt text-blue-500 mr-2"></i>
-            Quick Actions
-        </h2>
-        <div class="flex flex-wrap gap-3">
-            <a href="{{ route('driver.jobs.new') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition duration-200">
-                <i class="fas fa-eye mr-2"></i>
-                View New Jobs (<span id="new-jobs-quick-count">{{ $newJobsCount }}</span>)
-            </a>
+    <div class="bg-white rounded-2xl shadow p-5 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                <i class="fas fa-bolt text-indigo-500"></i>
+            </div>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-widest text-gray-400">Quick Action</p>
+                <p class="text-sm font-semibold text-gray-800">You have new jobs waiting</p>
+            </div>
         </div>
+        <a href="{{ route('driver.jobs.new') }}" class="shrink-0 flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow transition-all">
+            <i class="fas fa-eye"></i>
+            View Jobs&nbsp;<span class="bg-white/25 rounded-full px-2 py-0.5 text-xs font-bold" id="new-jobs-quick-count">{{ $newJobsCount }}</span>
+        </a>
     </div>
     @endif
 
     <!-- Driver Info -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-xl font-semibold text-gray-900 mb-4">
-            <i class="fas fa-user text-green-500 mr-2"></i>
-            Driver Information
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-3">
-                <div class="flex items-center">
-                    <span class="text-sm font-medium text-gray-500 w-24">Email:</span>
-                    <span class="text-sm text-gray-900">{{ $driver->email }}</span>
-                </div>
-                <div class="flex items-center">
-                    <span class="text-sm font-medium text-gray-500 w-24">Phone:</span>
-                    <span class="text-sm text-gray-900">{{ $driver->phone }}</span>
-                </div>
-                <div class="flex items-center">
-                    <span class="text-sm font-medium text-gray-500 w-24">Status:</span>
-                    <span data-test="driver-status-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $driver->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+    <div class="bg-white rounded-2xl shadow-md overflow-hidden">
+        <!-- Card Header with gradient -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5 flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center ring-2 ring-white/40 shrink-0">
+                <i class="fas fa-user text-white text-2xl"></i>
+            </div>
+            <div>
+                <h2 class="text-white text-xl font-bold leading-tight">{{ $driver->name }}</h2>
+                <div class="flex items-center gap-2 mt-1">
+                    <span data-test="driver-status-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $driver->status === 'active' ? 'bg-green-400/30 text-green-100 ring-1 ring-green-300/50' : 'bg-red-400/30 text-red-100 ring-1 ring-red-300/50' }}">
+                        <span class="w-1.5 h-1.5 rounded-full {{ $driver->status === 'active' ? 'bg-green-300' : 'bg-red-300' }} inline-block"></span>
                         {{ ucfirst($driver->status) }}
                     </span>
+                    @if($driver->rating)
+                        <span class="flex items-center gap-1 text-yellow-300 text-xs font-medium">
+                            <i class="fas fa-star text-yellow-300 text-xs"></i>
+                            {{ number_format($driver->rating, 1) }}/5.0
+                        </span>
+                    @endif
                 </div>
             </div>
-            <div class="space-y-3">
-                <div class="flex items-center">
-                    <span class="text-sm font-medium text-gray-500 w-24">Vehicle:</span>
-                    <span class="text-sm text-gray-900">{{ $driver->vehicle_make }} {{ $driver->vehicle_model }}</span>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Contact & Info Column -->
+            <div class="space-y-4">
+                <p class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Contact Details</p>
+
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div class="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                        <i class="fas fa-envelope text-indigo-500 text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-gray-400">Email</p>
+                        <p class="text-sm font-medium text-gray-800 truncate">{{ $driver->email }}</p>
+                    </div>
                 </div>
-                <div class="flex items-center">
-                    <span class="text-sm font-medium text-gray-500 w-24">Plate:</span>
-                    <span class="text-sm text-gray-900">{{ $driver->vehicle_plate }}</span>
+
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div class="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                        <i class="fas fa-phone text-green-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400">Phone</p>
+                        <p class="text-sm font-medium text-gray-800">{{ $driver->phone }}</p>
+                    </div>
                 </div>
+
                 @if($driver->rating)
-                <div class="flex items-center">
-                    <span class="text-sm font-medium text-gray-500 w-24">Rating:</span>
-                    <span class="text-sm text-gray-900">{{ $driver->rating }}/5.0</span>
-                    <div class="ml-2">
-                        @for($i = 1; $i <= 5; $i++)
-                            <i class="fas fa-star text-{{ $i <= $driver->rating ? 'yellow' : 'gray' }}-400 text-xs"></i>
-                        @endfor
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div class="w-9 h-9 rounded-lg bg-yellow-100 flex items-center justify-center shrink-0">
+                        <i class="fas fa-star text-yellow-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400">Rating</p>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-sm font-medium text-gray-800">{{ number_format($driver->rating, 1) }}/5.0</span>
+                            <div class="flex">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="fas fa-star text-{{ $i <= $driver->rating ? 'yellow' : 'gray' }}-400 text-xs"></i>
+                                @endfor
+                            </div>
+                        </div>
                     </div>
                 </div>
                 @endif
+            </div>
 
-                <!-- Availability controls -->
-                <div class="mt-4">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">Availability</h4>
-                    <div class="flex items-center gap-4">
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="driver_status" value="active" class="driver-status-radio" {{ $driver->status === 'active' ? 'checked' : '' }}>
-                            <span class="ml-2 text-sm">Active</span>
+            <!-- Vehicle & Availability Column -->
+            <div class="space-y-4">
+                <p class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Vehicle & Availability</p>
+
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div class="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                        <i class="fas fa-car text-blue-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400">Vehicle</p>
+                        <p class="text-sm font-medium text-gray-800">{{ $driver->vehicle_make }} {{ $driver->vehicle_model }}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div class="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+                        <i class="fas fa-id-card text-purple-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400">Number Plate</p>
+                        <p class="text-sm font-bold text-gray-800 tracking-widest uppercase">{{ $driver->vehicle_plate }}</p>
+                    </div>
+                </div>
+
+                <!-- Availability Toggle -->
+                <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Set Availability</p>
+                    <div class="flex items-center gap-3 mb-3">
+                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-lg border-2 transition-all driver-avail-btn {{ $driver->status === 'active' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-500' }}">
+                            <input type="radio" name="driver_status" value="active" class="driver-status-radio sr-only" {{ $driver->status === 'active' ? 'checked' : '' }}>
+                            <i class="fas fa-circle text-xs {{ $driver->status === 'active' ? 'text-green-500' : 'text-gray-300' }}"></i>
+                            <span class="text-sm font-medium">Active</span>
                         </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="driver_status" value="inactive" class="driver-status-radio" {{ $driver->status === 'inactive' ? 'checked' : '' }}>
-                            <span class="ml-2 text-sm">Inactive</span>
+                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-lg border-2 transition-all driver-avail-btn {{ $driver->status === 'inactive' ? 'border-red-400 bg-red-50 text-red-700' : 'border-gray-200 bg-white text-gray-500' }}">
+                            <input type="radio" name="driver_status" value="inactive" class="driver-status-radio sr-only" {{ $driver->status === 'inactive' ? 'checked' : '' }}>
+                            <i class="fas fa-circle text-xs {{ $driver->status === 'inactive' ? 'text-red-400' : 'text-gray-300' }}"></i>
+                            <span class="text-sm font-medium">Inactive</span>
                         </label>
                     </div>
 
-                    <div id="availability-range" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3" style="display: {{ $driver->status === 'inactive' ? 'grid' : 'none' }};">
+                    <div id="availability-range" class="grid grid-cols-1 gap-3 mb-3" style="display: {{ $driver->status === 'inactive' ? 'grid' : 'none' }};">
                         <div>
-                            <label class="text-xs text-gray-500">From</label>
-                            <input type="datetime-local" id="unavailable_from" class="mt-1 block w-full border rounded p-2" value="{{ $driver->unavailable_from ? $driver->unavailable_from->format('Y-m-d\TH:i') : '' }}">
+                            <label class="text-xs text-gray-500 font-medium">Unavailable From</label>
+                            <input type="datetime-local" id="unavailable_from" class="mt-1 block w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" value="{{ $driver->unavailable_from ? $driver->unavailable_from->format('Y-m-d\TH:i') : '' }}">
                         </div>
                         <div>
-                            <label class="text-xs text-gray-500">To</label>
-                            <input type="datetime-local" id="unavailable_to" class="mt-1 block w-full border rounded p-2" value="{{ $driver->unavailable_to ? $driver->unavailable_to->format('Y-m-d\TH:i') : '' }}">
+                            <label class="text-xs text-gray-500 font-medium">Unavailable To</label>
+                            <input type="datetime-local" id="unavailable_to" class="mt-1 block w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" value="{{ $driver->unavailable_to ? $driver->unavailable_to->format('Y-m-d\TH:i') : '' }}">
                         </div>
                     </div>
 
-                    <div class="mt-3">
-                        <button id="save-availability" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Availability</button>
-                        <span id="availability-status" class="ml-3 text-sm text-gray-600"></span>
-                    </div>
+                    <button id="save-availability" class="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm font-semibold rounded-lg shadow transition-all">
+                        <i class="fas fa-save mr-2"></i>Save Availability
+                    </button>
+                    <p id="availability-status" class="mt-2 text-xs text-center text-gray-500"></p>
                 </div>
             </div>
         </div>
@@ -214,8 +284,40 @@
             if (val === 'inactive') range.style.display = 'grid'; else range.style.display = 'none';
         }
 
-        radios.forEach(function(r){ r.addEventListener('change', updateRangeVisibility); });
+        function updateAvailBtnStyles(){
+            var val = document.querySelector('input[name="driver_status"]:checked').value;
+            document.querySelectorAll('.driver-avail-btn').forEach(function(btn){
+                var radio = btn.querySelector('input[type="radio"]');
+                var icon = btn.querySelector('.fas.fa-circle');
+                if (!radio) return;
+                if (radio.value === 'active') {
+                    if (val === 'active') {
+                        btn.className = btn.className.replace(/border-gray-200|bg-white|text-gray-500/g,'').trim();
+                        btn.classList.add('border-green-500','bg-green-50','text-green-700');
+                        btn.classList.remove('border-gray-200','bg-white','text-gray-500');
+                        if (icon) { icon.classList.remove('text-gray-300'); icon.classList.add('text-green-500'); }
+                    } else {
+                        btn.classList.remove('border-green-500','bg-green-50','text-green-700');
+                        btn.classList.add('border-gray-200','bg-white','text-gray-500');
+                        if (icon) { icon.classList.remove('text-green-500'); icon.classList.add('text-gray-300'); }
+                    }
+                } else {
+                    if (val === 'inactive') {
+                        btn.classList.remove('border-gray-200','bg-white','text-gray-500');
+                        btn.classList.add('border-red-400','bg-red-50','text-red-700');
+                        if (icon) { icon.classList.remove('text-gray-300'); icon.classList.add('text-red-400'); }
+                    } else {
+                        btn.classList.remove('border-red-400','bg-red-50','text-red-700');
+                        btn.classList.add('border-gray-200','bg-white','text-gray-500');
+                        if (icon) { icon.classList.remove('text-red-400'); icon.classList.add('text-gray-300'); }
+                    }
+                }
+            });
+        }
+
+        radios.forEach(function(r){ r.addEventListener('change', function(){ updateRangeVisibility(); updateAvailBtnStyles(); }); });
         updateRangeVisibility();
+        updateAvailBtnStyles();
 
         function clearAvailabilityTimer(){
             if (availabilityInterval) { clearInterval(availabilityInterval); availabilityInterval = null; }
