@@ -504,11 +504,7 @@
             }
           });
 
-          // Disable global toasts for admins (preference: no toasts)
-          try {
-            window.showToast = function(){ /* no-op */ };
-            window.showInlineToast = function(){ /* no-op */ };
-          } catch(e) {}
+          // showToast is defined in _modals.blade.php — do not override
 
 
           // Close dropdown when clicking outside

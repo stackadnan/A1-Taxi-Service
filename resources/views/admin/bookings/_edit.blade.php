@@ -138,6 +138,59 @@
         if (!select) return;
         var prev = select.value;
 
+        // helper to submit the full booking form via AJAX and handle response/toasts
+        function submitDriverChange(){
+          var form = document.getElementById('booking-edit-form');
+          if (!form) return;
+          var fd = new FormData(form);
+          // ensure PUT method
+          fd.set('_method','PUT');
+          var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+          fetch(form.getAttribute('action'), {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            credentials: 'same-origin'
+          })
+          .then(function(res){
+            return res.text().then(function(txt){
+              var parsed = null;
+              try { parsed = txt && txt.length ? JSON.parse(txt) : null; } catch(e){ parsed = null; }
+              if (res.ok) {
+                return parsed || { success: true };
+              }
+              if (parsed) throw { status: res.status, body: parsed };
+              throw { status: res.status, body: { message: txt } };
+            });
+          })
+          .then(function(json){
+            if (json && json.success) {
+              // determine if this was a removal or assignment
+              var msg = 'Driver assignment saved';
+              var removed = (select.value === '__remove__' || (json.booking && !json.booking.driver_id));
+              if (removed) {
+                msg = 'Driver removed';
+                // clear selection
+                select.value = '';
+              }
+              if (typeof window.showToast === 'function') window.showToast(msg);
+              if (json.booking) {
+                window.dispatchEvent(new CustomEvent('bookingUpdated',{detail:{booking:json.booking}}));
+              }
+              // update prev since assignment succeeded
+              prev = removed ? '' : select.value;
+            } else {
+              if (typeof window.showToast === 'function') window.showToast(json.message || 'Failed to save driver');
+              // revert selection to previous value
+              if (typeof prev !== 'undefined') select.value = prev;
+            }
+          })
+          .catch(function(err){
+            console.error('Driver change AJAX failed', err);
+            if (typeof window.showToast === 'function') window.showToast('Error saving driver');
+          });
+        }
+
         function showModal(){ if (modal) modal.classList.remove('hidden'); }
         function hideModal(){ if (modal) modal.classList.add('hidden'); }
 
@@ -160,7 +213,11 @@
                 hideModal();
                 prev = '';
                 var form = document.getElementById('booking-edit-form');
-                if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                if (form) {
+                  // ensure the special remove value is set
+                  form.querySelector('select[name="driver_id"]').value = '__remove__';
+                  submitDriverChange();
+                }
               };
             }
 
@@ -185,6 +242,8 @@
                   if (typeof window.showToast === 'function') window.showToast('Driver reactivated (unavailability expired)');
                   // accept this selection as the new previous
                   prev = newSelection;
+                  // automatically save assignment
+                  submitDriverChange();
                   return;
                 }
 
@@ -220,6 +279,8 @@
                     } else {
                       // accept this selection as the current valid selection
                       prev = newSelection;
+                      // auto-submit assignment now that it's valid
+                      submitDriverChange();
                     }
                   } catch(e){ console.warn('Failed to show docs popup', e); }
                   return;
@@ -247,6 +308,8 @@
                   if (confModal) { confModal.classList.remove('hidden'); var cbtn = confModal.querySelector('#availability-conflict-confirm'); if (cbtn && typeof cbtn.focus === 'function') cbtn.focus(); }
                   // accept this selection as the current valid selection (admin can override on save)
                   prev = newSelection;
+                  // auto-save assignment
+                  submitDriverChange();
                 }
               }).catch(function(err){ console.error('driver availability check failed', err); });
             } catch(e){ console.error('driver select handler failed', e); }

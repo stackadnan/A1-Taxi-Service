@@ -42,7 +42,7 @@
 </div>
 
 <!-- Toast container -->
-<div id="toast-container" class="fixed top-6 right-6 z-50 space-y-2"></div>
+<div id="toast-container" class="fixed top-6 right-6 z-60 space-y-2"></div>
 
 <script>
 (function(){
@@ -64,10 +64,36 @@
   // showToast helper
   if (typeof window.showToast === 'undefined') {
     window.showToast = function(message){
-      var container = document.getElementById('toast-container'); if (!container) return;
-      var t = document.createElement('div'); t.className = 'bg-black text-white px-4 py-2 rounded shadow'; t.style.opacity='0'; t.textContent = message; container.appendChild(t);
-      requestAnimationFrame(function(){ t.style.opacity='1'; t.style.transition='opacity 200ms'; });
-      setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){ t.remove(); }, 300); }, 2500);
+      // If postcode-modal is open, show toast inside the modal so it's visible above the overlay
+      var modal = document.getElementById('postcode-modal');
+      var inModal = modal && !modal.classList.contains('hidden');
+      var container;
+      if (inModal) {
+        container = modal.querySelector('.modal-toast-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.className = 'modal-toast-container';
+          container.style.cssText = 'position:fixed;top:1.5rem;right:1.5rem;z-index:99999;display:flex;flex-direction:column;gap:0.5rem;';
+          document.body.appendChild(container);
+        }
+      }
+
+      if (!container) {
+        container = document.getElementById('toast-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'toast-container';
+          container.style.cssText = 'position:fixed;top:1.5rem;right:1.5rem;z-index:99999;display:flex;flex-direction:column;gap:0.5rem;';
+          document.body.appendChild(container);
+        }
+      }
+
+      var t = document.createElement('div');
+      t.style.cssText = 'background:#22c55e;color:#fff;padding:0.75rem 1.25rem;border-radius:0.5rem;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-weight:600;opacity:0;transition:opacity 200ms;';
+      t.textContent = message;
+      container.appendChild(t);
+      requestAnimationFrame(function(){ t.style.opacity='1'; });
+      setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){ t.remove(); }, 300); }, 4000);
     };
   }
 
