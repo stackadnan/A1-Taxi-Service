@@ -242,8 +242,6 @@
                   if (typeof window.showToast === 'function') window.showToast('Driver reactivated (unavailability expired)');
                   // accept this selection as the new previous
                   prev = newSelection;
-                  // automatically save assignment
-                  submitDriverChange();
                   return;
                 }
 
@@ -279,8 +277,6 @@
                     } else {
                       // accept this selection as the current valid selection
                       prev = newSelection;
-                      // auto-submit assignment now that it's valid
-                      submitDriverChange();
                     }
                   } catch(e){ console.warn('Failed to show docs popup', e); }
                   return;
@@ -308,8 +304,6 @@
                   if (confModal) { confModal.classList.remove('hidden'); var cbtn = confModal.querySelector('#availability-conflict-confirm'); if (cbtn && typeof cbtn.focus === 'function') cbtn.focus(); }
                   // accept this selection as the current valid selection (admin can override on save)
                   prev = newSelection;
-                  // auto-save assignment
-                  submitDriverChange();
                 }
               }).catch(function(err){ console.error('driver availability check failed', err); });
             } catch(e){ console.error('driver select handler failed', e); }
