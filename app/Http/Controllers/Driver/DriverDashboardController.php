@@ -951,4 +951,41 @@ class DriverDashboardController extends Controller
             return response()->json(['error' => 'Failed to get location status'], 500);
         }
     }
+
+    /**
+     * Store the driver's Expo Push Token for push notifications
+     */
+    public function storePushToken(Request $request)
+    {
+        $driver = Auth::guard('driver')->user();
+        if (!$driver) {
+            return response()->json(['success' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $request->validate([
+            'token' => 'required|string|max:255',
+        ]);
+
+        $token = $request->input('token');
+
+        // Validate Expo push token format
+        if (!str_starts_with($token, 'ExponentPushToken[') && !str_starts_with($token, 'ExpoPushToken[')) {
+            return response()->json(['success' => false, 'message' => 'Invalid push token format'], 422);
+        }
+
+        // Clear token from any other driver (a device can only belong to one driver)
+        \App\Models\Driver::where('expo_push_token', $token)
+            ->where('id', '!=', $driver->id)
+            ->update(['expo_push_token' => null]);
+
+        $driver->expo_push_token = $token;
+        $driver->save();
+
+        \Log::info('Driver push token stored', [
+            'driver_id' => $driver->id,
+            'token' => substr($token, 0, 30) . '...',
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Push token registered']);
+    }
 }

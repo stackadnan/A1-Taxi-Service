@@ -209,6 +209,8 @@ Route::prefix('driver')->name('driver.')->group(function () {
         // Driver notifications
         Route::get('notifications/unread', [DriverDashboardController::class, 'unreadNotifications'])->name('notifications.unread');
         Route::get('notifications/stream', [\App\Http\Controllers\Driver\NotificationStreamController::class, 'stream'])->name('notifications.stream');
+        // Expo push token registration
+        Route::post('push-token', [DriverDashboardController::class, 'storePushToken'])->name('push-token.store');
         // Lightweight counts endpoint for the driver dashboard
         Route::get('dashboard/counts', [DriverDashboardController::class, 'counts'])->name('dashboard.counts');
 

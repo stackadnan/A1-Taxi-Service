@@ -22,7 +22,9 @@ class Driver extends Authenticatable
         // Vehicle Info
         'passenger_capacity', 'luggage_capacity', 'vehicle_license_number', 'vehicle_pictures',
         // Availability
-        'unavailable_from', 'unavailable_to'
+        'unavailable_from', 'unavailable_to',
+        // Push Notifications
+        'expo_push_token'
     ];
 
     /**
