@@ -58,29 +58,37 @@
             </tr>
           </thead>
           <tbody>
+          @forelse($drivers as $d)
             <tr class="border-t">
-              <td class="px-2 py-3">Driver A</td>
-              <td class="px-2 py-3">D102198</td>
-              <td class="px-2 py-3"><span class="text-xs px-2 py-1 rounded bg-green-100 text-green-700">On Route</span></td>
-              <td class="px-2 py-3">00:12:34</td>
-              <td class="px-2 py-3">📍</td>
+              <td class="px-2 py-3">{{ $d->name }}</td>
+              <td class="px-2 py-3">@if($d->current_booking){{ $d->current_booking->booking_code }}@else None @endif</td>
+              <td class="px-2 py-3">
+                @php
+                  $bgColor = 'bg-gray-100 text-gray-700';
+                  if ($d->status_color === 'green') $bgColor = 'bg-green-100 text-green-700';
+                  elseif ($d->status_color === 'yellow') $bgColor = 'bg-yellow-100 text-yellow-700';
+                  elseif ($d->status_color === 'orange') $bgColor = 'bg-orange-100 text-orange-700';
+                  elseif ($d->status_color === 'blue') $bgColor = 'bg-blue-100 text-blue-700';
+                  elseif ($d->status_color === 'purple') $bgColor = 'bg-purple-100 text-purple-700';
+                  elseif ($d->status_color === 'red') $bgColor = 'bg-red-100 text-red-700';
+                @endphp
+                <span class="text-xs px-2 py-1 rounded {{ $bgColor }}">{{ $d->status_label }}</span>
+              </td>
+              <td class="px-2 py-3">{{ $d->status_since }}</td>
+              <td class="px-2 py-3">
+                @if($d->current_booking && in_array($d->status_label, ['POB','In Route','Arrived']))
+                  <a href="{{ route('admin.drivers.track', ['driver' => $d->id, 'booking' => $d->current_booking->id]) }}" class="text-indigo-600 hover:text-indigo-800">📍</a>
+                @else
+                  <span class="text-gray-400">📍</span>
+                @endif
+              </td>
             </tr>
-            <tr class="border-t">
-              <td class="px-2 py-3">Driver B</td>
-              
-              <td class="px-2 py-3">None</td>
-              <td class="px-2 py-3"><span class="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700">Idle</span></td>
-              <td class="px-2 py-3">00:45:10</td>
-              <td class="px-2 py-3">📍</td>
+          @empty
+            <tr>
+              <td colspan="5" class="px-4 py-3 text-center text-gray-600">No drivers available</td>
             </tr>
-            <tr class="border-t">
-              <td class="px-2 py-3">Driver C</td>
-              <td class="px-2 py-3">D102128</td>
-              <td class="px-2 py-3"><span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">POB</span></td>
-              <td class="px-2 py-3">00:05:20</td>
-              <td class="px-2 py-3">📍</td>
-            </tr>
-          </tbody>
+          @endforelse
+        </tbody>
         </table>
       </div>
     </div>

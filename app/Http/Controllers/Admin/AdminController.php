@@ -60,6 +60,10 @@ class AdminController extends Controller
             'junk' => 'Junk',
         ];
 
+        // --- driver status for dashboard (used in the small status panel) ---
+        $drivers = $this->prepareDriverStatuses();
+
+
         // Count bookings for each section
         $counts = [];
         foreach (array_keys($sections) as $key) {
@@ -112,7 +116,8 @@ class AdminController extends Controller
             'totalThisMonth','confirmedThisMonth','completedThisMonth','cancelledThisMonth',
             'totalLastMonth','confirmedLastMonth','completedLastMonth','cancelledLastMonth',
             'broadcasts',
-            'sections', 'active', 'counts', 'bookings'
+            'sections', 'active', 'counts', 'bookings',
+            'drivers'
         ));
     }
 
@@ -134,6 +139,104 @@ class AdminController extends Controller
             default:
                 return 0;
         }
+    }
+
+    /**
+     * Prepare status-related properties on each driver for dashboard display.
+     * Logic mirrors Admin\DriverController@index when tab === 'status'.
+     *
+     * @return \Illuminate\Support\Collection|array
+     */
+    protected function prepareDriverStatuses()
+    {
+        $drivers = \App\Models\Driver::orderBy('name')->get();
+
+        // Determine which booking statuses are considered "finished" so they can be ignored
+        $finishedStatusIds = \App\Models\BookingStatus::whereIn('name', ['completed', 'cancelled'])->pluck('id')->toArray();
+
+        foreach ($drivers as $drv) {
+            // find the most relevant active booking for this driver
+            $currentBooking = \App\Models\Booking::where('driver_id', $drv->id)
+                ->whereNotIn('status_id', $finishedStatusIds)
+                ->orderBy('scheduled_at', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $drv->current_booking = $currentBooking;
+
+            if ($currentBooking) {
+                $meta = $currentBooking->meta ?? [];
+                $isInRoute        = isset($meta['in_route']) && $meta['in_route'] === true;
+                $isArrivedPickup  = isset($meta['arrived_at_pickup']) && $meta['arrived_at_pickup'] === true;
+                $statusKey = $currentBooking->status->name ?? 'in_progress';
+
+                // Priority: POB > arrived_at_pickup > in_route > other
+                if ($statusKey === 'pob') {
+                    $label = 'POB';
+                    $color = 'orange';
+                    $sinceFrom = isset($meta['pob_marked_at']) ? $meta['pob_marked_at'] : ($currentBooking->updated_at ?? $drv->last_active_at);
+                } elseif ($isArrivedPickup) {
+                    $label = 'Arrived';
+                    $color = 'blue';
+                    $sinceFrom = isset($meta['arrived_at_pickup_at']) ? $meta['arrived_at_pickup_at'] : ($currentBooking->updated_at ?? $drv->last_active_at);
+                } elseif ($isInRoute) {
+                    $label = 'In Route';
+                    $color = 'purple';
+                    $sinceFrom = isset($meta['in_route_at']) ? $meta['in_route_at'] : ($currentBooking->updated_at ?? $drv->last_active_at);
+                } else {
+                    $labelMap = [
+                        'in_progress' => ['On Route', 'green'],
+                        'confirmed' => ['Accepted', 'yellow'],
+                        'new' => ['New', 'gray'],
+                    ];
+                    $label = $labelMap[$statusKey][0] ?? ucfirst(str_replace('_', ' ', $statusKey));
+                    $color = $labelMap[$statusKey][1] ?? 'gray';
+                    $sinceFrom = $drv->last_assigned_at ?? $currentBooking->updated_at ?? $drv->last_active_at;
+                }
+            } else {
+                $label = 'Idle';
+                $color = 'yellow';
+
+                $lastCompleted = \App\Models\Booking::where('driver_id', $drv->id)
+                    ->whereHas('status', function($q){ $q->where('name', 'completed'); })
+                    ->orderBy('updated_at', 'desc')
+                    ->first();
+
+                if ($lastCompleted) {
+                    $meta = $lastCompleted->meta ?? [];
+                    $completed_at = $meta['completed_at'] ?? null;
+                    \Log::info("Driver {$drv->id} last completed booking found", [
+                        'booking_id' => $lastCompleted->id,
+                        'updated_at' => $lastCompleted->updated_at,
+                        'meta_completed_at' => $completed_at,
+                        'meta_keys' => array_keys($meta)
+                    ]);
+                    $sinceFrom = $completed_at ?? $lastCompleted->updated_at ?? $drv->last_active_at;
+                } else {
+                    \Log::info("Driver {$drv->id} no completed bookings found, using last_active_at", [
+                        'last_active_at' => $drv->last_active_at
+                    ]);
+                    $sinceFrom = $drv->last_active_at;
+                }
+            }
+
+            $sinceStr = '-';
+            if ($sinceFrom) {
+                try {
+                    $sinceCarbon = \Carbon\Carbon::parse($sinceFrom);
+                    $formatted = $sinceCarbon->format('H:i d/m/Y');
+                    $sinceStr = $formatted;
+                } catch (\Exception $e) {
+                    $sinceStr = '-';
+                }
+            }
+
+            $drv->status_label = $label;
+            $drv->status_color = $color;
+            $drv->status_since = $sinceStr;
+        }
+
+        return $drivers;
     }
 
     /**
