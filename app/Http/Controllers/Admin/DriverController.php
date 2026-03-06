@@ -655,4 +655,152 @@ class DriverController extends Controller
 
         return redirect()->route('admin.drivers.index')->with('success', 'Driver deleted');
     }
+
+    /**
+     * Return pickup timing data for accepted drivers (used by the status-tab AJAX poller).
+     * Accepts optional ?ids=1,2,3 to scope to specific driver IDs visible on screen.
+     */
+    public function getBookingTiming(Request $request)
+    {
+        $finishedStatusIds = \App\Models\BookingStatus::whereIn('name', ['completed', 'cancelled'])->pluck('id')->toArray();
+
+        $query = Driver::where('status', 'active');
+
+        // Scope to the driver IDs currently visible on the admin page
+        if ($request->filled('ids')) {
+            $ids = array_filter(array_map('intval', explode(',', $request->get('ids'))));
+            if (!empty($ids)) {
+                $query->whereIn('id', $ids);
+            }
+        }
+
+        $drivers = $query->get(['id', 'name']);
+
+        $data = [];
+        foreach ($drivers as $driver) {
+            $booking = \App\Models\Booking::where('driver_id', $driver->id)
+                ->whereNotIn('status_id', $finishedStatusIds)
+                ->orderBy('scheduled_at', 'asc')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $item = [
+                'driver_id'         => $driver->id,
+                'driver_name'       => $driver->name,
+                'booking_id'        => null,
+                'booking_code'      => null,
+                'scheduled_at'      => null,
+                'remaining_minutes' => null,
+                'is_in_route'       => false,
+                'is_pob'            => false,
+                'pickup_address'    => null,
+            ];
+
+            if ($booking && $booking->scheduled_at) {
+                $meta             = $booking->meta ?? [];
+                $isInRoute        = (isset($meta['in_route']) && $meta['in_route'] === true)
+                                 || (isset($meta['arrived_at_pickup']) && $meta['arrived_at_pickup'] === true);
+                $isPob            = optional($booking->status)->name === 'pob';
+                $remainingMinutes = (int) now()->diffInMinutes($booking->scheduled_at, false);
+
+                $item['booking_id']        = $booking->id;
+                $item['booking_code']      = $booking->booking_code;
+                $item['scheduled_at']      = $booking->scheduled_at->toIso8601String();
+                $item['remaining_minutes'] = $remainingMinutes;
+                $item['is_in_route']       = $isInRoute;
+                $item['is_pob']            = $isPob;
+                $item['pickup_address']    = $booking->pickup_address;
+            }
+
+            $data[] = $item;
+        }
+
+        return response()->json(['success' => true, 'drivers' => $data]);
+    }
+
+    /**
+     * Send a late-warning notification to the driver (and admin for urgent warnings).
+     * Called by the status-tab AJAX poller when thresholds are crossed.
+     */
+    public function sendLateWarning(Request $request, Driver $driver)
+    {
+        $validated = $request->validate([
+            'booking_id'        => 'required|integer',
+            'reason'            => 'required|string|in:two_hour_warning,urgent_warning',
+            'remaining_minutes' => 'required|integer',
+            'eta_minutes'       => 'nullable|integer',
+        ]);
+
+        $booking = \App\Models\Booking::find($validated['booking_id']);
+        if (!$booking || (int) $booking->driver_id !== (int) $driver->id) {
+            return response()->json(['success' => false, 'message' => 'Invalid booking'], 404);
+        }
+
+        // Deduplication: skip if same warning type was sent too recently
+        $meta       = $booking->meta ?? [];
+        $warningKey = 'late_warning_' . $validated['reason'] . '_sent_at';
+        $lastSent   = isset($meta[$warningKey]) ? \Carbon\Carbon::parse($meta[$warningKey]) : null;
+
+        if ($validated['reason'] === 'two_hour_warning' && $lastSent && $lastSent->diffInMinutes(now()) < 25) {
+            return response()->json(['success' => false, 'message' => 'Already sent recently', 'skipped' => true]);
+        }
+        if ($validated['reason'] === 'urgent_warning' && $lastSent && $lastSent->diffInSeconds(now()) < 55) {
+            return response()->json(['success' => false, 'message' => 'Already sent recently', 'skipped' => true]);
+        }
+
+        $remainingText = $this->formatMinutesText($validated['remaining_minutes']);
+        $etaText       = isset($validated['eta_minutes']) ? $this->formatMinutesText($validated['eta_minutes']) : null;
+
+        if ($validated['reason'] === 'two_hour_warning') {
+            $title = 'Please Select "In Route"';
+            $body  = "Your pickup is in {$remainingText}."
+                   . ($etaText ? " ETA to pickup location: {$etaText}." : '')
+                   . ' Please mark yourself as In Route now.';
+        } else {
+            $title = 'Urgent: Select "In Route" NOW';
+            $body  = "Only {$remainingText} until your pickup! You must select In Route immediately.";
+        }
+
+        // Create driver notification - model observer auto-sends Expo push
+        \App\Models\DriverNotification::create([
+            'driver_id' => $driver->id,
+            'title'     => $title,
+            'message'   => $body,
+        ]);
+
+        // For urgent warnings, also notify all admins
+        if ($validated['reason'] === 'urgent_warning') {
+            $adminTitle = "Driver Not In Route – {$driver->name}";
+            $adminMsg   = "Driver {$driver->name} has NOT selected In Route."
+                        . " Booking: {$booking->booking_code}."
+                        . " Time remaining: {$remainingText}."
+                        . ($etaText ? " ETA to pickup: {$etaText}." : '');
+            \App\Models\UserNotification::createForAdmins($adminTitle, $adminMsg);
+        }
+
+        // Record warning timestamp in booking meta (saveQuietly avoids model events)
+        $meta[$warningKey] = now()->toIso8601String();
+        $booking->meta     = $meta;
+        $booking->saveQuietly();
+
+        \Log::info("Late warning sent [{$validated['reason']}]", [
+            'driver_id'         => $driver->id,
+            'booking_id'        => $booking->id,
+            'remaining_minutes' => $validated['remaining_minutes'],
+            'eta_minutes'       => $validated['eta_minutes'] ?? null,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Warning sent']);
+    }
+
+    /** Format minutes as human-readable string, e.g. "3h 45m" */
+    private function formatMinutesText(int $minutes): string
+    {
+        if ($minutes < 0) return 'overdue';
+        $hours = intdiv($minutes, 60);
+        $mins  = $minutes % 60;
+        if ($hours > 0 && $mins > 0) return "{$hours}h {$mins}m";
+        if ($hours > 0) return "{$hours}h";
+        return "{$mins}m";
+    }
 }

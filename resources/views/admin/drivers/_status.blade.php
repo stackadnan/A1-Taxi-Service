@@ -9,12 +9,40 @@
             <th class="p-2">Booking</th>
             <th class="p-2">Status</th>
             <th class="p-2">Since</th>
+            <th class="p-2">Remaining</th>
             <th class="p-2">Track</th>
           </tr>
         </thead>
       <tbody>
         @forelse($drivers as $d)
-        <tr class="border-t" data-driver-id="{{ $d->id }}">
+        @php
+          $cbk = $d->current_booking ?? null;
+          $rowRemainingMinutes = null;
+          $rowRemainingLabel   = '-';
+          $rowRemainingClass   = 'text-gray-400';
+          $rowBookingId        = $cbk ? $cbk->id : '';
+          $rowPickupAddress    = $cbk ? ($cbk->pickup_address ?? '') : '';
+          $rowIsInRoute        = in_array($d->status_label ?? '', ['In Route', 'Arrived']);
+          $rowIsPob            = ($d->status_label ?? '') === 'POB';
+          if ($cbk && $cbk->scheduled_at) {
+            $rowRemainingMinutes = (int) now()->diffInMinutes($cbk->scheduled_at, false);
+            $h = intdiv(abs($rowRemainingMinutes), 60);
+            $m = abs($rowRemainingMinutes) % 60;
+            $rowRemainingLabel = ($rowRemainingMinutes < 0 ? 'Overdue' : (($h > 0 ? $h.'h ' : '') . $m . 'm'));
+            if ($rowRemainingMinutes < 0)       { $rowRemainingClass = 'text-red-600 font-semibold'; }
+            elseif ($rowRemainingMinutes <= 25 && !$rowIsInRoute && !$rowIsPob)  { $rowRemainingClass = 'text-red-600 font-semibold'; }
+            elseif ($rowRemainingMinutes <= 120 && !$rowIsInRoute && !$rowIsPob) { $rowRemainingClass = 'text-orange-500 font-semibold'; }
+            else                                { $rowRemainingClass = 'text-gray-700'; }
+          }
+        @endphp
+        <tr class="border-t"
+            data-driver-id="{{ $d->id }}"
+            data-booking-id="{{ $rowBookingId }}"
+            data-remaining-minutes="{{ $rowRemainingMinutes ?? '' }}"
+            data-is-in-route="{{ $rowIsInRoute ? '1' : '0' }}"
+            data-is-pob="{{ $rowIsPob ? '1' : '0' }}"
+            data-pickup-address="{{ e($rowPickupAddress) }}"
+        >
           <td class="p-2">{{ $d->name }}</td>
           <td class="p-2">@if($d->current_booking)<a href="{{ route('admin.bookings.show', $d->current_booking) }}" class="text-indigo-600 text-sm">{{ $d->current_booking->booking_code }}</a>@else None @endif</td>
           <td class="p-2">
@@ -30,6 +58,9 @@
             <span class="text-sm px-2 py-1 rounded {{ $colorClass }}">{{ $d->status_label }}</span>
           </td>
           <td class="p-2">{{ $d->status_since }}</td>
+          <td class="p-2">
+            <span class="remaining-time-cell text-sm {{ $rowRemainingClass }}">{{ $rowRemainingLabel }}</span>
+          </td>
           <td class="p-2">
             @if($d->current_booking && ($d->status_label === 'POB' || $d->status_label === 'In Route' || $d->status_label === 'Arrived'))
               <button 
@@ -658,5 +689,177 @@
   
   // Pre-load Google Maps API for faster tracking start
   loadGoogleMapsAPI();
+
+  // ─── Remaining-Time Polling & Late-Warning System ────────────────────────
+  const _csrf = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
+
+  // Per-driver warning state (session-only; resets on page reload)
+  const _warnState = {}; // { [driverId]: { twoHourDone: bool, urgentLast: timestamp } }
+
+  // Format minutes as "Xh Ym"
+  function _fmtMin(minutes) {
+    if (minutes < 0) return 'Overdue';
+    var h = Math.floor(minutes / 60);
+    var m = minutes % 60;
+    if (h > 0 && m > 0) return h + 'h ' + m + 'm';
+    if (h > 0) return h + 'h';
+    return m + 'm';
+  }
+
+  // Return Tailwind colour class for remaining minutes
+  function _remainingClass(minutes, isInRoute, isPob) {
+    if (isInRoute || isPob) return 'text-gray-400';
+    if (minutes < 0)        return 'text-red-600 font-semibold';
+    if (minutes <= 25)      return 'text-red-600 font-semibold';
+    if (minutes <= 120)     return 'text-orange-500 font-semibold';
+    return 'text-gray-700';
+  }
+
+  // POST a late-warning to the backend
+  function _sendWarning(driverId, bookingId, reason, remainingMinutes, etaMinutes) {
+    var body = { booking_id: bookingId, reason: reason, remaining_minutes: remainingMinutes };
+    if (etaMinutes !== null && etaMinutes !== undefined) body.eta_minutes = etaMinutes;
+    fetch('/admin/drivers/' + driverId + '/send-late-warning', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': _csrf,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify(body)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.success) console.log('[timing] warning sent (' + reason + ') driver=' + driverId);
+      else console.log('[timing] warning skipped (' + reason + '):', d.message);
+    })
+    .catch(function(e){ console.warn('[timing] sendWarning error:', e); });
+  }
+
+  // Calculate ETA via Google Directions API then optionally warn
+  function _checkETA2Hour(driverId, bookingId, remainingMinutes, pickupAddress) {
+    if (!pickupAddress) {
+      _sendWarning(driverId, bookingId, 'two_hour_warning', remainingMinutes, null);
+      return;
+    }
+    // Ensure Maps is loaded
+    loadGoogleMapsAPI(function() {
+      fetch('/admin/drivers/' + driverId + '/location/0', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': _csrf }
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(locData) {
+        if (!locData.success || !locData.driver) {
+          // No location available – warn without ETA
+          _sendWarning(driverId, bookingId, 'two_hour_warning', remainingMinutes, null);
+          return;
+        }
+        var driverPos = {
+          lat: parseFloat(locData.driver.latitude),
+          lng: parseFloat(locData.driver.longitude)
+        };
+        var svc = new google.maps.DirectionsService();
+        svc.route({
+          origin: driverPos,
+          destination: pickupAddress,
+          travelMode: google.maps.TravelMode.DRIVING
+        }, function(result, status) {
+          if (status === 'OK') {
+            var etaMins = Math.round(result.routes[0].legs[0].duration.value / 60);
+            // Warn if buffer (remaining – eta) < 30 minutes
+            if ((remainingMinutes - etaMins) < 30) {
+              _sendWarning(driverId, bookingId, 'two_hour_warning', remainingMinutes, etaMins);
+            }
+          } else {
+            // Can't get directions – warn anyway
+            _sendWarning(driverId, bookingId, 'two_hour_warning', remainingMinutes, null);
+          }
+        });
+      })
+      .catch(function() {
+        _sendWarning(driverId, bookingId, 'two_hour_warning', remainingMinutes, null);
+      });
+    });
+  }
+
+  // Fetch fresh timing data from server and update the Remaining column
+  function _refreshTimingData() {
+    var rows = document.querySelectorAll('[data-driver-id]');
+    if (!rows.length) return;
+    var ids = Array.from(rows).map(function(r){ return r.dataset.driverId; }).filter(Boolean).join(',');
+
+    fetch('/admin/drivers/booking-timing?ids=' + encodeURIComponent(ids), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': _csrf }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (!data.success) return;
+      data.drivers.forEach(function(d) {
+        var row = document.querySelector('[data-driver-id="' + d.driver_id + '"]');
+        if (!row) return;
+
+        // Update data attributes on the row
+        row.dataset.bookingId        = d.booking_id || '';
+        row.dataset.remainingMinutes = (d.remaining_minutes !== null && d.remaining_minutes !== undefined) ? d.remaining_minutes : '';
+        row.dataset.isInRoute        = d.is_in_route ? '1' : '0';
+        row.dataset.isPob            = d.is_pob ? '1' : '0';
+        row.dataset.pickupAddress    = d.pickup_address || '';
+
+        // Update the visible cell
+        var cell = row.querySelector('.remaining-time-cell');
+        if (!cell) return;
+        if (d.remaining_minutes === null || d.remaining_minutes === undefined || !d.booking_id) {
+          cell.textContent  = '-';
+          cell.className    = 'remaining-time-cell text-sm text-gray-400';
+          return;
+        }
+        cell.textContent = _fmtMin(d.remaining_minutes);
+        cell.className   = 'remaining-time-cell text-sm ' + _remainingClass(d.remaining_minutes, d.is_in_route, d.is_pob);
+      });
+    })
+    .catch(function(e){ console.warn('[timing] refresh error:', e); });
+  }
+
+  // Run every minute: check 25-minute urgent threshold & 2-hour ETA threshold
+  function _checkWarnings() {
+    var rows = document.querySelectorAll('[data-driver-id]');
+    rows.forEach(function(row) {
+      var driverId      = parseInt(row.dataset.driverId);
+      var bookingId     = parseInt(row.dataset.bookingId);
+      var remaining     = parseInt(row.dataset.remainingMinutes);
+      var isInRoute     = row.dataset.isInRoute === '1';
+      var isPob         = row.dataset.isPob === '1';
+      var pickupAddress = row.dataset.pickupAddress || '';
+
+      if (!bookingId || isNaN(remaining) || isInRoute || isPob) return;
+
+      if (!_warnState[driverId]) _warnState[driverId] = {};
+      var state = _warnState[driverId];
+
+      // ── 25-minute urgent warning: every ~1 minute ──
+      if (remaining > 0 && remaining <= 25) {
+        var now = Date.now();
+        if (!state.urgentLast || (now - state.urgentLast) >= 55000) {
+          state.urgentLast = now;
+          _sendWarning(driverId, bookingId, 'urgent_warning', remaining, null);
+        }
+      }
+
+      // ── 2-hour ETA check: once per session per driver ──
+      if (remaining > 25 && remaining <= 120 && !state.twoHourDone) {
+        state.twoHourDone = true;
+        _checkETA2Hour(driverId, bookingId, remaining, pickupAddress);
+      }
+    });
+  }
+
+  // Kick off both intervals
+  setInterval(_refreshTimingData, 15 * 60 * 1000); // 15-minute data refresh
+  setInterval(_checkWarnings,          60 * 1000);  // 1-minute warning check
+
+  // Run an initial warning check a few seconds after page load
+  setTimeout(_checkWarnings, 4000);
+  // ─────────────────────────────────────────────────────────────────────────
+
 })();
 </script>

@@ -78,6 +78,10 @@ Route::name('admin.')->group(function () {
         // Driver tracking routes (must be before general {driver} routes)
         Route::get('drivers/{driver}/track/{booking}', [\App\Http\Controllers\Admin\DriverController::class, 'track'])->name('drivers.track')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::get('drivers/{driver}/location/{bookingId}', [\App\Http\Controllers\Admin\DriverController::class, 'getLocation'])->name('drivers.location')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        // Booking timing data for the status-tab 15-min poller
+        Route::get('drivers/booking-timing', [\App\Http\Controllers\Admin\DriverController::class, 'getBookingTiming'])->name('drivers.booking_timing')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        // Send late-warning push notification to driver (+ admin for urgent)
+        Route::post('drivers/{driver}/send-late-warning', [\App\Http\Controllers\Admin\DriverController::class, 'sendLateWarning'])->name('drivers.send_late_warning')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         // AJAX helper to check availability and documents
         Route::get('drivers/{driver}/check-availability', [\App\Http\Controllers\Admin\DriverController::class, 'checkAvailability'])->name('drivers.check_availability')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         // Support older client URL that uses '/admin/drivers' base in JS
