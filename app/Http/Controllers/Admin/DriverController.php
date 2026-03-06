@@ -696,20 +696,30 @@ class DriverController extends Controller
                 'pickup_address'    => null,
             ];
 
-            if ($booking && $booking->scheduled_at) {
-                $meta             = $booking->meta ?? [];
-                $isInRoute        = (isset($meta['in_route']) && $meta['in_route'] === true)
-                                 || (isset($meta['arrived_at_pickup']) && $meta['arrived_at_pickup'] === true);
-                $isPob            = optional($booking->status)->name === 'pob';
-                $remainingMinutes = (int) now()->diffInMinutes($booking->scheduled_at, false);
+            if ($booking) {
+                // Resolve pickup datetime: pickup_date+pickup_time first, scheduled_at as fallback
+                $pickupAt = null;
+                if ($booking->pickup_date && $booking->pickup_time) {
+                    $pickupAt = \Carbon\Carbon::parse($booking->pickup_date->format('Y-m-d') . ' ' . $booking->pickup_time);
+                } elseif ($booking->scheduled_at) {
+                    $pickupAt = $booking->scheduled_at;
+                }
 
-                $item['booking_id']        = $booking->id;
-                $item['booking_code']      = $booking->booking_code;
-                $item['scheduled_at']      = $booking->scheduled_at->toIso8601String();
-                $item['remaining_minutes'] = $remainingMinutes;
-                $item['is_in_route']       = $isInRoute;
-                $item['is_pob']            = $isPob;
-                $item['pickup_address']    = $booking->pickup_address;
+                if ($pickupAt) {
+                    $meta             = $booking->meta ?? [];
+                    $isInRoute        = (isset($meta['in_route']) && $meta['in_route'] === true)
+                                     || (isset($meta['arrived_at_pickup']) && $meta['arrived_at_pickup'] === true);
+                    $isPob            = optional($booking->status)->name === 'pob';
+                    $remainingMinutes = (int) now()->diffInMinutes($pickupAt, false);
+
+                    $item['booking_id']        = $booking->id;
+                    $item['booking_code']      = $booking->booking_code;
+                    $item['scheduled_at']      = $pickupAt->toIso8601String();
+                    $item['remaining_minutes'] = $remainingMinutes;
+                    $item['is_in_route']       = $isInRoute;
+                    $item['is_pob']            = $isPob;
+                    $item['pickup_address']    = $booking->pickup_address;
+                }
             }
 
             $data[] = $item;

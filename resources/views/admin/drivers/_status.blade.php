@@ -24,15 +24,24 @@
           $rowPickupAddress    = $cbk ? ($cbk->pickup_address ?? '') : '';
           $rowIsInRoute        = in_array($d->status_label ?? '', ['In Route', 'Arrived']);
           $rowIsPob            = ($d->status_label ?? '') === 'POB';
-          if ($cbk && $cbk->scheduled_at) {
-            $rowRemainingMinutes = (int) now()->diffInMinutes($cbk->scheduled_at, false);
-            $h = intdiv(abs($rowRemainingMinutes), 60);
-            $m = abs($rowRemainingMinutes) % 60;
-            $rowRemainingLabel = ($rowRemainingMinutes < 0 ? 'Overdue' : (($h > 0 ? $h.'h ' : '') . $m . 'm'));
-            if ($rowRemainingMinutes < 0)       { $rowRemainingClass = 'text-red-600 font-semibold'; }
-            elseif ($rowRemainingMinutes <= 25 && !$rowIsInRoute && !$rowIsPob)  { $rowRemainingClass = 'text-red-600 font-semibold'; }
-            elseif ($rowRemainingMinutes <= 120 && !$rowIsInRoute && !$rowIsPob) { $rowRemainingClass = 'text-orange-500 font-semibold'; }
-            else                                { $rowRemainingClass = 'text-gray-700'; }
+          if ($cbk) {
+            // Resolve pickup datetime: pickup_date+pickup_time takes priority, scheduled_at is fallback
+            $rowPickupAt = null;
+            if ($cbk->pickup_date && $cbk->pickup_time) {
+              $rowPickupAt = \Carbon\Carbon::parse($cbk->pickup_date->format('Y-m-d') . ' ' . $cbk->pickup_time);
+            } elseif ($cbk->scheduled_at) {
+              $rowPickupAt = \Carbon\Carbon::parse($cbk->scheduled_at);
+            }
+            if ($rowPickupAt) {
+              $rowRemainingMinutes = (int) now()->diffInMinutes($rowPickupAt, false);
+              $h = intdiv(abs($rowRemainingMinutes), 60);
+              $m = abs($rowRemainingMinutes) % 60;
+              $rowRemainingLabel = ($rowRemainingMinutes < 0 ? 'Overdue' : (($h > 0 ? $h.'h ' : '') . $m . 'm'));
+              if ($rowRemainingMinutes < 0)       { $rowRemainingClass = 'text-red-600 font-semibold'; }
+              elseif ($rowRemainingMinutes <= 25 && !$rowIsInRoute && !$rowIsPob)  { $rowRemainingClass = 'text-red-600 font-semibold'; }
+              elseif ($rowRemainingMinutes <= 120 && !$rowIsInRoute && !$rowIsPob) { $rowRemainingClass = 'text-orange-500 font-semibold'; }
+              else                                { $rowRemainingClass = 'text-gray-700'; }
+            }
           }
         @endphp
         <tr class="border-t"
