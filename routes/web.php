@@ -94,6 +94,9 @@ Route::name('admin.')->group(function () {
         // Additional admin sections (placeholders)
         Route::get('accounts', function(){ return view('admin.accounts.index'); })->name('accounts.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':account.view');
 
+        // Public quote requests
+        Route::get('quotes', [\App\Http\Controllers\Admin\QuotesController::class, 'index'])->name('quotes.index');
+
         // Pricing area with sub-resources
         Route::prefix('pricing')->name('pricing.')->group(function(){
             Route::get('/', function(){ return view('admin.pricing.index'); })->name('index')->middleware(\App\Http\Middleware\EnsurePermission::class.':pricing.view');
