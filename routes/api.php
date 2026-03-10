@@ -19,3 +19,7 @@ Route::options('quote', [PublicQuoteController::class, 'preflight']);
 
 // Public price quote endpoint
 Route::post('quote', [PublicQuoteController::class, 'quote']);
+
+// Save selected quote to database
+Route::options('quote/save', [PublicQuoteController::class, 'preflight']);
+Route::post('quote/save', [PublicQuoteController::class, 'save']);

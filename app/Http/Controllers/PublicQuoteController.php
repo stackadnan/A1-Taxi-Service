@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Admin\Pricing\ZoneController;
+use App\Models\PublicQuoteRequest;
 
 /**
  * Public-facing quote API controller.
@@ -96,5 +97,131 @@ class PublicQuoteController extends Controller
             'Access-Control-Allow-Credentials' => 'false',
             'Access-Control-Max-Age'           => '86400',
         ];
+    }
+
+    /**
+     * Save a quote request to the database.
+     * If trip_type is 'return', two rows are created (outbound + return) with linked_quote_ref.
+     *
+     * Expected POST fields:
+     *   pickup_address, dropoff_address, pickup_date
+     *   vehicle_type, price, trip_type (one-way|return)
+     *   source_url  — optional
+     */
+    public function save(Request $request)
+    {
+        $data = $request->validate([
+            'pickup_address'  => 'required|string|max:500',
+            'dropoff_address' => 'required|string|max:500',
+            'pickup_date'     => 'nullable|string|max:30',
+            'vehicle_type'    => 'required|string|max:50',
+            'price'           => 'required|numeric|min:0',
+            'trip_type'       => 'required|in:one-way,return',
+            'source_url'      => 'nullable|string|max:500',
+        ]);
+
+        $ip         = $request->ip();
+        $sourceUrl  = $data['source_url'] ?? null;
+        $pickupDate = $data['pickup_date'] ?? null;
+
+        try {
+            if ($data['trip_type'] === 'return') {
+                // Two rows: outbound (one-way price) + return (full return price)
+                $oneWayPrice   = round($data['price'] / 2, 2); // price passed is already doubled
+                $returnPrice   = $data['price'];
+
+                $ref1 = $this->generateQuoteRef();
+                $ref2 = $this->generateQuoteRef();
+
+                // Outbound row
+                $row1 = PublicQuoteRequest::create([
+                    'quote_ref'        => $ref1,
+                    'pickup_address'   => $data['pickup_address'],
+                    'dropoff_address'  => $data['dropoff_address'],
+                    'pickup_date'      => $pickupDate,
+                    'source_ip'        => $ip,
+                    'source_url'       => $sourceUrl,
+                    'vehicle_type'     => $data['vehicle_type'],
+                    'price'            => $oneWayPrice,
+                    'trip_type'        => 'return',
+                    'linked_quote_ref' => $ref2,
+                ]);
+
+                // Return leg row (swapped addresses)
+                $row2 = PublicQuoteRequest::create([
+                    'quote_ref'        => $ref2,
+                    'pickup_address'   => $data['dropoff_address'],
+                    'dropoff_address'  => $data['pickup_address'],
+                    'pickup_date'      => $pickupDate,
+                    'source_ip'        => $ip,
+                    'source_url'       => $sourceUrl,
+                    'vehicle_type'     => $data['vehicle_type'],
+                    'price'            => $oneWayPrice,
+                    'trip_type'        => 'return',
+                    'linked_quote_ref' => $ref1,
+                ]);
+
+                \Log::channel('daily')->info('Public quote saved (return)', [
+                    'ref1' => $ref1, 'ref2' => $ref2, 'ip' => $ip,
+                    'vehicle' => $data['vehicle_type'], 'price_each' => $oneWayPrice,
+                ]);
+
+                return response()->json([
+                    'success'     => true,
+                    'trip_type'   => 'return',
+                    'quote_ref'   => $ref1,
+                    'return_ref'  => $ref2,
+                    'rows'        => [$row1->toArray(), $row2->toArray()],
+                ])->withHeaders($this->corsHeaders($request));
+
+            } else {
+                $ref = $this->generateQuoteRef();
+
+                $row = PublicQuoteRequest::create([
+                    'quote_ref'       => $ref,
+                    'pickup_address'  => $data['pickup_address'],
+                    'dropoff_address' => $data['dropoff_address'],
+                    'pickup_date'     => $pickupDate,
+                    'source_ip'       => $ip,
+                    'source_url'      => $sourceUrl,
+                    'vehicle_type'    => $data['vehicle_type'],
+                    'price'           => $data['price'],
+                    'trip_type'       => 'one-way',
+                ]);
+
+                \Log::channel('daily')->info('Public quote saved (one-way)', [
+                    'ref' => $ref, 'ip' => $ip,
+                    'vehicle' => $data['vehicle_type'], 'price' => $data['price'],
+                ]);
+
+                return response()->json([
+                    'success'   => true,
+                    'trip_type' => 'one-way',
+                    'quote_ref' => $ref,
+                    'row'       => $row->toArray(),
+                ])->withHeaders($this->corsHeaders($request));
+            }
+        } catch (\Throwable $e) {
+            \Log::error('PublicQuoteController::save error', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not save quote request.',
+            ], 500)->withHeaders($this->corsHeaders($request));
+        }
+    }
+
+    /**
+     * Generate a unique quote reference like QR123456.
+     */
+    protected function generateQuoteRef(): string
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $ref = 'QR' . random_int(100000, 999999);
+            if (! PublicQuoteRequest::where('quote_ref', $ref)->exists()) {
+                return $ref;
+            }
+        }
+        // last resort — append microseconds
+        return 'QR' . substr(str_replace('.', '', microtime(true)), -8);
     }
 }
