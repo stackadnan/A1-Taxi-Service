@@ -13,6 +13,7 @@
             <th class="p-3 font-medium">Driver</th>
           @endif
           @if(isset($active) && in_array($active, ['confirmed','completed']))
+            <th class="p-3 font-medium">Car Type</th>
             <th class="p-3 font-medium">Driver Response</th>
           @endif
           @if(!(isset($active) && $active === 'new'))
@@ -24,7 +25,22 @@
       </thead>
       <tbody>
         @forelse($bookings as $b)
-        <tr class="border-t hover:bg-gray-50 transition-colors" data-booking-id="{{ $b->id }}" id="booking-row-{{ $b->id }}">
+        @php
+          $rowBg = '';
+          if (isset($active) && $active === 'confirmed') {
+            $carType = $b->driver ? strtolower($b->driver->car_type ?? '') : '';
+            if ($carType === 'saloon') {
+              $rowBg = 'background-color:#d4edda;';
+            } elseif ($carType === 'business') {
+              $rowBg = 'background-color:#fff3cd;';
+            } elseif ($carType === 'mpv6') {
+              $rowBg = 'background-color:#d1ecf1;';
+            } elseif ($carType === 'mpv8') {
+              $rowBg = 'background-color:#e2d9f3;';
+            }
+          }
+        @endphp
+        <tr class="border-t hover:bg-gray-50 transition-colors" data-booking-id="{{ $b->id }}" id="booking-row-{{ $b->id }}" @if($rowBg) style="{{ $rowBg }}" @endif>
           <td class="p-3"><div class="text-sm font-medium text-gray-900">{{ $b->booking_code }}</div><div class="text-xs text-gray-500">{{ $b->created_at->format('Y-m-d') }}</div></td>
           <td class="p-3"><div class="text-sm text-gray-900">{{ $b->pickup_address ?: '-' }}</div><div class="text-xs text-gray-500">{{ optional($b->pickup_date)->format('Y-m-d') }} {{ $b->pickup_time }}</div></td>
           <td class="p-3 text-sm text-gray-900">{{ $b->dropoff_address ?: '-' }}</td>
@@ -35,6 +51,7 @@
             <td class="p-3 text-sm text-gray-900" data-col="driver_name">{{ $b->driver_name ?? '-' }}</td>
           @endif
           @if(isset($active) && in_array($active, ['confirmed','completed']))
+            <td class="p-3 text-sm text-gray-900" data-col="car_type">{{ $b->driver ? $b->driver->car_type : '-' }}</td>
             @if(!$b->driver_id)
               <td class="p-3" data-col="driver_response"><span class="text-sm text-gray-500">-</span></td>
             @else

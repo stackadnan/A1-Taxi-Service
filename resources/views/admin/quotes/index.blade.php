@@ -91,6 +91,7 @@
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Trip</th>
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Linked Ref</th>
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Source IP</th>
+            <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Source URL</th>
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Submitted</th>
           </tr>
         </thead>
@@ -111,7 +112,7 @@
                 <span class="capitalize text-gray-700">{{ $quote->vehicle_type }}</span>
               </td>
               <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
-                £{{ number_format($quote->price, 2) }}
+              £  {{ number_format($quote->price, 2) }}
               </td>
               <td class="px-4 py-3 whitespace-nowrap">
                 @if($quote->trip_type === 'return')
@@ -128,6 +129,7 @@
                 @endif
               </td>
               <td class="px-4 py-3 whitespace-nowrap text-gray-500 text-xs font-mono">{{ $quote->source_ip }}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-gray-500 text-xs font-mono">{{ $quote->source_url }}</td>
               <td class="px-4 py-3 whitespace-nowrap text-gray-500 text-xs">{{ $quote->created_at->format('d M Y H:i') }}</td>
             </tr>
           @endforeach
