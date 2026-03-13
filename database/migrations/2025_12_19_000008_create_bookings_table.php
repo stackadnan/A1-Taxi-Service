@@ -74,7 +74,7 @@ return new class extends Migration
             $table->integer('estimated_duration_minutes')->nullable();
 
             $table->json('meta')->nullable();
-            $table->string('currency', 5)->default('USD');
+            $table->string('currency', 5)->default('GBP');
             $table->timestamps();
 
             $table->index(['pickup_date', 'pickup_time']);

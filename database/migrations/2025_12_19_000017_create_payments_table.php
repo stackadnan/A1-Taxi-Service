@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('booking_id')->constrained('bookings')->cascadeOnDelete();
             $table->string('payment_type')->nullable();
             $table->decimal('amount', 12, 2);
-            $table->string('currency', 5)->default('USD');
+            $table->string('currency', 5)->default('GBP');
             $table->string('status')->default('pending');
             $table->string('method')->nullable();
             $table->string('transaction_id')->nullable()->index();

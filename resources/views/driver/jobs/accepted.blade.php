@@ -77,15 +77,15 @@
                             </div>
                             @endif
                             <div class="flex items-center text-sm">
-                                <i class="fas fa-euro-sign text-green-600 mr-2 w-4"></i>
-                                <span class="font-medium">Price:</span>
-                                <span class="ml-2 text-gray-700">
-                                  @if($job->driver_price)
-                                    €{{ number_format($job->driver_price, 2) }}
-                                  @else
-                                    -
-                                  @endif
-                                </span>
+                                                                <i class="fas fa-pound-sign text-green-600 mr-2 w-4"></i>
+                                                                <span class="font-medium">Price:</span>
+                                                                <span class="ml-2 text-gray-700">
+                                                                    @if($job->driver_price)
+                                                                        £{{ number_format($job->driver_price, 2) }}
+                                                                    @else
+                                                                        -
+                                                                    @endif
+                                                                </span>
                             </div> 
                         </div>
 

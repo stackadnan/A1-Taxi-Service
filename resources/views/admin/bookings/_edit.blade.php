@@ -103,9 +103,9 @@
   </div>
 
   <div>
-    <label class="block text-sm font-medium text-gray-700">Price (EUR)</label>
+    <label class="block text-sm font-medium text-gray-700">Price (GBP)</label>
     <div class="input-with-icon">
-      <span class="input-icon" style="color: #6b7280;">€</span>
+      <span class="input-icon" style="color: #6b7280;">£</span>
       <input type="number" step="0.01" name="booking_charges" value="{{ old('booking_charges', $booking->total_price) }}" class="mt-1 block w-full border rounded p-2 form-input form-input-with-icon" placeholder="0.00" />
     </div>
   </div>
@@ -398,7 +398,7 @@
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-gray-700">Driver Price (EUR)</label>
+      <label class="block text-sm font-medium text-gray-700">Driver Price (GBP)</label>
       <div class="input-with-icon">
         <span class="input-icon" style="color: #6b7280;">€</span>
         <input id="driver-price-input" type="number" step="0.01" name="driver_price" value="{{ old('driver_price', $booking->driver_price) }}" class="mt-1 block w-full border rounded p-2 form-input form-input-with-icon" placeholder="0.00" />

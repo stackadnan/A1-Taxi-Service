@@ -324,9 +324,9 @@
           </div>
         </div>
         <div>
-          <label class="form-label">Price (EUR)</label>
+          <label class="form-label">Price (GBP)</label>
           <div class="input-with-icon">
-            <span class="input-icon" style="color: #6b7280;">€</span>
+            <span class="input-icon" style="color: #6b7280;">£</span>
             <input id="booking-charges-input" type="number" step="0.01" name="booking_charges" value="{{ old('booking_charges') }}" class="form-input form-input-with-icon" placeholder="0.00" />
           </div>
         </div>

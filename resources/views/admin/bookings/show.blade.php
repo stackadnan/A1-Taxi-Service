@@ -45,7 +45,7 @@
       <p class="text-sm">{{ $booking->message_to_admin ?? '-' }}</p>
 
       <h3 class="mt-3 font-semibold mb-1">Pricing</h3>
-      <p class="text-sm">{{ $booking->total_price ? '€' . number_format($booking->total_price,2) : '-' }} EUR</p>
+      <p class="text-sm">{{ $booking->total_price ? '£' . number_format($booking->total_price,2) : '-' }} GBP</p>
     </div>
   </div>
 </div>
