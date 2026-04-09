@@ -1,0 +1,455 @@
+<?php
+
+namespace App\Providers;
+
+use App\Models\Breadcrumb;
+use App\Models\CardBlog;
+use App\Models\CardFleet;
+use App\Models\FeatureBenefit;
+use App\Models\FaqItem;
+use App\Models\Footer;
+use App\Models\Header;
+use App\Models\Offcanvas;
+use App\Models\Page;
+use App\Models\PagePartial;
+use App\Models\QuoteSection;
+use App\Models\StepItem;
+use App\Models\Testimonial;
+use App\Models\Url;
+use App\Models\WhyUs;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        View::composer('partials.card-fleet', function ($view) {
+            $fleetItems = CardFleet::orderBy('order')->get();
+
+            $view->with('fleetItems', $fleetItems);
+        });
+
+        View::composer('partials.card-blog', function ($view) {
+            $blogItems = CardBlog::orderBy('order')->get();
+
+            $view->with('blogItems', $blogItems);
+        });
+
+        View::composer('partials.quotes', function ($view) {
+            $quote = QuoteSection::where('section_key', 'quote')->first();
+            $page = null;
+            $pageId = request()->attributes->get('url_page_id');
+
+            if (is_numeric($pageId)) {
+                $page = Page::find((int) $pageId);
+            }
+
+            $heroTitle = null;
+            $heroSubtitle = null;
+            $heroDescription = null;
+            if ($page) {
+                $heroTitle = is_string($page->quote_title) ? trim($page->quote_title) : null;
+                $heroSubtitle = is_string($page->quote_subtitle) ? trim($page->quote_subtitle) : null;
+                $heroDescription = is_string($page->quote_description) ? trim($page->quote_description) : null;
+
+                if (!$heroTitle) {
+                    $pageName = is_string($page->name) ? trim($page->name) : 'London';
+                    $baseName = trim((string) preg_replace('/\s+Airport$/i', '', $pageName));
+                    if ($baseName === '') {
+                        $baseName = $pageName;
+                    }
+
+                    $heroTitle = "Reliable {$baseName} Airport Taxi Service";
+                }
+
+                if (!$heroSubtitle) {
+                    $pageName = is_string($page->name) ? trim($page->name) : 'UK';
+                    $heroSubtitle = str_ends_with(strtolower($pageName), 'airport')
+                        ? "{$pageName} Pickups and Drop-offs"
+                        : "{$pageName} Airport Transfer Service";
+                }
+
+                if (!$heroDescription) {
+                    $pageName = is_string($page->name) ? trim($page->name) : 'UK';
+                    $heroDescription = "Book professional {$pageName} airport taxi transfers to and from all major UK airports. We provide punctual drivers, fixed fares, and comfortable vehicles for every journey.";
+                }
+            }
+
+            $view->with([
+                'heroTitle' => $heroTitle ?? $quote->hero_title ?? 'Reliable London Airport Taxi Service',
+                'heroSubtitle' => $heroSubtitle ?? $quote->hero_subtitle ?? 'Airport Transfers Across the UK',
+                'heroDescription' => $heroDescription ?? $quote->description ?? 'Book professional London airport taxi transfers to and from all major UK airports. Whether you are travelling alone, with family, or in a group, we provide comfortable, punctual and affordable transport with fixed prices and no hidden charges.',
+                'heroAdditional' => 'Reserve your taxi in advance through our quick online booking system and enjoy a smooth, stress-free journey to or from the airport.',
+                'contactSentence' => 'Need assistance? Our customer support team is available 24 hours a day, 7 days a week on',
+                'phoneNumber' => $quote->phone ?? '(+44) 1582 801 611',
+                'highlights' => $quote->highlights ?? [
+                    'Free cancellation up to 12 hours before pickup',
+                    'Real-time flight tracking for timely pickups',
+                    'Fully licensed and professional drivers',
+                    'Comfortable vehicles for individuals and groups',
+                    '24/7 customer support and assistance',
+                ],
+            ]);
+        });
+
+        View::composer('partials.offcanvas', function ($view) {
+            $offcanvas = Offcanvas::where('section_key', 'offcanvas')->first();
+
+            $view->with([
+                'logo' => $offcanvas->logo ?? 'assets/img/logo/black-logo.png',
+                'address' => $offcanvas->address ?? '960 Capability Green, LU1 3PE Luton',
+                'email' => $offcanvas->email ?? 'info@a1airportcars.co.uk',
+                'phone' => $offcanvas->phone ?? '(+44) - 1582 - 801 - 611',
+                'buttonText' => $offcanvas->button_text ?? 'Manage My Booking',
+                'buttonLink' => $offcanvas->button_link ?? 'contact',
+                'socialLinks' => $offcanvas->social_links ?? [
+                    ['icon' => 'fab fa-facebook-f', 'link' => '#'],
+                    ['icon' => 'fab fa-twitter', 'link' => '#'],
+                    ['icon' => 'fab fa-youtube', 'link' => '#'],
+                    ['icon' => 'fab fa-linkedin-in', 'link' => '#'],
+                ],
+            ]);
+        });
+
+        View::composer('partials.testimonials', function ($view) {
+            $testimonials = Testimonial::orderBy('order')->get();
+
+            $view->with([
+                'testimonials' => $testimonials,
+                'testimonialSectionTitle' => 'Our Testimonials',
+                'testimonialSectionHeading' => 'What They’re Saying About A1 Airport Cars',
+                'testimonialSectionDescription' => 'Hear from our satisfied customers who trust A1 Airport Cars for reliable, comfortable, and on-time airport transfers. We pride ourselves on delivering a smooth travel experience from pickup to drop-off.',
+            ]);
+        });
+
+        View::composer('partials.steps', function ($view) {
+            $steps = StepItem::orderBy('order')->get();
+            $features = FeatureBenefit::orderBy('order')->get();
+
+            $page = null;
+            $pageId = request()->attributes->get('url_page_id');
+
+            if (is_numeric($pageId)) {
+                $page = Page::find((int) $pageId);
+            }
+
+            if (!$page) {
+                $defaultUrl = Url::where('group_slug', 'airport-transfers')
+                    ->where('is_active', true)
+                    ->orderBy('id')
+                    ->first();
+
+                if ($defaultUrl && is_numeric($defaultUrl->page_id)) {
+                    $page = Page::find((int) $defaultUrl->page_id);
+                }
+            }
+
+            if (!$page) {
+                $page = Page::orderBy('id')->first();
+            }
+
+            $featureHeading = is_string($page?->why_use_heading) ? trim($page->why_use_heading) : '';
+
+            if ($featureHeading === '') {
+                $featureHeading = 'Why You Should Use A1 Airport Cars';
+            }
+
+            $view->with([
+                'steps' => $steps,
+                'featureHeading' => $featureHeading,
+                'features' => $features,
+            ]);
+        });
+
+        View::composer('partials.footer', function ($view) {
+            $footer = Footer::where('section_key', 'footer')->first();
+            $social = $footer->social_links ?? [
+                ['icon' => 'fab fa-facebook-f', 'link' => '#'],
+                ['icon' => 'fab fa-twitter', 'link' => '#'],
+                ['icon' => 'fa-brands fa-linkedin-in', 'link' => '#'],
+                ['icon' => 'fa-brands fa-youtube', 'link' => '#'],
+            ];
+
+            $view->with([
+                'footerLogo' => $footer->logo ?? 'assets/img/logo/white-logo-2.png',
+                'footerTagline' => $footer->tagline ?? 'Your go to option for reliable Airport Transfers',
+                'contactAddress' => $footer->contact_address ?? '960 Capability Green, LU1 3PE Luton, United Kingdom',
+                'contactEmail' => $footer->contact_email ?? 'info@a1airportcars.co.uk',
+                'contactPhone' => $footer->contact_phone ?? '(+44) - 1582 - 801 - 611',
+                'links' => $footer->links ?? [
+                    ['label' => 'FAQ', 'url' => 'about'],
+                    ['label' => 'Terms & Conditions', 'url' => 'car-details'],
+                    ['label' => 'Refund Policy', 'url' => 'news-details'],
+                    ['label' => 'Privacy Policy', 'url' => 'gallery'],
+                    ['label' => 'Contact', 'url' => 'contact'],
+                ],
+                'airports' => $footer->airports ?? [
+                    ['label' => 'Heathrow Airport Transfers', 'url' => '/airport-transfers/heathrow-airport-transfers'],
+                    ['label' => 'Gatwick Airport Transfers', 'url' => '/airport-transfers/gatwick-airport-transfers'],
+                    ['label' => 'Stansted Airport Transfers', 'url' => '/airport-transfers/stansted-airport-transfers'],
+                    ['label' => 'Luton Airport Transfers', 'url' => '/airport-transfers/luton-airport-transfers'],
+                    ['label' => 'Manchester Airport Transfers', 'url' => '/airport-transfers/manchester-airport-transfers'],
+                    ['label' => 'Birmingham Airport Transfers', 'url' => '/airport-transfers/birmingham-airport-transfers'],
+                    ['label' => 'London City Airport Transfers', 'url' => '/airport-transfers/london-city-airport-transfers'],
+                ],
+                'cities' => $footer->cities ?? [
+                    'Aylesbury', 'Buckingham', 'Coventry', 'Baldock', 'Bedford',
+                    'Cambridge', 'Corby', 'Dartford', 'Daventry', 'Dunstable',
+                    'Harpenden', 'East Grinstead', 'East Midlands',
+                ],
+                'copyright' => $footer->copyright ?? '© Copyright '.date('Y').' A1 Airport Cars | Powered by <a href="./">BXS</a>',
+                'socialLinks' => $social,
+            ]);
+        });
+
+        View::composer('partials.header', function ($view) {
+            $header = Header::where('section_key', 'header')->first();
+
+            $view->with([
+                'topEmail' => $header->top_email ?? 'info@example.com',
+                'topAddress' => $header->top_address ?? '88 Broklyn Golden Street. New York',
+                'topLinks' => $header->top_links ?? [
+                    ['label' => 'Manage Bookings', 'url' => 'contact'],
+                    ['label' => 'Support', 'url' => 'contact'],
+                    ['label' => 'Contact', 'url' => 'contact'],
+                ],
+                'socialLinks' => $header->social_links ?? [
+                    ['icon' => 'fab fa-facebook-f', 'url' => '#'],
+                    ['icon' => 'fab fa-twitter', 'url' => '#'],
+                    ['icon' => 'fa-brands fa-linkedin-in', 'url' => '#'],
+                    ['icon' => 'fa-brands fa-youtube', 'url' => '#'],
+                ],
+                'logoLight' => $header->logo_light ?? 'assets/img/logo/white-logo-2.png',
+                'logoDark' => $header->logo_dark ?? 'assets/img/logo/black-logo.png',
+                'phoneLabel' => $header->phone_label ?? 'Call Anytime',
+                'phoneNumber' => $header->phone_number ?? '+92 (8800) - 9850',
+                'buttonText' => $header->button_text ?? 'Manage Bookings',
+                'buttonLink' => $header->button_link ?? 'car-details',
+                'airportLinks' => $header->airport_links ?? [
+                    ['label' => 'Heathrow Airport Transfers', 'url' => '/airport-transfers/heathrow-airport-transfers'],
+                    ['label' => 'Gatwick Airport Transfers', 'url' => '/airport-transfers/gatwick-airport-transfers'],
+                    ['label' => 'Stansted Airport Transfers', 'url' => '/airport-transfers/stansted-airport-transfers'],
+                    ['label' => 'Luton Airport Transfers', 'url' => '/airport-transfers/luton-airport-transfers'],
+                    ['label' => 'Manchester Airport Transfers', 'url' => '/airport-transfers/manchester-airport-transfers'],
+                    ['label' => 'Birmingham Airport Transfers', 'url' => '/airport-transfers/birmingham-airport-transfers'],
+                    ['label' => 'London City Airport Transfers', 'url' => '/airport-transfers/london-city-airport-transfers'],
+                ],
+                'cityLinks' => $header->city_links ?? [
+                    ['label' => 'Aylesbury', 'url' => '/city-transfers/aylesbury-city-transfers'],
+                    ['label' => 'Buckingham', 'url' => '/city-transfers/buckingham-city-transfers'],
+                    ['label' => 'Coventry', 'url' => '/city-transfers/coventry-city-transfers'],
+                    ['label' => 'Baldock', 'url' => '/city-transfers/baldock-city-transfers'],
+                    ['label' => 'Bedford', 'url' => '/city-transfers/bedford-city-transfers'],
+                    ['label' => 'Cambridge', 'url' => '/city-transfers/cambridge-city-transfers'],
+                    ['label' => 'Corby', 'url' => '/city-transfers/corby-city-transfers'],
+                    ['label' => 'Dartford', 'url' => '/city-transfers/dartford-city-transfers'],
+                    ['label' => 'Daventry', 'url' => '/city-transfers/daventry-city-transfers'],
+                    ['label' => 'Dunstable', 'url' => '/city-transfers/dunstable-city-transfers'],
+                    ['label' => 'Harpenden', 'url' => '/city-transfers/harpenden-city-transfers'],
+                    ['label' => 'East Grinstead', 'url' => '/city-transfers/east-grinstead-city-transfers'],
+                    ['label' => 'East Midlands', 'url' => '/city-transfers/east-midlands-city-transfers'],
+                ],
+            ]);
+        });
+
+        View::composer('partials.faq', function ($view) {
+            $pageId = request()->attributes->get('url_page_id');
+
+            if (is_numeric($pageId)) {
+                $faqs = FaqItem::where('page_id', (int) $pageId)
+                    ->orderBy('order')
+                    ->get();
+            } else {
+                $faqs = FaqItem::whereNull('page_id')
+                    ->orderBy('order')
+                    ->get();
+            }
+
+            if ($faqs->isEmpty()) {
+                $faqs = FaqItem::whereNull('page_id')
+                    ->orderBy('order')
+                    ->get();
+            }
+
+            $view->with([
+                'faqTitle' => 'Question & Answers',
+                'faqSubtitle' => 'Frequently asked questions',
+                'faqs' => $faqs,
+            ]);
+        });
+
+        View::composer('airport', function ($view) {
+            $pageId = request()->attributes->get('url_page_id');
+            $page = null;
+
+            if (is_numeric($pageId)) {
+                $page = Page::find((int) $pageId);
+            }
+
+            if (!$page) {
+                $defaultUrl = Url::where('group_slug', 'airport-transfers')
+                    ->where('is_active', true)
+                    ->orderBy('id')
+                    ->first();
+
+                if ($defaultUrl && is_numeric($defaultUrl->page_id)) {
+                    $page = Page::find((int) $defaultUrl->page_id);
+                }
+            }
+
+            if (!$page) {
+                $page = Page::orderBy('id')->first();
+            }
+
+            $pageName = $page?->name ?? 'Airport';
+            $defaultEnabledPartials = [
+                'head',
+                'preloader',
+                'scroll-up',
+                'offcanvas',
+                'header',
+                'breadcrumb',
+                'quotes',
+                'testimonials',
+                'why-us',
+                'card-fleet',
+                'steps',
+                'card-blog',
+                'faq',
+                'footer',
+                'script',
+            ];
+            $enabledPartials = $defaultEnabledPartials;
+
+            if ($page && is_numeric($page->id)) {
+                $partialConfig = PagePartial::where('page_id', (int) $page->id)->first();
+
+                if ($partialConfig) {
+                    $partialToggleMap = [
+                        'head' => (bool) $partialConfig->head,
+                        'preloader' => (bool) $partialConfig->preloader,
+                        'scroll-up' => (bool) $partialConfig->scroll_up,
+                        'offcanvas' => (bool) $partialConfig->offcanvas,
+                        'header' => (bool) $partialConfig->header,
+                        'breadcrumb' => (bool) $partialConfig->breadcrumb,
+                        'quotes' => (bool) $partialConfig->quotes,
+                        'testimonials' => (bool) $partialConfig->testimonials,
+                        'why-us' => (bool) $partialConfig->why_us,
+                        'card-fleet' => (bool) $partialConfig->card_fleet,
+                        'steps' => (bool) $partialConfig->steps,
+                        'card-blog' => (bool) $partialConfig->card_blog,
+                        'faq' => (bool) $partialConfig->faq,
+                        'footer' => (bool) $partialConfig->footer,
+                        'script' => (bool) $partialConfig->script,
+                    ];
+
+                    $enabledPartials = array_keys(array_filter($partialToggleMap));
+                }
+            }
+
+            $view->with([
+                'enabledPartials' => $enabledPartials,
+                'airportHeadTitle' => $page?->head_title ?? 'A1 Airport Cars ',
+                'airportMainTitle' => $page?->main_title ?? "Reliable {$pageName} Transfers",
+                'airportMainDescription' => $page?->main_description ?? '<strong>A1 Airport Cars</strong> provides professional and reliable airport transfer services. Whether you are arriving or departing, our service ensures a smooth and comfortable journey.',
+                'airportLeftTitle' => $page?->left_title ?? "Professional {$pageName} Drivers",
+                'airportLeftDescription' => $page?->left_description ?? 'Our experienced drivers are fully licensed and highly familiar with terminal pickup points and surrounding routes.',
+                'airportRightTitle' => $page?->right_title ?? "Comfortable Vehicles for {$pageName} Transfers",
+                'airportRightDescription' => $page?->right_description ?? 'We offer saloon cars, executive vehicles, and MPVs for individuals, families, and groups.',
+                'airportBottomTitle' => $page?->bottom_title ?? "Simple Booking for {$pageName} Transfers",
+                'airportBottomDescription' => $page?->bottom_description ?? 'Book your transfer online in minutes and travel with fully licensed drivers for a safe and reliable journey.',
+            ]);
+        });
+
+        View::composer('partials.why-us', function ($view) {
+            $whyUs = WhyUs::where('section_key', 'why-us')->first();
+            $page = null;
+            $pageId = request()->attributes->get('url_page_id');
+
+            if (is_numeric($pageId)) {
+                $page = Page::find((int) $pageId);
+            }
+
+            if (!$page) {
+                $defaultUrl = Url::where('group_slug', 'airport-transfers')
+                    ->where('is_active', true)
+                    ->orderBy('id')
+                    ->first();
+
+                if ($defaultUrl && is_numeric($defaultUrl->page_id)) {
+                    $page = Page::find((int) $defaultUrl->page_id);
+                }
+            }
+
+            if (!$page) {
+                $page = Page::orderBy('id')->first();
+            }
+
+            $sectionTitle = is_string($page?->why_us_title) ? trim($page->why_us_title) : '';
+            $sectionSubtitle = is_string($whyUs?->section_subtitle) ? trim($whyUs->section_subtitle) : '';
+
+            if ($sectionTitle === '') {
+                $sectionTitle = $whyUs->section_title ?? 'Why Choose Us';
+            }
+
+            if ($sectionSubtitle === '') {
+                $sectionSubtitle = 'Why Book an Airport Taxi with Us?';
+            }
+
+            $view->with([
+                'sectionTitle' => $sectionTitle,
+                'sectionSubtitle' => $sectionSubtitle,
+                'leftItems' => $whyUs->left_items ?? [
+                    'Save up to 40% compared to other taxi fares',
+                    'The price you see is the price you pay',
+                    'No hidden fees or surprise charges',
+                    'Free 45 minutes airport waiting time',
+                    'Real-time flight monitoring for timely pickups',
+                ],
+                'rightItems' => $whyUs->right_items ?? [
+                    'Prices: Up to 40% cheaper than many airport taxis',
+                    'Vehicles: Saloon, Executive, MPV, and 8-Seater Minivans',
+                    'Drivers: Fully licensed and background checked',
+                    'Cancellation: No cancellation charge*',
+                    'Baby Seats: Available free of charge (subject to availability)',
+                ],
+            ]);
+        });
+
+        View::composer('partials.breadcrumb', function ($view) {
+            $route = request()->route();
+            $pageKey = 'home';
+
+            if ($route) {
+                if ($route->getName() === 'pages.show') {
+                    $pageKey = $route->parameter('slug') ?: 'home';
+                } elseif ($route->getName() === 'pages.legacy') {
+                    $pageKey = strtolower($route->parameter('legacy') ?: 'home');
+                } else {
+                    $pageKey = $route->getName() ?: 'home';
+                }
+            }
+
+            $breadcrumb = Breadcrumb::where('page_key', $pageKey)->first();
+
+            $view->with([
+                'img' => $breadcrumb->img ?? 'assets/img/breadcrumb-banner.png',
+                'Title' => $breadcrumb->title ?? 'Home',
+                'Title2' => $breadcrumb->title2 ?? ucfirst(str_replace('-', ' ', $pageKey)),
+                'SubTitle' => $breadcrumb->subtitle ?? '',
+            ]);
+        });
+    }
+}

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 use Carbon\Carbon;
 use App\Models\Driver;
+use App\Models\UserNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
@@ -22,6 +23,40 @@ class Booking extends Model
 
     protected static function booted()
     {
+        static::created(function ($booking) {
+            try {
+                // Public frontend bookings should notify the admin dashboard immediately.
+                // Manual/admin-created bookings already have created_by_user_id set and should not self-notify.
+                if (!empty($booking->created_by_user_id)) {
+                    return;
+                }
+
+                $meta = is_array($booking->meta) ? $booking->meta : [];
+
+                // Skip the return leg of a return booking to avoid duplicate admin alerts.
+                if (($meta['trip_leg'] ?? null) === 'return') {
+                    return;
+                }
+
+                $bookingCode = $booking->booking_code ?? $booking->id;
+                $message = sprintf(
+                    'New booking #%s has been created for %s from %s to %s.',
+                    $bookingCode,
+                    $booking->passenger_name ?: 'a passenger',
+                    $booking->pickup_address ?: 'an unknown pickup location',
+                    $booking->dropoff_address ?: 'an unknown dropoff location'
+                );
+
+                UserNotification::createForAdmins('New Booking Received', $message);
+                \Cache::forget('booking_section_counts');
+            } catch (\Throwable $e) {
+                Log::error('Booking created notification failed', [
+                    'booking_id' => $booking->id ?? null,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
+
         static::updating(function($booking){
             try {
                 if ($booking->isDirty('driver_id')) {

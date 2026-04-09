@@ -30,10 +30,13 @@ class UserNotification extends Model
      */
     public static function createForAdmins(string $title, string $message)
     {
-        // Get all admin users
-        $adminUsers = User::whereHas('roles', function($q) {
-            $q->where('name', 'Super Admin');
-        })->get();
+        // Notify every user who can access the admin area, not just Super Admins.
+        $adminUsers = User::query()
+            ->where('is_admin', true)
+            ->orWhereHas('roles', function ($q) {
+                $q->whereHas('permissions');
+            })
+            ->get();
 
         $now = now();
         $recentWindow = 30; // seconds

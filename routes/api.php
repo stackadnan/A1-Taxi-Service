@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicQuoteController;
 use App\Http\Controllers\PublicComplaintController;
+use App\Http\Controllers\PublicBookingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,6 +25,10 @@ Route::post('quote', [PublicQuoteController::class, 'quote']);
 // Save selected quote to database
 Route::options('quote/save', [PublicQuoteController::class, 'preflight']);
 Route::post('quote/save', [PublicQuoteController::class, 'save']);
+
+// Save a public booking created from the frontend booking confirmation form
+Route::options('booking/save', [PublicBookingController::class, 'preflight']);
+Route::post('booking/save', [PublicBookingController::class, 'save']);
 
 // Save public complainet/lost-found form submissions
 Route::options('complaint-lost-found', [PublicComplaintController::class, 'preflight']);
