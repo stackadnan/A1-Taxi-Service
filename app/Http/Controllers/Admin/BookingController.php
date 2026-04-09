@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\BookingStatus;
 use App\Models\Driver;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 
 class BookingController extends Controller
 {
@@ -150,39 +152,93 @@ class BookingController extends Controller
             'source' => 'nullable|string|max:50',
             'passengers' => 'nullable|integer|min:1',
             'luggage' => 'nullable|string|max:100',
-            'booking_charges' => 'nullable|numeric|min:0'
+            'booking_charges' => 'nullable|numeric|min:0',
+            'is_return_booking' => 'nullable|boolean',
+            'return_flight_number' => 'nullable|string|max:100',
+            'return_pickup_date' => 'nullable|date|after_or_equal:today|required_if:is_return_booking,1',
+            'return_pickup_time' => 'nullable|required_if:is_return_booking,1',
+            'return_flight_time' => 'nullable',
+            'return_meet_and_greet' => 'nullable|boolean',
+            'return_baby_seat' => 'nullable|boolean'
         ]);
 
         $status = BookingStatus::where('name', 'new')->first();
+        $isReturnBooking = (bool) ($data['is_return_booking'] ?? false);
+        $userId = $request->user() ? $request->user()->id : null;
+
+        $pickupAddress = $data['pickup_address'] ?? $data['pickup_address_line'] ?? null;
+        $dropoffAddress = $data['dropoff_address'] ?? $data['dropoff_address_line'] ?? null;
 
         try {
-            $booking = Booking::create([
-                'booking_code' => $this->generateBookingCode(),
-                'user_id' => $request->user() ? $request->user()->id : null,
-                'passenger_name' => $data['passenger_name'] ?? null,
-                'phone' => $data['phone'] ?? null,
-                'email' => $data['email'] ?? null,
-                'pickup_address' => $data['pickup_address'] ?? $data['pickup_address_line'] ?? null,
-                'dropoff_address' => $data['dropoff_address'] ?? $data['dropoff_address_line'] ?? null,
-                'pickup_date' => $data['pickup_date'] ?? null,
-                'pickup_time' => $data['pickup_time'] ?? null,
-                'vehicle_type' => $data['vehicle_type'] ?? ($request->input('vehicle_type_text') ?? null),
-                'flight_number' => $data['flight_number'] ?? null,
-                'meet_and_greet' => isset($data['meet_and_greet']) ? (bool) $data['meet_and_greet'] : false,
-                'baby_seat' => isset($data['baby_seat']) ? (bool) $data['baby_seat'] : false,
-                'baby_seat_age' => (isset($data['baby_seat']) && $data['baby_seat']) ? ($data['baby_seat_age'] ?? null) : null,
-                'message_to_driver' => $data['message_to_driver'] ?? null,
-                'message_to_admin' => $data['message_to_admin'] ?? null,
-                'created_by_user_id' => $request->user() ? $request->user()->id : null,
-                'status_id' => $status ? $status->id : null,
-                'total_price' => isset($data['booking_charges']) ? $data['booking_charges'] : null,
-                'passengers_count' => $data['passengers'] ?? 1,
-                'luggage_count' => is_numeric($data['luggage'] ?? null) ? $data['luggage'] : 0,
-                'meta' => [
-                    'source' => $data['source'] ?? null,
-                    'flight_time' => $data['flight_time'] ?? null
-                ]
-            ]);
+            $result = DB::transaction(function () use ($data, $request, $status, $isReturnBooking, $userId, $pickupAddress, $dropoffAddress) {
+                $basePayload = [
+                    'user_id' => $userId,
+                    'passenger_name' => $data['passenger_name'] ?? null,
+                    'phone' => $data['phone'] ?? null,
+                    'email' => $data['email'] ?? null,
+                    'vehicle_type' => $data['vehicle_type'] ?? ($request->input('vehicle_type_text') ?? null),
+                    'message_to_driver' => $data['message_to_driver'] ?? null,
+                    'message_to_admin' => $data['message_to_admin'] ?? null,
+                    'created_by_user_id' => $userId,
+                    'status_id' => $status ? $status->id : null,
+                    'total_price' => isset($data['booking_charges']) ? $data['booking_charges'] : null,
+                    'passengers_count' => $data['passengers'] ?? 1,
+                    'luggage_count' => is_numeric($data['luggage'] ?? null) ? $data['luggage'] : 0,
+                ];
+
+                $outbound = Booking::create(array_merge($basePayload, [
+                    'booking_code' => $this->generateBookingCode(),
+                    'pickup_address' => $pickupAddress,
+                    'dropoff_address' => $dropoffAddress,
+                    'pickup_date' => $data['pickup_date'] ?? null,
+                    'pickup_time' => $data['pickup_time'] ?? null,
+                    'flight_number' => $data['flight_number'] ?? null,
+                    'meet_and_greet' => isset($data['meet_and_greet']) ? (bool) $data['meet_and_greet'] : false,
+                    'baby_seat' => isset($data['baby_seat']) ? (bool) $data['baby_seat'] : false,
+                    'baby_seat_age' => (isset($data['baby_seat']) && $data['baby_seat']) ? ($data['baby_seat_age'] ?? null) : null,
+                    'meta' => [
+                        'source' => $data['source'] ?? null,
+                        'flight_time' => $data['flight_time'] ?? null,
+                        'trip_leg' => $isReturnBooking ? 'outbound' : 'single',
+                    ],
+                ]));
+
+                $created = [$outbound];
+
+                if ($isReturnBooking) {
+                    $returnBooking = Booking::create(array_merge($basePayload, [
+                        'booking_code' => $this->generateBookingCode(),
+                        'pickup_address' => $dropoffAddress,
+                        'dropoff_address' => $pickupAddress,
+                        'pickup_date' => $data['return_pickup_date'] ?? null,
+                        'pickup_time' => $data['return_pickup_time'] ?? null,
+                        'flight_number' => $data['return_flight_number'] ?? null,
+                        'meet_and_greet' => isset($data['return_meet_and_greet']) ? (bool) $data['return_meet_and_greet'] : false,
+                        'baby_seat' => isset($data['return_baby_seat']) ? (bool) $data['return_baby_seat'] : false,
+                        'baby_seat_age' => null,
+                        'meta' => [
+                            'source' => $data['source'] ?? null,
+                            'flight_time' => $data['return_flight_time'] ?? null,
+                            'trip_leg' => 'return',
+                        ],
+                    ]));
+
+                    $outbound->return_booking = true;
+                    $outbound->return_booking_id = $returnBooking->id;
+                    $outbound->save();
+
+                    $returnBooking->return_booking = true;
+                    $returnBooking->return_booking_id = $outbound->id;
+                    $returnBooking->save();
+
+                    $created[] = $returnBooking;
+                }
+
+                return [
+                    'booking' => $outbound,
+                    'bookings' => $created,
+                ];
+            });
         } catch (\Exception $e) {
             logger()->error('Manual booking create failed: ' . $e->getMessage(), ['exception' => $e]);
             if ($request->ajax() || $request->wantsJson()) {
@@ -192,10 +248,17 @@ class BookingController extends Controller
         }
 
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'booking' => $booking], 201);
+            return response()->json([
+                'success' => true,
+                'booking' => $result['booking'],
+                'bookings' => $result['bookings'],
+                'created_count' => count($result['bookings']),
+                'return_booking' => $isReturnBooking,
+            ], 201);
         }
 
-        return redirect()->route('admin.bookings.index', ['section' => 'new_manual'])->with('success', 'Booking created');
+        $message = $isReturnBooking ? 'Return bookings created successfully' : 'Booking created';
+        return redirect()->route('admin.bookings.index', ['section' => 'new_manual'])->with('success', $message);
     }
 
     public function directions(Request $request)
@@ -281,12 +344,16 @@ class BookingController extends Controller
             'dropoff_address_line' => 'nullable|string|max:255',
             'passenger_name' => 'required|string|max:255',
             'phone' => 'required|string|max:50',
+            'alternate_phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'pickup_date' => 'required|date',
             'pickup_time' => 'required',
             'vehicle_type' => 'nullable|string|max:100',
             'flight_number' => 'nullable|string|max:100',
             'flight_time' => 'nullable',
+            'booking_charges' => 'nullable|numeric|min:0',
+            'payment_type' => 'nullable|string|max:50',
+            'source' => 'nullable|string|max:2048',
             'meet_and_greet' => 'nullable|boolean',
             'baby_seat' => 'nullable|boolean',
             'baby_seat_age' => 'nullable|string|max:50',
@@ -297,6 +364,7 @@ class BookingController extends Controller
             'luggage' => 'nullable|string|max:100',
             'driver_id' => 'nullable',
             'driver_price' => 'nullable|numeric|min:0',
+            'driver_display_price' => 'nullable|numeric|min:0',
             'use_percentage' => 'nullable|boolean',
             'driver_percentage' => 'nullable|numeric|min:0|max:100',
             'override_availability' => 'nullable|boolean'
@@ -304,10 +372,19 @@ class BookingController extends Controller
         ]);
 
         $wasJunk = false;
+        $originalAttributes = $booking->getAttributes();
+        $originalMeta = is_array($booking->meta) ? $booking->meta : [];
         try {
             $booking->passenger_name = $data['passenger_name'] ?? $booking->passenger_name;
             $booking->phone = $data['phone'] ?? $booking->phone;
+            $booking->alternate_phone = $data['alternate_phone'] ?? $booking->alternate_phone;
             $booking->email = $data['email'] ?? $booking->email;
+            if (!empty($data['payment_type'])) {
+                $booking->payment_type = $data['payment_type'];
+            }
+            if (!empty($data['source']) && filter_var($data['source'], FILTER_VALIDATE_URL)) {
+                $booking->source_url = $data['source'];
+            }
             $booking->pickup_date = $data['pickup_date'] ?? $booking->pickup_date;
             $booking->pickup_time = $data['pickup_time'] ?? $booking->pickup_time;
             $booking->vehicle_type = $data['vehicle_type'] ?? $booking->vehicle_type;
@@ -554,18 +631,33 @@ class BookingController extends Controller
                 }
             }
 
-            // Respect explicit driver_price unless percentage mode is enabled
-            if (array_key_exists('driver_price', $data)) {
-                $booking->driver_price = $data['driver_price'];
+            // Pricing split:
+            // - total_price: original booking fare (admin-side)
+            // - meta.driver_display_price: fare shown to driver
+            // - driver_price: final driver payout after percentage deduction from display price
+            $driverPercent = null;
+            if (isset($data['driver_percentage']) && $data['driver_percentage'] !== '') {
+                $driverPercent = (float)$data['driver_percentage'];
+                if ($driverPercent < 0) $driverPercent = 0;
+                if ($driverPercent > 100) $driverPercent = 100;
             }
 
-            // Percentage-based driver price support
-            $driverPercent = null;
-            if (!empty($data['use_percentage']) && isset($data['driver_percentage'])) {
-                $driverPercent = (float)$data['driver_percentage'];
-                $base = (float)($booking->total_price ?? 0);
-                $computed = round($base * (1 - ($driverPercent / 100)), 2);
-                $booking->driver_price = $computed;
+            $driverDisplayPrice = null;
+            if (isset($data['driver_display_price']) && $data['driver_display_price'] !== '') {
+                $driverDisplayPrice = (float)$data['driver_display_price'];
+                if ($driverDisplayPrice < 0) $driverDisplayPrice = 0;
+            }
+
+            if ($driverDisplayPrice !== null) {
+                $effectivePercent = $driverPercent;
+                if ($effectivePercent === null) {
+                    $existingMeta = is_array($booking->meta) ? $booking->meta : [];
+                    $effectivePercent = isset($existingMeta['driver_percentage']) ? (float)$existingMeta['driver_percentage'] : 0;
+                }
+                $booking->driver_price = round($driverDisplayPrice * (1 - ($effectivePercent / 100)), 2);
+            } elseif (array_key_exists('driver_price', $data)) {
+                // Backward-compatible manual payout override if no display price provided
+                $booking->driver_price = $data['driver_price'];
             }
 
             // Preserve other meta items (source, flight_time etc.)
@@ -576,8 +668,10 @@ class BookingController extends Controller
             // Store or clear driver percentage meta
             if ($driverPercent !== null) {
                 $meta['driver_percentage'] = $driverPercent;
-            } else {
-                if (isset($meta['driver_percentage'])) unset($meta['driver_percentage']);
+            }
+
+            if ($driverDisplayPrice !== null) {
+                $meta['driver_display_price'] = $driverDisplayPrice;
             }
 
             $booking->meta = $meta; 
@@ -609,6 +703,36 @@ class BookingController extends Controller
                         $booking->meta = $meta;
                     }
                 }
+            }
+
+            $meta = is_array($booking->meta) ? $booking->meta : [];
+            $changeSet = $this->buildBookingChangeSet($booking, $originalAttributes, $originalMeta, $meta);
+            if (!empty($changeSet)) {
+                $changeLogs = isset($originalMeta['change_logs']) && is_array($originalMeta['change_logs'])
+                    ? $originalMeta['change_logs']
+                    : [];
+
+                $actor = auth()->user();
+                $actorName = $actor
+                    ? ($actor->name ?? $actor->email ?? ('User #' . $actor->id))
+                    : 'System';
+
+                $changeLogs[] = [
+                    'at' => now()->toDateTimeString(),
+                    'by' => [
+                        'id' => auth()->id(),
+                        'name' => $actorName,
+                    ],
+                    'changes' => $changeSet,
+                ];
+
+                // Keep recent history bounded to avoid unbounded meta growth.
+                if (count($changeLogs) > 200) {
+                    $changeLogs = array_slice($changeLogs, -200);
+                }
+
+                $meta['change_logs'] = $changeLogs;
+                $booking->meta = $meta;
             }
 
             $booking->save();
@@ -696,7 +820,409 @@ class BookingController extends Controller
         return response()->json(['success' => true, 'results' => $matches]);
     }
 
+    /**
+     * Send booking confirmation email to customer from admin panel.
+     */
+    public function sendConfirmationEmail(Request $request, Booking $booking)
+    {
+        try {
+            $email = trim((string)($booking->email ?? ''));
+            if ($email === '') {
+                return response()->json(['success' => false, 'message' => 'Customer email is missing for this booking.'], 422);
+            }
+
+            $subject = 'Booking Confirmation - ' . ($booking->booking_code ?? ('#' . $booking->id));
+            $bodyLines = [
+                'Dear ' . ($booking->passenger_name ?: 'Customer') . ',',
+                '',
+                'Your booking has been confirmed.',
+                '',
+                'Booking Reference: ' . ($booking->booking_code ?? ('#' . $booking->id)),
+                'Pickup: ' . ($booking->pickup_address ?: '-'),
+                'Dropoff: ' . ($booking->dropoff_address ?: '-'),
+                'Pickup Date: ' . (optional($booking->pickup_date)->format('Y-m-d') ?: '-'),
+                'Pickup Time: ' . ($booking->pickup_time ?: '-'),
+                'Price: ' . ($booking->total_price !== null ? ('£' . number_format((float)$booking->total_price, 2)) : '-'),
+                '',
+                'Thank you for booking with us.',
+            ];
+            $body = implode("\n", $bodyLines);
+
+            $this->sendPlainTextMail($email, $subject, $body);
+
+            return response()->json(['success' => true, 'message' => 'Confirmation email sent successfully.']);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to send booking confirmation email', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+            $message = 'Failed to send confirmation email.';
+            if (config('app.debug')) {
+                $message .= ' ' . $e->getMessage();
+            }
+            return response()->json(['success' => false, 'message' => $message], 500);
+        }
+    }
+
+    /**
+     * Send booking cancellation email to customer from admin panel.
+     */
+    public function sendCancellationEmail(Request $request, Booking $booking)
+    {
+        try {
+            $email = trim((string)($booking->email ?? ''));
+            if ($email === '') {
+                return response()->json(['success' => false, 'message' => 'Customer email is missing for this booking.'], 422);
+            }
+
+            $statusName = strtolower((string)($booking->status->name ?? ''));
+            if ($statusName !== 'cancelled' && $statusName !== 'canceled') {
+                return response()->json(['success' => false, 'message' => 'Cancellation email can only be sent for canceled bookings.'], 422);
+            }
+
+            $subject = 'Booking Cancellation - ' . ($booking->booking_code ?? ('#' . $booking->id));
+            $bodyLines = [
+                'Dear ' . ($booking->passenger_name ?: 'Customer') . ',',
+                '',
+                'Your booking has been cancelled.',
+                '',
+                'Booking Reference: ' . ($booking->booking_code ?? ('#' . $booking->id)),
+                'Pickup: ' . ($booking->pickup_address ?: '-'),
+                'Dropoff: ' . ($booking->dropoff_address ?: '-'),
+                'Pickup Date: ' . (optional($booking->pickup_date)->format('Y-m-d') ?: '-'),
+                'Pickup Time: ' . ($booking->pickup_time ?: '-'),
+                '',
+                'If you have any questions, please contact support.',
+            ];
+            $body = implode("\n", $bodyLines);
+
+            $this->sendPlainTextMail($email, $subject, $body);
+
+            return response()->json(['success' => true, 'message' => 'Cancellation email sent successfully.']);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to send booking cancellation email', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+            $message = 'Failed to send cancellation email.';
+            if (config('app.debug')) {
+                $message .= ' ' . $e->getMessage();
+            }
+            return response()->json(['success' => false, 'message' => $message], 500);
+        }
+    }
+
+    /**
+     * Queue a pending review approval request for a completed booking.
+     */
+    public function sendReviewApprovalRequest(Request $request, Booking $booking)
+    {
+        try {
+            $statusName = strtolower((string) ($booking->status->name ?? ''));
+            if ($statusName !== 'completed') {
+                return response()->json(['success' => false, 'message' => 'Review approval can only be requested for completed bookings.'], 422);
+            }
+
+            if (trim((string) ($booking->email ?? '')) === '') {
+                return response()->json(['success' => false, 'message' => 'Customer email is missing for this booking.'], 422);
+            }
+
+            $booking->review_status = Booking::REVIEW_PENDING;
+            $booking->review_requested_at = now();
+            $booking->review_approved_at = null;
+            $booking->review_rejected_at = null;
+            $booking->review_email_sent_at = null;
+            $booking->save();
+
+            return response()->json(['success' => true, 'message' => 'Review approval request queued successfully.']);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to queue review approval request', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            $message = 'Failed to queue review approval request.';
+            if (config('app.debug')) {
+                $message .= ' ' . $e->getMessage();
+            }
+
+            return response()->json(['success' => false, 'message' => $message], 500);
+        }
+    }
+
+    /**
+     * Send assigned driver information email to customer from admin panel.
+     */
+    public function sendDriverInfoEmail(Request $request, Booking $booking)
+    {
+        try {
+            $email = trim((string)($booking->email ?? ''));
+            if ($email === '') {
+                return response()->json(['success' => false, 'message' => 'Customer email is missing for this booking.'], 422);
+            }
+
+            $driver = $booking->driver_id ? Driver::find($booking->driver_id) : null;
+            if (!$driver) {
+                return response()->json(['success' => false, 'message' => 'No driver is assigned to this booking yet.'], 422);
+            }
+
+            $subject = 'Driver Details - ' . ($booking->booking_code ?? ('#' . $booking->id));
+            $bodyLines = [
+                'Dear ' . ($booking->passenger_name ?: 'Customer') . ',',
+                '',
+                'Your assigned driver details are below:',
+                '',
+                'Driver Name: ' . ($driver->name ?: '-'),
+                'Driver Phone: ' . ($driver->phone ?: '-'),
+                'Vehicle: ' . trim(($driver->vehicle_make ?: '') . ' ' . ($driver->vehicle_model ?: '')),
+                'Plate Number: ' . ($driver->vehicle_plate ?: '-'),
+                '',
+                'Booking Reference: ' . ($booking->booking_code ?? ('#' . $booking->id)),
+                'Pickup: ' . ($booking->pickup_address ?: '-'),
+                'Dropoff: ' . ($booking->dropoff_address ?: '-'),
+                'Pickup Date: ' . (optional($booking->pickup_date)->format('Y-m-d') ?: '-'),
+                'Pickup Time: ' . ($booking->pickup_time ?: '-'),
+                '',
+                'Thank you for choosing us.',
+            ];
+            $body = implode("\n", $bodyLines);
+
+            $this->sendPlainTextMail($email, $subject, $body);
+
+            return response()->json(['success' => true, 'message' => 'Driver information email sent successfully.']);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to send driver info email', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+            $message = 'Failed to send driver information email.';
+            if (config('app.debug')) {
+                $message .= ' ' . $e->getMessage();
+            }
+            return response()->json(['success' => false, 'message' => $message], 500);
+        }
+    }
+
     // Generate a unique numeric booking code prefixed with CD (e.g., CD123456)
+    protected function sendPlainTextMail(string $to, string $subject, string $body): void
+    {
+        Mail::raw($body, function ($message) use ($to, $subject) {
+            $message->to($to)->subject($subject);
+        });
+    }
+
+    private function buildBookingChangeSet(Booking $booking, array $originalAttributes, array $originalMeta, array $newMeta): array
+    {
+        $newAttributes = $booking->getAttributes();
+
+        $trackedFields = [
+            'passenger_name' => 'Name',
+            'phone' => 'Phone',
+            'alternate_phone' => 'Alt Phone',
+            'email' => 'Email',
+            'pickup_address' => 'Pickup Address',
+            'dropoff_address' => 'Dropoff Address',
+            'pickup_date' => 'Pickup Date',
+            'pickup_time' => 'Pickup Time',
+            'vehicle_type' => 'Vehicle Type',
+            'flight_number' => 'Flight Number',
+            'meet_and_greet' => 'Meet & Greet',
+            'baby_seat' => 'Baby Seat',
+            'baby_seat_age' => 'Baby Seat Age',
+            'message_to_driver' => 'Note To Driver',
+            'message_to_admin' => 'Note To Admin',
+            'total_price' => 'Booking Price',
+            'payment_type' => 'Payment Type',
+            'source_url' => 'Source',
+            'passengers_count' => 'Passengers',
+            'luggage_count' => 'Luggage',
+            'driver_id' => 'Driver',
+            'driver_name' => 'Driver Name',
+            'driver_price' => 'Driver Payout',
+            'status_id' => 'Status',
+        ];
+
+        $trackedMeta = [
+            'flight_time' => 'Flight Time',
+            'driver_percentage' => 'Driver Percentage',
+            'driver_display_price' => 'Driver Visible Price',
+            'junk' => 'Junk Flag',
+        ];
+
+        $changes = [];
+
+        foreach ($trackedFields as $field => $label) {
+            $old = $originalAttributes[$field] ?? null;
+            $new = $newAttributes[$field] ?? null;
+
+            if ($field === 'status_id') {
+                $old = $this->resolveBookingStatusName($old);
+                $new = $this->resolveBookingStatusName($new);
+            }
+
+            $old = $this->normalizeAuditValueForField($field, $old);
+            $new = $this->normalizeAuditValueForField($field, $new);
+
+            if (! $this->auditValuesEqual($old, $new)) {
+                $changes[] = [
+                    'field' => $label,
+                    'old' => $this->formatAuditValue($old),
+                    'new' => $this->formatAuditValue($new),
+                ];
+            }
+        }
+
+        foreach ($trackedMeta as $metaKey => $label) {
+            $old = $originalMeta[$metaKey] ?? null;
+            $new = $newMeta[$metaKey] ?? null;
+
+            $old = $this->normalizeAuditValueForField($metaKey, $old);
+            $new = $this->normalizeAuditValueForField($metaKey, $new);
+
+            if (! $this->auditValuesEqual($old, $new)) {
+                $changes[] = [
+                    'field' => $label,
+                    'old' => $this->formatAuditValue($old),
+                    'new' => $this->formatAuditValue($new),
+                ];
+            }
+        }
+
+        return $changes;
+    }
+
+    private function resolveBookingStatusName($statusId): ?string
+    {
+        if ($statusId === null || $statusId === '') {
+            return null;
+        }
+
+        static $statusMap = null;
+        if ($statusMap === null) {
+            $statusMap = BookingStatus::query()->pluck('name', 'id')->toArray();
+        }
+
+        $statusId = (int) $statusId;
+
+        return $statusMap[$statusId] ?? (string) $statusId;
+    }
+
+    private function auditValuesEqual($left, $right): bool
+    {
+        if (is_bool($left) && is_bool($right)) {
+            return $left === $right;
+        }
+
+        if (is_numeric($left) && is_numeric($right)) {
+            return (float) $left === (float) $right;
+        }
+
+        if (is_array($left) && is_array($right)) {
+            return json_encode($left) === json_encode($right);
+        }
+
+        return (string) ($left ?? '') === (string) ($right ?? '');
+    }
+
+    private function formatAuditValue($value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
+
+        if ($value === null || $value === '') {
+            return '-';
+        }
+
+        if (is_array($value)) {
+            return json_encode($value);
+        }
+
+        if (is_float($value)) {
+            $formatted = number_format($value, 2, '.', '');
+            return rtrim(rtrim($formatted, '0'), '.');
+        }
+
+        return (string) $value;
+    }
+
+    private function normalizeAuditValueForField(string $field, $value)
+    {
+        if (is_string($value)) {
+            $value = trim($value);
+            if ($value === '') {
+                $value = null;
+            }
+        }
+
+        if (in_array($field, ['meet_and_greet', 'baby_seat', 'junk'], true)) {
+            return $this->toAuditBool($value);
+        }
+
+        if ($field === 'pickup_date') {
+            if ($value === null) {
+                return null;
+            }
+
+            try {
+                return \Carbon\Carbon::parse((string) $value)->format('Y-m-d');
+            } catch (\Throwable $e) {
+                return (string) $value;
+            }
+        }
+
+        if (in_array($field, ['pickup_time', 'flight_time'], true)) {
+            if ($value === null) {
+                return null;
+            }
+
+            try {
+                return \Carbon\Carbon::parse((string) $value)->format('H:i');
+            } catch (\Throwable $e) {
+                $raw = (string) $value;
+                return strlen($raw) >= 5 ? substr($raw, 0, 5) : $raw;
+            }
+        }
+
+        if (in_array($field, ['total_price', 'driver_price', 'driver_display_price', 'driver_percentage'], true)) {
+            if ($value === null || $value === '') {
+                return null;
+            }
+            return round((float) $value, 2);
+        }
+
+        if (in_array($field, ['passengers_count', 'luggage_count', 'driver_id'], true)) {
+            if ($value === null || $value === '') {
+                return null;
+            }
+            return (int) $value;
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return $value;
+    }
+
+    private function toAuditBool($value): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return ((int) $value) === 1;
+        }
+
+        $normalized = strtolower(trim((string) $value));
+        return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+    }
+
     protected function generateBookingCode(): string
     {
         $prefix = 'CD';

@@ -467,6 +467,51 @@
           </div>
         </div>
       </div>
+
+      <div class="mb-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="text-sm font-semibold text-gray-800">Return Booking</h3>
+          <button type="button" id="return-booking-toggle" class="btn-primary px-4 py-2">Return Booking</button>
+        </div>
+        <input type="hidden" name="is_return_booking" id="is_return_booking" value="0" />
+
+        <div id="return-booking-section" class="mt-4 hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label class="form-label">Return Flight Number</label>
+              <input type="text" name="return_flight_number" class="form-input" />
+            </div>
+            <div>
+              <label class="form-label">Return Pick-up Date</label>
+              <input type="date" name="return_pickup_date" class="form-input" min="{{ date('Y-m-d') }}" />
+            </div>
+            <div>
+              <label class="form-label">Return Pick-up Time</label>
+              <input type="time" name="return_pickup_time" class="form-input" />
+            </div>
+            <div>
+              <label class="form-label">Return Flight Time</label>
+              <input type="time" name="return_flight_time" class="form-input" />
+            </div>
+            <div>
+              <label class="form-label">Return Meet &amp; Greet</label>
+              <select name="return_meet_and_greet" class="form-input">
+                <option value="">Select option</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Return Baby Seat</label>
+              <select name="return_baby_seat" class="form-input">
+                <option value="">Select option</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <!-- Message Section -->
       <div class="mb-6">
@@ -1428,6 +1473,30 @@
     var extra = document.createElement('div'); extra.style.display='none'; extra.innerHTML = '<input type="hidden" name="pickup_lat" /><input type="hidden" name="pickup_lon" /><input type="hidden" name="dropoff_lat" /><input type="hidden" name="dropoff_lon" /><input type="hidden" name="pickup_postcode" /><input type="hidden" name="dropoff_postcode" />'; form.appendChild(extra);
   }
 
+  // Return booking toggle
+  (function(){
+    var toggle = document.getElementById('return-booking-toggle');
+    var section = document.getElementById('return-booking-section');
+    var flag = document.getElementById('is_return_booking');
+    if (!toggle || !section || !flag) return;
+
+    function applyState(enabled){
+      flag.value = enabled ? '1' : '0';
+      section.classList.toggle('hidden', !enabled);
+      toggle.textContent = enabled ? 'Remove Return Booking' : 'Return Booking';
+
+      var dateInput = section.querySelector('input[name="return_pickup_date"]');
+      var timeInput = section.querySelector('input[name="return_pickup_time"]');
+      if (dateInput) dateInput.required = enabled;
+      if (timeInput) timeInput.required = enabled;
+    }
+
+    applyState(flag.value === '1');
+    toggle.addEventListener('click', function(){
+      applyState(!(flag.value === '1'));
+    });
+  })();
+
   // wire up legacy createAutocomplete calls to stay compatible (no-op now)
   function createAutocomplete(a,b,c) { return; }
 
@@ -1517,9 +1586,17 @@
           throw { status: res.status, body: { message: txt } };
         });
       })
-      .then(function(json){ showToast('Booking created');
+      .then(function(json){
+        var createdCount = parseInt((json && json.created_count) ? json.created_count : 1, 10) || 1;
+        showToast(createdCount > 1 ? 'Return bookings created' : 'Booking created');
         try {
           var id = json && json.booking && json.booking.id ? json.booking.id : null;
+          var createdIds = [];
+          if (json && Array.isArray(json.bookings)) {
+            json.bookings.forEach(function(b){ if (b && b.id) createdIds.push(String(b.id)); });
+          }
+          if (!createdIds.length && id) createdIds.push(String(id));
+
           // explicitly activate the 'new' tab
           var newTab = document.querySelector('ul[role="tablist"] [data-tab="new"]');
           if (newTab) newTab.click();
@@ -1535,24 +1612,22 @@
               if (window.attachPagination) window.attachPagination(container);
               if (window.attachBookingViewButtons) window.attachBookingViewButtons(container);
 
-              // highlight newly created row if present
-              if (id) {
-                var row = container.querySelector('[data-booking-id="' + id + '"]');
+              createdIds.forEach(function(bookingId){
+                var row = container.querySelector('[data-booking-id="' + bookingId + '"]');
                 if (row) {
                   row.classList.add('bg-yellow-50');
                   setTimeout(function(){ row.classList.remove('bg-yellow-50'); }, 2200);
                 }
+              });
 
-                // Update 'new' tab badge(s)
-                try {
-                  document.querySelectorAll('[data-count-for="new"]').forEach(function(b){
-                    var n = parseInt(b.textContent.trim()) || 0; b.textContent = n + 1;
-                    // remove inactive styles to highlight if needed
-                    b.classList.remove('bg-gray-100','text-gray-700');
-                  });
-                } catch(e){ console.error('Failed to update new badge', e); }
-
-              }
+              // Update 'new' tab badge(s)
+              try {
+                document.querySelectorAll('[data-count-for="new"]').forEach(function(b){
+                  var n = parseInt(b.textContent.trim()) || 0;
+                  b.textContent = n + createdCount;
+                  b.classList.remove('bg-gray-100','text-gray-700');
+                });
+              } catch(e){ console.error('Failed to update new badge', e); }
             } else {
               // fallback: reload page if container not present
               setTimeout(function(){ location.reload(); }, 400);

@@ -14,6 +14,10 @@ class Booking extends Model
 {
     use HasFactory;
 
+    public const REVIEW_REJECTED = 0;
+    public const REVIEW_PENDING = 1;
+    public const REVIEW_APPROVED = 2;
+
     protected $table = 'bookings';
 
     protected static function booted()
@@ -108,12 +112,17 @@ class Booking extends Model
     }
 
     protected $fillable = [
-        'booking_code','user_id','status_id','payment_id','passenger_name','phone','alternate_phone','email','passengers_count','luggage_count','pickup_address','dropoff_address','pickup_date','pickup_time','scheduled_at','flight_number','flight_arrival_time','meet_and_greet','baby_seat','baby_seat_age','vehicle_type','total_price','driver_price','driver_id','driver_name','return_booking','return_booking_id','message_to_driver','message_to_admin','source_url','source_ip','created_by_user_id','handled_by_user_id','estimated_distance_km','estimated_duration_minutes','meta','currency'
+        'booking_code','user_id','status_id','payment_id','payment_type','passenger_name','phone','alternate_phone','email','passengers_count','luggage_count','pickup_address','dropoff_address','pickup_date','pickup_time','scheduled_at','flight_number','flight_arrival_time','meet_and_greet','baby_seat','baby_seat_age','vehicle_type','total_price','driver_price','driver_id','driver_name','return_booking','return_booking_id','message_to_driver','message_to_admin','source_url','source_ip','created_by_user_id','handled_by_user_id','estimated_distance_km','estimated_duration_minutes','review_status','review_requested_at','review_approved_at','review_rejected_at','review_email_sent_at','meta','currency'
     ];
 
     protected $casts = [
         'pickup_date' => 'date',
         'scheduled_at' => 'datetime',
+        'review_status' => 'integer',
+        'review_requested_at' => 'datetime',
+        'review_approved_at' => 'datetime',
+        'review_rejected_at' => 'datetime',
+        'review_email_sent_at' => 'datetime',
         'meta' => 'array'
     ];
 

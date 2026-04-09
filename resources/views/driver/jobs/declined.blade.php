@@ -59,17 +59,33 @@
                                 <span class="ml-2 text-gray-700">{{ $job->passengers_count }}</span>
                             </div>
                             @endif
+                            @php
+                                $driverVisiblePrice = $job->meta['driver_display_price'] ?? null;
+                            @endphp
                             <div class="flex items-center text-sm">
-                                                                <i class="fas fa-pound-sign text-green-600 mr-2 w-4"></i>
-                                                                <span class="font-medium">Price:</span>
-                                                                <span class="ml-2 text-gray-700">
-                                                                    @if($job->driver_price)
-                                                                        £{{ number_format($job->driver_price, 2) }}
-                                                                    @else
-                                                                        -
-                                                                    @endif
-                                                                </span>
-                            </div> 
+                                <i class="fas fa-pound-sign text-green-600 mr-2 w-4"></i>
+                                <span class="font-medium">Price:</span>
+                                <span class="ml-2 text-gray-700">
+                                    @if($driverVisiblePrice !== null && $driverVisiblePrice !== '')
+                                        £{{ number_format((float)$driverVisiblePrice, 2) }}
+                                    @elseif($job->driver_price)
+                                        £{{ number_format($job->driver_price, 2) }}
+                                    @else
+                                        -
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-wallet text-indigo-600 mr-2 w-4"></i>
+                                <span class="font-medium">You receive:</span>
+                                <span class="ml-2 text-gray-700">
+                                    @if($job->driver_price)
+                                        £{{ number_format($job->driver_price, 2) }}
+                                    @else
+                                        -
+                                    @endif
+                                </span>
+                            </div>
                         </div>
 
                         @if($job->message_to_driver)

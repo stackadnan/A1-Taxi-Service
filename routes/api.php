@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicQuoteController;
+use App\Http\Controllers\PublicComplaintController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,3 +24,7 @@ Route::post('quote', [PublicQuoteController::class, 'quote']);
 // Save selected quote to database
 Route::options('quote/save', [PublicQuoteController::class, 'preflight']);
 Route::post('quote/save', [PublicQuoteController::class, 'save']);
+
+// Save public complainet/lost-found form submissions
+Route::options('complaint-lost-found', [PublicComplaintController::class, 'preflight']);
+Route::post('complaint-lost-found', [PublicComplaintController::class, 'store']);

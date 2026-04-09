@@ -42,8 +42,12 @@
 
     <div>
       <h3 class="text-lg font-semibold mb-2">Pricing & Notes</h3>
+      @php
+        $driverVisiblePrice = $job->meta['driver_display_price'] ?? null;
+      @endphp
       <div class="space-y-2 text-sm text-gray-800">
-        <div><strong>Price:</strong> {{ $job->driver_price ? '£' . number_format($job->driver_price,2) : '-' }}</div>
+        <div><strong>Price:</strong> {{ ($driverVisiblePrice !== null && $driverVisiblePrice !== '') ? ('£' . number_format((float)$driverVisiblePrice,2)) : ($job->driver_price ? ('£' . number_format($job->driver_price,2)) : '-') }}</div>
+        <div><strong>You Receive:</strong> {{ $job->driver_price ? '£' . number_format($job->driver_price,2) : '-' }}</div>
         <div><strong>Notes to driver:</strong> {{ $job->message_to_driver ?? '-' }}</div>
       </div>
 

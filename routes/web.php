@@ -148,7 +148,10 @@ Route::name('admin.')->group(function () {
 
         Route::get('settings', function(){ return view('admin.settings.index'); })->name('settings.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.view');
         Route::get('notifications', function(){ return view('admin.notifications.index'); })->name('notifications.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':notification.view');
-        Route::get('reviews', function(){ return view('admin.reviews.index'); })->name('reviews.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':review.view');
+        Route::get('reviews', [\App\Http\Controllers\Admin\ReviewsController::class, 'index'])->name('reviews.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':review.view');
+        Route::get('complaints-lost-found', [\App\Http\Controllers\Admin\ComplaintLostFoundController::class, 'index'])->name('complaints.index');
+        Route::get('complaints-lost-found/{complaint}/edit', [\App\Http\Controllers\Admin\ComplaintLostFoundController::class, 'edit'])->name('complaints.edit');
+        Route::put('complaints-lost-found/{complaint}', [\App\Http\Controllers\Admin\ComplaintLostFoundController::class, 'update'])->name('complaints.update');
 
         // Users management
         Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':user.view');
@@ -159,6 +162,14 @@ Route::name('admin.')->group(function () {
         // Edit booking (form partial or full page) and update
         Route::get('bookings/{booking}/edit', [\App\Http\Controllers\Admin\BookingController::class, 'edit'])->name('bookings.edit')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
         Route::put('bookings/{booking}', [\App\Http\Controllers\Admin\BookingController::class, 'update'])->name('bookings.update')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
+        Route::post('bookings/{booking}/send-confirmation', [\App\Http\Controllers\Admin\BookingController::class, 'sendConfirmationEmail'])->name('bookings.send_confirmation')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
+        Route::post('bookings/{booking}/send-cancellation', [\App\Http\Controllers\Admin\BookingController::class, 'sendCancellationEmail'])->name('bookings.send_cancellation')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
+        Route::post('bookings/{booking}/send-review-approval', [\App\Http\Controllers\Admin\BookingController::class, 'sendReviewApprovalRequest'])->name('bookings.send_review_approval')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
+        Route::post('bookings/{booking}/send-driver-info', [\App\Http\Controllers\Admin\BookingController::class, 'sendDriverInfoEmail'])->name('bookings.send_driver_info')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
+
+        // Review approval management
+        Route::post('reviews/{booking}/approve', [\App\Http\Controllers\Admin\ReviewsController::class, 'approve'])->name('reviews.approve')->middleware(\App\Http\Middleware\EnsurePermission::class.':review.view');
+        Route::post('reviews/{booking}/reject', [\App\Http\Controllers\Admin\ReviewsController::class, 'reject'])->name('reviews.reject')->middleware(\App\Http\Middleware\EnsurePermission::class.':review.view');
 
         // Manual booking create (AJAX post)
         Route::post('bookings/manual', [\App\Http\Controllers\Admin\BookingController::class, 'storeManual'])->name('bookings.manual.store')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.create');

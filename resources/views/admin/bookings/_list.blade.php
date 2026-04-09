@@ -27,17 +27,18 @@
         @forelse($bookings as $b)
         @php
           $rowBg = '';
-          if (isset($active) && $active === 'confirmed') {
-            $carType = $b->driver ? strtolower($b->driver->car_type ?? '') : '';
-            if ($carType === 'saloon') {
-              $rowBg = 'background-color:#d4edda;';
-            } elseif ($carType === 'business') {
-              $rowBg = 'background-color:#fff3cd;';
-            } elseif ($carType === 'mpv6') {
-              $rowBg = 'background-color:#d1ecf1;';
-            } elseif ($carType === 'mpv8') {
-              $rowBg = 'background-color:#e2d9f3;';
-            }
+          $carTypeRaw = (string) ($b->vehicle_type ?? '');
+          $carType = strtolower(trim($carTypeRaw));
+          $carTypeKey = str_replace([' ', '-', '_'], '', $carType);
+
+          if (str_contains($carType, 'saloon')) {
+            $rowBg = 'background-color:#d4edda;';
+          } elseif (str_contains($carType, 'business')) {
+            $rowBg = 'background-color:#fff3cd;';
+          } elseif (str_contains($carTypeKey, 'mpv6')) {
+            $rowBg = 'background-color:#d1ecf1;';
+          } elseif (str_contains($carTypeKey, 'mpv8')) {
+            $rowBg = 'background-color:#e2d9f3;';
           }
         @endphp
         <tr class="border-t hover:bg-gray-50 transition-colors" data-booking-id="{{ $b->id }}" id="booking-row-{{ $b->id }}" @if($rowBg) style="{{ $rowBg }}" @endif>
@@ -51,7 +52,7 @@
             <td class="p-3 text-sm text-gray-900" data-col="driver_name">{{ $b->driver_name ?? '-' }}</td>
           @endif
           @if(isset($active) && in_array($active, ['confirmed','completed']))
-            <td class="p-3 text-sm text-gray-900" data-col="car_type">{{ $b->driver ? $b->driver->car_type : '-' }}</td>
+            <td class="p-3 text-sm text-gray-900" data-col="car_type">{{ $b->vehicle_type ?: '-' }}</td>
             @if(!$b->driver_id)
               <td class="p-3" data-col="driver_response"><span class="text-sm text-gray-500">-</span></td>
             @else
@@ -83,7 +84,7 @@
           @endif
           <td class="p-3 text-sm text-gray-900" data-col="total_price">{{ $b->total_price ? number_format($b->total_price,2) : '-' }}</td>
           <td class="p-3">
-            <a href="{{ route('admin.bookings.show', $b) }}?section={{ $active ?? 'new' }}" class="booking-view-button text-indigo-600 hover:text-indigo-800 mr-3 text-sm font-medium" data-title="View Booking">View</a>
+            <a href="{{ route('admin.bookings.edit', $b) }}?section={{ $active ?? 'new' }}&readonly=1" class="booking-view-button text-indigo-600 hover:text-indigo-800 mr-3 text-sm font-medium" data-title="View Booking">View</a>
             <a href="{{ route('admin.bookings.edit', $b) }}?section={{ $active ?? 'new' }}" class="text-gray-600 hover:text-gray-800 text-sm font-medium">Edit</a>
           </td>
         </tr>

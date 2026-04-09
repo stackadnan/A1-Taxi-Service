@@ -100,7 +100,7 @@
     }
 
     function attachBookingViewButtons(container){
-      // Bind "View" buttons to open the booking show partial inside a modal (reuses openPostcodeModal)
+      // Bind "View" buttons to open readonly edit inside modal.
       var buttons = container.querySelectorAll('.booking-view-button');
       buttons.forEach(function(btn){
         if (btn.dataset.bound) return; btn.dataset.bound = '1';
