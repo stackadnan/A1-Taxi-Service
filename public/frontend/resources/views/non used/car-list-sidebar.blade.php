@@ -1,6 +1,6 @@
-﻿<?php
+<?php
 $headTitle = 'A1 Airport Cars ';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'Cars';
 $SubTitle = 'list Style';
@@ -170,7 +170,7 @@ $SubTitle = 'list Style';
                 <div class="col-lg-8">
                     <div class="woocommerce-notices-wrapper">
                         <div class="product-showing">
-                            <p>Showing 1â€“9 of 12 Results</p>
+                            <p>Showing 1–9 of 12 Results</p>
                         </div>
                         <div class="woocommerce-right d-flex align-items-center">
                             <div class="icon-items">
@@ -204,7 +204,7 @@ $SubTitle = 'list Style';
                         <div class="col-lg-12">
                             <div class="car-list-items style-2">
                                 <div class="car-image bg-cover"
-                                    style="background-image: url('assets/img/car/car-list-1.jpg');">
+                                    style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
                                     <div class="post-cat">
                                         2024 Model
                                     </div>
@@ -226,19 +226,19 @@ $SubTitle = 'list Style';
                                     </p>
                                     <ul class="icon-items">
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -248,7 +248,7 @@ $SubTitle = 'list Style';
                         <div class="col-lg-12">
                             <div class="car-list-items style-2">
                                 <div class="car-image bg-cover"
-                                    style="background-image: url('assets/img/car/car-list-2.jpg');">
+                                    style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
                                     <div class="post-cat">
                                         2024 Model
                                     </div>
@@ -270,19 +270,19 @@ $SubTitle = 'list Style';
                                     </p>
                                     <ul class="icon-items">
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -292,7 +292,7 @@ $SubTitle = 'list Style';
                         <div class="col-lg-12">
                             <div class="car-list-items style-2">
                                 <div class="car-image bg-cover"
-                                    style="background-image: url('assets/img/car/car-list-3.jpg');">
+                                    style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
                                     <div class="post-cat">
                                         2024 Model
                                     </div>
@@ -314,19 +314,19 @@ $SubTitle = 'list Style';
                                     </p>
                                     <ul class="icon-items">
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -336,7 +336,7 @@ $SubTitle = 'list Style';
                         <div class="col-lg-12">
                             <div class="car-list-items style-2">
                                 <div class="car-image bg-cover"
-                                    style="background-image: url('assets/img/car/car-list-4.jpg');">
+                                    style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
                                     <div class="post-cat">
                                         2024 Model
                                     </div>
@@ -358,19 +358,19 @@ $SubTitle = 'list Style';
                                     </p>
                                     <ul class="icon-items">
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -380,7 +380,7 @@ $SubTitle = 'list Style';
                         <div class="col-lg-12">
                             <div class="car-list-items style-2">
                                 <div class="car-image bg-cover"
-                                    style="background-image: url('assets/img/car/car-list-5.jpg');">
+                                    style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
                                     <div class="post-cat">
                                         2024 Model
                                     </div>
@@ -402,19 +402,19 @@ $SubTitle = 'list Style';
                                     </p>
                                     <ul class="icon-items">
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -424,7 +424,7 @@ $SubTitle = 'list Style';
                         <div class="col-lg-12">
                             <div class="car-list-items style-2">
                                 <div class="car-image bg-cover"
-                                    style="background-image: url('assets/img/car/car-list-6.jpg');">
+                                    style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
                                     <div class="post-cat">
                                         2024 Model
                                     </div>
@@ -446,19 +446,19 @@ $SubTitle = 'list Style';
                                     </p>
                                     <ul class="icon-items">
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -480,7 +480,7 @@ $SubTitle = 'list Style';
                     .3s">
                 <div class="logo-thumb">
                     <a href="./">
-                        <img src="assets/img/logo/white-logo.svg" alt="logo-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/21') }}" alt="logo-img">
                     </a>
                 </div>
                 <h4 class="text-white">Save big with our cheap car rental</h4>

@@ -1,6 +1,6 @@
-﻿<?php
+<?php
 $headTitle = 'A1 Airport Cars ';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'Faqs';
 $SubTitle = 'Faqs';
@@ -34,7 +34,7 @@ $SubTitle = 'Faqs';
             <div class="col-lg-8">
                 <div class="faq-content">
                     <div class="section-title">
-                        <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                        <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                         <span class="wow fadeInUp" data-wow-delay=".2s">Frequently asked questions</span>
                         <h2 class="wow fadeInUp" data-wow-delay=".4s">
                             Question & Answers
@@ -52,7 +52,7 @@ $SubTitle = 'Faqs';
                                 <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#accordion">
                                     <div class="accordion-body">
                                         There are many variations of passages of available but the have suffered
-                                        alteration in that some form by injected randomised words which donâ€™t look
+                                        alteration in that some form by injected randomised words which don’t look
                                         even as slightly believable now.
                                     </div>
                                 </div>
@@ -67,7 +67,7 @@ $SubTitle = 'Faqs';
                                 <div id="faq2" class="accordion-collapse show" data-bs-parent="#accordion">
                                     <div class="accordion-body">
                                         There are many variations of passages of available but the have suffered
-                                        alteration in that some form by injected randomised words which donâ€™t look
+                                        alteration in that some form by injected randomised words which don’t look
                                         even as slightly believable now.
                                     </div>
                                 </div>
@@ -82,7 +82,7 @@ $SubTitle = 'Faqs';
                                 <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#accordion">
                                     <div class="accordion-body">
                                         There are many variations of passages of available but the have suffered
-                                        alteration in that some form by injected randomised words which donâ€™t look
+                                        alteration in that some form by injected randomised words which don’t look
                                         even as slightly believable now.
                                     </div>
                                 </div>
@@ -97,7 +97,7 @@ $SubTitle = 'Faqs';
                                 <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#accordion">
                                     <div class="accordion-body">
                                         There are many variations of passages of available but the have suffered
-                                        alteration in that some form by injected randomised words which donâ€™t look
+                                        alteration in that some form by injected randomised words which don’t look
                                         even as slightly believable now.
                                     </div>
                                 </div>
@@ -112,7 +112,7 @@ $SubTitle = 'Faqs';
                                 <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#accordion">
                                     <div class="accordion-body">
                                         There are many variations of passages of available but the have suffered
-                                        alteration in that some form by injected randomised words which donâ€™t look
+                                        alteration in that some form by injected randomised words which don’t look
                                         even as slightly believable now.
                                     </div>
                                 </div>
@@ -127,7 +127,7 @@ $SubTitle = 'Faqs';
                                 <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#accordion">
                                     <div class="accordion-body">
                                         There are many variations of passages of available but the have suffered
-                                        alteration in that some form by injected randomised words which donâ€™t look
+                                        alteration in that some form by injected randomised words which don’t look
                                         even as slightly believable now.
                                     </div>
                                 </div>
@@ -142,7 +142,7 @@ $SubTitle = 'Faqs';
                                 <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#accordion">
                                     <div class="accordion-body">
                                         There are many variations of passages of available but the have suffered
-                                        alteration in that some form by injected randomised words which donâ€™t look
+                                        alteration in that some form by injected randomised words which don’t look
                                         even as slightly believable now.
                                     </div>
                                 </div>

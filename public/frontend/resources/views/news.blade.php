@@ -1,6 +1,6 @@
-﻿<?php
+<?php
 $headTitle = 'A1 Airport Cars ';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'blog';
 $SubTitle = 'blog';
@@ -16,7 +16,7 @@ $SubTitle = 'blog';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".3s">
                 <div class="news-card-items mt-0">
                     <div class="news-image">
-                        <img src="assets/img/news/01.jpg" alt="news-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/62') }}" alt="news-img">
                         <div class="post-date">
                             <h6>
                                 20 <br>
@@ -26,12 +26,12 @@ $SubTitle = 'blog';
                     </div>
                     <div class="news-content">
                         <div class="post-client">
-                            <img src="assets/img/news/client.png" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/63') }}" alt="img">
                         </div>
                         <div class="news-cont">
                             <span>by Mike Hardson</span>
                             <h3><a href="news-details">The best fastest and most powerful road car</a></h3>
-                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatemâ€¦</p>
+                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem…</p>
                         </div>
                         <ul>
                             <li>
@@ -51,7 +51,7 @@ $SubTitle = 'blog';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".5s">
                 <div class="news-card-items mt-0">
                     <div class="news-image">
-                        <img src="assets/img/news/02.jpg" alt="news-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/64') }}" alt="news-img">
                         <div class="post-date">
                             <h6>
                                 26 <br>
@@ -61,12 +61,12 @@ $SubTitle = 'blog';
                     </div>
                     <div class="news-content">
                         <div class="post-client">
-                            <img src="assets/img/news/client.png" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/63') }}" alt="img">
                         </div>
                         <div class="news-cont">
                             <span>by Mike Hardson</span>
                             <h3><a href="news-details">The best fastest and most powerful road car</a></h3>
-                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatemâ€¦</p>
+                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem…</p>
                         </div>
                         <ul>
                             <li>
@@ -86,7 +86,7 @@ $SubTitle = 'blog';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".7s">
                 <div class="news-card-items mt-0">
                     <div class="news-image">
-                        <img src="assets/img/news/03.jpg" alt="news-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/65') }}" alt="news-img">
                         <div class="post-date">
                             <h6>
                                 29 <br>
@@ -96,12 +96,12 @@ $SubTitle = 'blog';
                     </div>
                     <div class="news-content">
                         <div class="post-client">
-                            <img src="assets/img/news/client.png" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/63') }}" alt="img">
                         </div>
                         <div class="news-cont">
                             <span>by Mike Hardson</span>
                             <h3><a href="news-details">The best fastest and most powerful road car</a></h3>
-                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatemâ€¦</p>
+                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem…</p>
                         </div>
                         <ul>
                             <li>
@@ -121,7 +121,7 @@ $SubTitle = 'blog';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".3s">
                 <div class="news-card-items mt-0">
                     <div class="news-image">
-                        <img src="assets/img/news/04.jpg" alt="news-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/66') }}" alt="news-img">
                         <div class="post-date">
                             <h6>
                                 20 <br>
@@ -131,12 +131,12 @@ $SubTitle = 'blog';
                     </div>
                     <div class="news-content">
                         <div class="post-client">
-                            <img src="assets/img/news/client.png" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/63') }}" alt="img">
                         </div>
                         <div class="news-cont">
                             <span>by Mike Hardson</span>
                             <h3><a href="news-details">The best fastest and most powerful road car</a></h3>
-                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatemâ€¦</p>
+                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem…</p>
                         </div>
                         <ul>
                             <li>
@@ -156,7 +156,7 @@ $SubTitle = 'blog';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".5s">
                 <div class="news-card-items mt-0">
                     <div class="news-image">
-                        <img src="assets/img/news/05.jpg" alt="news-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/67') }}" alt="news-img">
                         <div class="post-date">
                             <h6>
                                 26 <br>
@@ -166,12 +166,12 @@ $SubTitle = 'blog';
                     </div>
                     <div class="news-content">
                         <div class="post-client">
-                            <img src="assets/img/news/client.png" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/63') }}" alt="img">
                         </div>
                         <div class="news-cont">
                             <span>by Mike Hardson</span>
                             <h3><a href="news-details">The best fastest and most powerful road car</a></h3>
-                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatemâ€¦</p>
+                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem…</p>
                         </div>
                         <ul>
                             <li>
@@ -191,7 +191,7 @@ $SubTitle = 'blog';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".7s">
                 <div class="news-card-items mt-0">
                     <div class="news-image">
-                        <img src="assets/img/news/06.jpg" alt="news-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/68') }}" alt="news-img">
                         <div class="post-date">
                             <h6>
                                 29 <br>
@@ -201,12 +201,12 @@ $SubTitle = 'blog';
                     </div>
                     <div class="news-content">
                         <div class="post-client">
-                            <img src="assets/img/news/client.png" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/63') }}" alt="img">
                         </div>
                         <div class="news-cont">
                             <span>by Mike Hardson</span>
                             <h3><a href="news-details">The best fastest and most powerful road car</a></h3>
-                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatemâ€¦</p>
+                            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem…</p>
                         </div>
                         <ul>
                             <li>
@@ -235,7 +235,7 @@ $SubTitle = 'blog';
                     .3s">
                 <div class="logo-thumb">
                     <a href="./">
-                        <img src="assets/img/logo/white-logo.svg" alt="logo-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/21') }}" alt="logo-img">
                     </a>
                 </div>
                 <h4 class="text-white">Save big with our cheap car rental</h4>

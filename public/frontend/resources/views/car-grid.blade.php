@@ -1,6 +1,6 @@
-﻿<?php
+<?php
 $headTitle = 'A1 Airport Cars ';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'Cars';
 $SubTitle = 'Grid Style';
@@ -15,7 +15,7 @@ $SubTitle = 'Grid Style';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".3s">
                 <div class="car-rentals-items mt-0">
                     <div class="car-image">
-                        <img src="assets/img/car/05.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/38') }}" alt="img">
                     </div>
                     <div class="car-content">
                         <div class="post-cat">
@@ -34,21 +34,21 @@ $SubTitle = 'Grid Style';
                         <div class="icon-items">
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                     6 Seats
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                     2 Doors
                                 </li>
                             </ul>
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                     Automatic
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                     Petrol
                                 </li>
                             </ul>
@@ -61,7 +61,7 @@ $SubTitle = 'Grid Style';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".5s">
                 <div class="car-rentals-items mt-0">
                     <div class="car-image">
-                        <img src="assets/img/car/06.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/39') }}" alt="img">
                     </div>
                     <div class="car-content">
                         <div class="post-cat">
@@ -80,21 +80,21 @@ $SubTitle = 'Grid Style';
                         <div class="icon-items">
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                     6 Seats
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                     2 Doors
                                 </li>
                             </ul>
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                     Automatic
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                     Petrol
                                 </li>
                             </ul>
@@ -107,7 +107,7 @@ $SubTitle = 'Grid Style';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".7s">
                 <div class="car-rentals-items mt-0">
                     <div class="car-image">
-                        <img src="assets/img/car/07.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/40') }}" alt="img">
                     </div>
                     <div class="car-content">
                         <div class="post-cat">
@@ -126,21 +126,21 @@ $SubTitle = 'Grid Style';
                         <div class="icon-items">
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                     6 Seats
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                     2 Doors
                                 </li>
                             </ul>
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                     Automatic
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                     Petrol
                                 </li>
                             </ul>
@@ -153,7 +153,7 @@ $SubTitle = 'Grid Style';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".3s">
                 <div class="car-rentals-items mt-0">
                     <div class="car-image">
-                        <img src="assets/img/car/08.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/35') }}" alt="img">
                     </div>
                     <div class="car-content">
                         <div class="post-cat">
@@ -172,21 +172,21 @@ $SubTitle = 'Grid Style';
                         <div class="icon-items">
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                     6 Seats
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                     2 Doors
                                 </li>
                             </ul>
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                     Automatic
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                     Petrol
                                 </li>
                             </ul>
@@ -199,7 +199,7 @@ $SubTitle = 'Grid Style';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".5s">
                 <div class="car-rentals-items mt-0">
                     <div class="car-image">
-                        <img src="assets/img/car/09.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/36') }}" alt="img">
                     </div>
                     <div class="car-content">
                         <div class="post-cat">
@@ -218,21 +218,21 @@ $SubTitle = 'Grid Style';
                         <div class="icon-items">
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                     6 Seats
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                     2 Doors
                                 </li>
                             </ul>
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                     Automatic
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                     Petrol
                                 </li>
                             </ul>
@@ -245,7 +245,7 @@ $SubTitle = 'Grid Style';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".7s">
                 <div class="car-rentals-items mt-0">
                     <div class="car-image">
-                        <img src="assets/img/car/10.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/37') }}" alt="img">
                     </div>
                     <div class="car-content">
                         <div class="post-cat">
@@ -264,21 +264,21 @@ $SubTitle = 'Grid Style';
                         <div class="icon-items">
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                     6 Seats
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                     2 Doors
                                 </li>
                             </ul>
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                     Automatic
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                     Petrol
                                 </li>
                             </ul>
@@ -301,7 +301,7 @@ $SubTitle = 'Grid Style';
                     .3s">
                 <div class="logo-thumb">
                     <a href="./">
-                        <img src="assets/img/logo/white-logo.svg" alt="logo-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/21') }}" alt="logo-img">
                     </a>
                 </div>
                 <h4 class="text-white">Save big with our cheap car rental</h4>

@@ -3,12 +3,12 @@
         <div class="swiper hero-slider-3">
             <div class="swiper-wrapper">
                 <div class="swiper-slide">
-                    <div class="hero-image bg-cover" style="background-image: url('assets/img/hero/hero-3.webp');">
+                    <div class="hero-image bg-cover" style="background-image: url('{{ \App\Support\GalleryPath::path('i/148') }}');">
                         <div class="line-shape" data-animation="slideInLeft" data-duration="3s" data-delay="2.1s">
-                            <img src="assets/img/hero/line-shape-1.png" alt="shape-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/145') }}" alt="shape-img">
                         </div>
                         <div class="line-shape-2" data-animation="slideInLeft" data-duration="3s" data-delay="2.3s">
-                            <img src="assets/img/hero/line-shape-2.png" alt="shape-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/146') }}" alt="shape-img">
                         </div>
                     </div>
                     <div class="container">
@@ -20,7 +20,7 @@
                                         <div class="product-search-area">
                                             <h2 class="search-text">Get Instant Quotes</h2>
                                             <div class="line-icon">
-                                                <img src="assets/img/hero/icon.png" alt="img">
+                                                <img src="{{ \App\Support\GalleryPath::path('i/147') }}" alt="img">
                                             </div>
                                             <form action="#" id="contact-form" method="POST">
                                                 <div class="row g-4">
@@ -247,11 +247,8 @@
                                 source_url: window.location.href
                             }));
 
-                            // Log to console then redirect
-                            fetch('https://api.ipify.org?format=json')
-                                .then(function(r){ return r.json(); })
-                                .then(function(d){ logAndRedirect(d.ip, distanceMiles); })
-                                .catch(function(){ logAndRedirect('unavailable', distanceMiles); });
+                            // Redirect immediately after saving quote data.
+                            logAndRedirect('not-requested', distanceMiles);
                         }
                     );
 
@@ -276,12 +273,27 @@
             function getDrivingDistanceMiles(origin, destination, callback) {
                 try {
                     var service = new google.maps.DistanceMatrixService();
+                    var isDone = false;
+                    var timeoutId = setTimeout(function() {
+                        if (isDone) return;
+                        isDone = true;
+                        console.warn('DistanceMatrix timed out, falling back to backend distance handling');
+                        callback(null);
+                    }, 2500);
+
                     service.getDistanceMatrix({
                         origins: [origin],
                         destinations: [destination],
                         travelMode: google.maps.TravelMode.DRIVING,
                         unitSystem: google.maps.UnitSystem.IMPERIAL
                     }, function(response, status) {
+                        if (isDone) {
+                            return;
+                        }
+
+                        isDone = true;
+                        clearTimeout(timeoutId);
+
                         if (status === 'OK' &&
                                 response.rows[0] &&
                                 response.rows[0].elements[0] &&

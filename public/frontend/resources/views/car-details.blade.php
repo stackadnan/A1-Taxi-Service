@@ -1,6 +1,6 @@
-﻿<?php
+<?php
 $headTitle = 'A1 Airport Cars ';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'Cars';
 $SubTitle = 'Single Car';
@@ -17,7 +17,7 @@ $SubTitle = 'Single Car';
                 <div class="col-lg-8">
                     <div class="car-details-items">
                         <div class="car-image">
-                            <img src="assets/img/car/car-details.jpg" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/26') }}" alt="img">
                         </div>
                         <div class="car-content">
                             <div class="star">
@@ -33,14 +33,14 @@ $SubTitle = 'Single Car';
                             <p class="mt-4 mb-4">
                                 To deliver on the promise of technology and human We help our clients become sions of
                                 themselves. Lorem Ipsum is simply dummy text of the printing and typesetting industry.
-                                orem ipsum has been the industryâ€™s standard dummy text ever since the 1500s.
+                                orem ipsum has been the industry’s standard dummy text ever since the 1500s.
                             </p>
                             <div class="icon-details-area">
                                 <h4>Key Features</h4>
                                 <div class="icon-details-main-items">
                                     <div class="icon-items">
                                         <div class="icon">
-                                            <img src="assets/img/car/icon/07.png" alt="img">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/27') }}" alt="img">
                                         </div>
                                         <div class="content">
                                             <h6>body:</h6>
@@ -49,7 +49,7 @@ $SubTitle = 'Single Car';
                                     </div>
                                     <div class="icon-items">
                                         <div class="icon">
-                                            <img src="assets/img/car/icon/07.png" alt="img">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/27') }}" alt="img">
                                         </div>
                                         <div class="content">
                                             <h6>Mileage:</h6>
@@ -58,7 +58,7 @@ $SubTitle = 'Single Car';
                                     </div>
                                     <div class="icon-items">
                                         <div class="icon">
-                                            <img src="assets/img/car/icon/07.png" alt="img">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/27') }}" alt="img">
                                         </div>
                                         <div class="content">
                                             <h6>Year:</h6>
@@ -67,7 +67,7 @@ $SubTitle = 'Single Car';
                                     </div>
                                     <div class="icon-items">
                                         <div class="icon">
-                                            <img src="assets/img/car/icon/07.png" alt="img">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/27') }}" alt="img">
                                         </div>
                                         <div class="content">
                                             <h6>Engine:</h6>
@@ -78,7 +78,7 @@ $SubTitle = 'Single Car';
                                 <div class="icon-details-main-items">
                                     <div class="icon-items">
                                         <div class="icon">
-                                            <img src="assets/img/car/door.svg" alt="img">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img">
                                         </div>
                                         <div class="content">
                                             <h6>Passengers:</h6>
@@ -87,7 +87,7 @@ $SubTitle = 'Single Car';
                                     </div>
                                     <div class="icon-items">
                                         <div class="icon">
-                                            <img src="assets/img/car/seat.svg" alt="img">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img">
                                         </div>
                                         <div class="content">
                                             <h6>Gear:</h6>
@@ -96,7 +96,7 @@ $SubTitle = 'Single Car';
                                     </div>
                                     <div class="icon-items">
                                         <div class="icon">
-                                            <img src="assets/img/car/automatic.svg" alt="img">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img">
                                         </div>
                                         <div class="content">
                                             <h6>Gear:</h6>
@@ -105,7 +105,7 @@ $SubTitle = 'Single Car';
                                     </div>
                                     <div class="icon-items">
                                         <div class="icon">
-                                            <img src="assets/img/car/petrol.svg" alt="img">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img">
                                         </div>
                                         <div class="content">
                                             <h6>Fuel:</h6>
@@ -146,7 +146,7 @@ $SubTitle = 'Single Car';
                                 </div>
                             </div>
                             <div class="car-video">
-                                <img src="assets/img/car/car-details-2.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/32') }}" alt="img">
                                 <div class="video-box">
                                     <a href="https://www.youtube.com/watch?v=Cn4G2lZ_g2I"
                                         class="video-btn ripple video-popup">
@@ -288,7 +288,7 @@ $SubTitle = 'Single Car';
                         <h3>2 Reviews</h3>
                         <div class="car-single-comment d-flex gap-4 pb-5">
                             <div class="image">
-                                <img src="assets/img/car/comment01.png" alt="image">
+                                <img src="{{ \App\Support\GalleryPath::path('i/33') }}" alt="image">
                             </div>
                             <div class="content">
                                 <div class="head d-flex flex-wrap gap-3 align-items-center justify-content-between">
@@ -312,7 +312,7 @@ $SubTitle = 'Single Car';
                         </div>
                         <div class="car-single-comment d-flex gap-4 pt-5 border-none">
                             <div class="image">
-                                <img src="assets/img/car/comment02.png" alt="image">
+                                <img src="{{ \App\Support\GalleryPath::path('i/34') }}" alt="image">
                             </div>
                             <div class="content">
                                 <div class="head d-flex flex-wrap gap-3 align-items-center justify-content-between">
@@ -454,7 +454,7 @@ $SubTitle = 'Single Car';
 <section class="car-rentals-section-2 section-padding fix pt-0">
     <div class="container">
         <div class="section-title text-center">
-            <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+            <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
             <span class="wow fadeInUp" data-wow-delay=".2s">Checkout our new cars</span>
             <h2 class="wow fadeInUp" data-wow-delay=".4s">
                 Similar Cars Available
@@ -464,7 +464,7 @@ $SubTitle = 'Single Car';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".3s">
                 <div class="car-rentals-items">
                     <div class="car-image">
-                        <img src="assets/img/car/08.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/35') }}" alt="img">
                     </div>
                     <div class="car-content">
                         <div class="post-cat">
@@ -483,21 +483,21 @@ $SubTitle = 'Single Car';
                         <div class="icon-items">
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                     6 Seats
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                     2 Doors
                                 </li>
                             </ul>
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                     Automatic
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                     Petrol
                                 </li>
                             </ul>
@@ -510,7 +510,7 @@ $SubTitle = 'Single Car';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".5s">
                 <div class="car-rentals-items">
                     <div class="car-image">
-                        <img src="assets/img/car/09.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/36') }}" alt="img">
                     </div>
                     <div class="car-content">
                         <div class="post-cat">
@@ -529,21 +529,21 @@ $SubTitle = 'Single Car';
                         <div class="icon-items">
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                     6 Seats
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                     2 Doors
                                 </li>
                             </ul>
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                     Automatic
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                     Petrol
                                 </li>
                             </ul>
@@ -556,7 +556,7 @@ $SubTitle = 'Single Car';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".7s">
                 <div class="car-rentals-items">
                     <div class="car-image">
-                        <img src="assets/img/car/10.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/37') }}" alt="img">
                     </div>
                     <div class="car-content">
                         <div class="post-cat">
@@ -575,21 +575,21 @@ $SubTitle = 'Single Car';
                         <div class="icon-items">
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                     6 Seats
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                     2 Doors
                                 </li>
                             </ul>
                             <ul>
                                 <li>
-                                    <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                     Automatic
                                 </li>
                                 <li>
-                                    <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                     Petrol
                                 </li>
                             </ul>

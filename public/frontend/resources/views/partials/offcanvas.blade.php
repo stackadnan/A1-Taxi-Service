@@ -6,7 +6,7 @@
                     <div class="offcanvas__top mb-5 d-flex justify-content-between align-items-center">
                         <div class="offcanvas__logo">
                             <a href="./">
-                                <img src="{{ $logo ?? 'assets/img/logo/black-logo.png' }}" alt="logo-img">
+                                <img src="{{ \App\Support\GalleryPath::path($logo ?? 'i/154') }}" alt="logo-img">
                             </a>
                         </div>
                         <div class="offcanvas__close">

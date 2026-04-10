@@ -6,7 +6,7 @@
                 <div class="col-lg-12">
                     <div class="about-content">
                         <div class="section-title-content">
-                            <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                            <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                             <span class="wow fadeInUp" data-wow-delay=".2s">{{ $sectionTitle ?? 'Why Choose Us' }}</span>
                             <h3 class="wow fadeInUp" data-wow-delay=".4s">
                                 {{ $sectionSubtitle ?? 'Why Book an Airport Taxi with Us?' }}

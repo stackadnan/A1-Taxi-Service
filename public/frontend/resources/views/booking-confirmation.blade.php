@@ -1,16 +1,9 @@
-﻿<?php
+<?php
 $headTitle = 'Passenger Information';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'Passenger Information';
 $SubTitle = 'Complete Your Booking';
-
-$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-if (str_contains($host, 'executiveairportcars.com')) {
-  $api_url = 'https://admin.executiveairportcars.com/api/quote';
-} else {
-  $api_url = 'http://localhost/AirportServices/public/api/quote';
-}
 ?>
 
 @include('partials.layouts.layoutsTop')
@@ -21,7 +14,7 @@ if (str_contains($host, 'executiveairportcars.com')) {
       <div class="row g-4">
         <div class="col-lg-4">
           <div class="section-title">
-            <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+            <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
             <span class="wow fadeInUp" data-wow-delay=".2s">booking summary</span>
             <h4 class="wow fadeInUp" data-wow-delay=".4s">Your Journey</h4>
           </div>
@@ -39,12 +32,10 @@ if (str_contains($host, 'executiveairportcars.com')) {
         <div class="col-lg-8">
           <div class="contact-content">
             <div class="section-title">
-              <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+              <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
               <span class="wow fadeInUp" data-wow-delay=".2s">passenger details</span>
               <h2 class="wow fadeInUp" data-wow-delay=".4s">Passenger Information</h2>
             </div>
-
-            <div id="booking-submit-status" class="alert alert-info d-none mb-4" role="alert"></div>
 
             <form id="passenger-form" class="contact-form-items mt-4">
               <input type="hidden" name="payment_type" id="payment_type" value="cash">
@@ -117,6 +108,55 @@ if (str_contains($host, 'executiveairportcars.com')) {
                   </div>
                 </div>
 
+                <div class="col-lg-6">
+                  <div class="form-clt">
+                    <span>Flight Number</span>
+                    <input type="text" name="flight_number" placeholder="Flight #">
+                  </div>
+                </div>
+
+                <div class="col-lg-6">
+                  <div class="form-clt">
+                    <span>Flight Time</span>
+                    <select name="flight_time">
+                      <option value="">Select Flight Time</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="col-lg-6">
+                  <div class="form-clt">
+                    <span>Meet &amp; Greet</span>
+                    <select name="meet_and_greet">
+                      <option value="0">No</option>
+                      <option value="1">Yes</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="col-lg-6">
+                  <div class="form-clt">
+                    <span>Baby Seat</span>
+                    <select name="baby_seat" id="baby_seat_select">
+                      <option value="0">No</option>
+                      <option value="1">Yes</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="col-lg-6 d-none" id="baby-seat-age-wrapper">
+                  <div class="form-clt">
+                    <span>Baby Seat Age</span>
+                    <select name="baby_seat_age">
+                      <option value="">Select child seat</option>
+                      <option value="0-1">0 to 1 Years</option>
+                      <option value="1-3">1 to 3 Years</option>
+                      <option value="3-5">3 to 5 Years</option>
+                      <option value="5-12">5 to 12 Years</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div class="col-lg-12 d-none" id="return-section">
                   <div class="section-title mb-3">
                     <span>return journey</span>
@@ -142,28 +182,39 @@ if (str_contains($host, 'executiveairportcars.com')) {
 
                     <div class="col-lg-6">
                       <div class="form-clt">
-                        <span>Flight Number</span>
-                        <input type="text" name="flight_number" placeholder="Flight #">
+                        <span>Return Flight Number</span>
+                        <input type="text" name="return_flight_number" placeholder="Flight #">
                       </div>
                     </div>
 
                     <div class="col-lg-6">
                       <div class="form-clt">
-                        <span>Flight Landing Time</span>
-                        <select name="flight_landing_time">
-                          <option value="">Select Return Flight Landing Time</option>
+                        <span>Return Flight Time</span>
+                        <select name="return_flight_time">
+                          <option value="">Select Return Flight Time</option>
                         </select>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                <div class="col-lg-12">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="meet_and_greet" value="1" id="meet_and_greet">
-                    <label class="form-check-label" for="meet_and_greet">
-                      Meet &amp; Greet Service Â£20 Extra
-                    </label>
+                    <div class="col-lg-6">
+                      <div class="form-clt">
+                        <span>Return Meet &amp; Greet</span>
+                        <select name="return_meet_and_greet">
+                          <option value="0">No</option>
+                          <option value="1">Yes</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                      <div class="form-clt">
+                        <span>Return Baby Seat</span>
+                        <select name="return_baby_seat">
+                          <option value="0">No</option>
+                          <option value="1">Yes</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -199,7 +250,7 @@ if (str_contains($host, 'executiveairportcars.com')) {
 <script>
   var bdata = {};
   var selectedPaymentType = 'cash';
-  var API_URL = <?php echo json_encode($api_url); ?>;
+  var bookingSubmitUrl = <?php echo json_encode(route('booking.submit')); ?>;
 
   try {
     bdata = JSON.parse(localStorage.getItem('booking_data') || '{}');
@@ -214,6 +265,10 @@ if (str_contains($host, 'executiveairportcars.com')) {
 
   if (bdata.trip_type === 'return') {
     document.getElementById('return-section').classList.remove('d-none');
+    var returnDateEl = document.getElementById('return_pickup_date');
+    if (returnDateEl) returnDateEl.required = true;
+    var returnTimeEl = document.querySelector('[name="return_pickup_time"]');
+    if (returnTimeEl) returnTimeEl.required = true;
     if (bdata.pickup_date) document.getElementById('return_pickup_date').value = bdata.pickup_date;
   }
 
@@ -230,8 +285,28 @@ if (str_contains($host, 'executiveairportcars.com')) {
     }
   }
 
-  document.querySelectorAll('select[name="pickup_time"], select[name="return_pickup_time"], select[name="flight_landing_time"]')
+  document.querySelectorAll('select[name="pickup_time"], select[name="flight_time"], select[name="return_pickup_time"], select[name="return_flight_time"]')
     .forEach(function(el) { populateTimeSelect(el); });
+
+  (function() {
+    var babySeatSelect = document.getElementById('baby_seat_select');
+    var babySeatAgeWrapper = document.getElementById('baby-seat-age-wrapper');
+    var babySeatAgeSelect = document.querySelector('[name="baby_seat_age"]');
+
+    if (!babySeatSelect || !babySeatAgeWrapper || !babySeatAgeSelect) return;
+
+    function toggleBabySeatAge() {
+      var enabled = babySeatSelect.value === '1';
+      babySeatAgeWrapper.classList.toggle('d-none', !enabled);
+      babySeatAgeSelect.required = enabled;
+      if (!enabled) {
+        babySeatAgeSelect.value = '';
+      }
+    }
+
+    babySeatSelect.addEventListener('change', toggleBabySeatAge);
+    toggleBabySeatAge();
+  })();
 
   document.querySelectorAll('button[data-payment]').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -240,28 +315,34 @@ if (str_contains($host, 'executiveairportcars.com')) {
     });
   });
 
-  console.log('=== Page 3 â€” Passenger Form ===');
+  console.log('=== Page 3 — Passenger Form ===');
   console.log('Quote Ref:', bdata.quote_ref || '-');
   console.log('Return Ref:', bdata.return_ref || 'N/A');
   console.log('Pickup:', bdata.pickup);
   console.log('Dropoff:', bdata.dropoff);
   console.log('Pickup Date:', bdata.pickup_date);
   console.log('Vehicle:', bdata.vehicle_type);
-  console.log('Price: Â£' + (bdata.price ? Number(bdata.price).toFixed(2) : '-'));
+  console.log('Price: £' + (bdata.price ? Number(bdata.price).toFixed(2) : '-'));
   console.log('Trip type:', bdata.trip_type);
+
+  function setStatus(message, type) {
+    var status = document.getElementById('booking-submit-status');
+    if (!status) return;
+    status.className = 'alert alert-' + (type || 'info') + ' mb-4';
+    status.textContent = message;
+    status.classList.remove('d-none');
+  }
 
   document.getElementById('passenger-form').addEventListener('submit', function(e) {
     e.preventDefault();
 
     var submitButton = e.submitter || document.activeElement;
-    var form = e.currentTarget;
-    var status = document.getElementById('booking-submit-status');
-
-    function showStatus(message, type) {
-      if (!status) return;
-      status.className = 'alert alert-' + (type || 'info') + ' mb-4';
-      status.textContent = message;
-      status.classList.remove('d-none');
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.dataset.originalText = submitButton.textContent;
+      submitButton.textContent = 'Submitting...';
     }
 
     var formData = {
@@ -276,7 +357,11 @@ if (str_contains($host, 'executiveairportcars.com')) {
       phone: document.querySelector('[name="phone"]').value,
       passengers: document.querySelector('[name="passengers"]').value,
       suitcases: document.querySelector('[name="suitcases"]').value,
-      meet_and_greet: document.querySelector('[name="meet_and_greet"]').checked,
+      flight_number: document.querySelector('[name="flight_number"]').value,
+      flight_time: document.querySelector('[name="flight_time"]').value,
+      meet_and_greet: document.querySelector('[name="meet_and_greet"]').value === '1',
+      baby_seat: document.querySelector('[name="baby_seat"]').value === '1',
+      baby_seat_age: document.querySelector('[name="baby_seat_age"]').value,
       message_to_driver: document.querySelector('[name="message_to_driver"]').value,
       vehicle_type: bdata.vehicle_type,
       price: bdata.price,
@@ -288,55 +373,69 @@ if (str_contains($host, 'executiveairportcars.com')) {
     if (bdata.trip_type === 'return') {
       formData.return_pickup_date = document.querySelector('[name="return_pickup_date"]').value;
       formData.return_pickup_time = document.querySelector('[name="return_pickup_time"]').value;
-      formData.flight_number = document.querySelector('[name="flight_number"]').value;
-      formData.flight_landing_time = document.querySelector('[name="flight_landing_time"]').value;
+      formData.return_flight_number = document.querySelector('[name="return_flight_number"]').value;
+      formData.return_flight_time = document.querySelector('[name="return_flight_time"]').value;
+      formData.return_meet_and_greet = document.querySelector('[name="return_meet_and_greet"]').value === '1';
+      formData.return_baby_seat = document.querySelector('[name="return_baby_seat"]').value === '1';
     }
 
     console.log('=== Book Now Clicked ===');
     console.log('Payment type:', selectedPaymentType);
     console.log('Form data:', formData);
 
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.dataset.originalText = submitButton.textContent;
-      submitButton.textContent = 'Submitting...';
-    }
+    setStatus('Submitting your booking...', 'info');
 
-    showStatus('Submitting your booking...', 'info');
-
-    fetch(API_URL.replace('/quote', '/booking/save'), {
+    fetch(bookingSubmitUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': csrfToken
       },
       body: JSON.stringify(formData)
     })
-    .then(function(r) { return r.json().then(function(json) { return { ok: r.ok, json: json }; }); })
+    .then(function(response) {
+      return response.json().then(function(payload) {
+        return {
+          ok: response.ok,
+          payload: payload
+        };
+      });
+    })
     .then(function(result) {
-      if (!result.ok || !result.json || !result.json.success) {
-        throw new Error((result.json && result.json.message) || 'Could not submit booking.');
+      if (!result.ok || !result.payload.success) {
+        var errorMessage = (result.payload && result.payload.message) ? result.payload.message : 'Could not complete your booking.';
+        setStatus(errorMessage, 'danger');
+        return;
       }
 
       try {
-        localStorage.setItem('booking_result', JSON.stringify(result.json));
+        localStorage.setItem('booking_result', JSON.stringify(result.payload));
       } catch (storageError) {}
 
-      form.classList.add('d-none');
-      showStatus('Booking submitted successfully. Reference: ' + (result.json.booking_refs && result.json.booking_refs.length ? result.json.booking_refs.join(', ') : 'pending'), 'success');
+      if (result.payload.redirect_url) {
+        window.location.href = result.payload.redirect_url;
+        return;
+      }
 
-      if (document.getElementById('booking-summary')) {
-        document.getElementById('booking-summary').innerHTML = '<div class="form-clt mb-0"><span>Status</span><input type="text" readonly value="Booking submitted successfully"></div>';
+      document.getElementById('passenger-form').classList.add('d-none');
+      setStatus(
+        'Booking submitted successfully. Reference: ' +
+          ((result.payload.booking_refs && result.payload.booking_refs.length) ? result.payload.booking_refs.join(', ') : 'pending'),
+        'success'
+      );
+
+      var summary = document.getElementById('booking-summary');
+      if (summary) {
+        summary.innerHTML = '<div class="form-clt mb-0"><span>Status</span><input type="text" readonly value="Booking submitted successfully"></div>';
       }
     })
-    .catch(function(error) {
-      showStatus(error.message || 'Could not submit booking.', 'danger');
-      if (submitButton) {
-        submitButton.disabled = false;
-      }
+    .catch(function(err) {
+      setStatus('Request failed: ' + err.message, 'danger');
     })
     .finally(function() {
       if (submitButton) {
+        submitButton.disabled = false;
         submitButton.textContent = submitButton.dataset.originalText || 'Book Now';
       }
     });
@@ -355,7 +454,7 @@ if (str_contains($host, 'executiveairportcars.com')) {
     rows.push(summaryInput('From', bdata.pickup || '-'));
     rows.push(summaryInput('To', bdata.dropoff || '-'));
     rows.push(summaryInput('Vehicle', bdata.vehicle_type || '-'));
-    rows.push(summaryInput('Price', bdata.price ? ('Â£' + Number(bdata.price).toFixed(2)) : '-'));
+    rows.push(summaryInput('Price', bdata.price ? ('£' + Number(bdata.price).toFixed(2)) : '-'));
     rows.push(summaryInput('Trip Type', bdata.trip_type || '-'));
 
     summary.innerHTML = rows.join('');

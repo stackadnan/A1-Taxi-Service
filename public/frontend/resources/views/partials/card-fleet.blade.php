@@ -1,7 +1,7 @@
-﻿ <section class="car-rentals-section section-padding fix">
+ <section class="car-rentals-section section-padding fix">
         <div class="container">
             <div class="section-title text-center">
-                <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                 <span class="wow fadeInUp" data-wow-delay=".2s">Checkout our new cars</span>
                 <h2 class="wow fadeInUp" data-wow-delay=".4s">
                     Our Fleet
@@ -19,7 +19,7 @@
                         <div class="swiper-slide">
                             <div class="car-rentals-items">
                                 <div class="car-image">
-                                    <img src="{{ $item->image }}" alt="{{ $item->title }}">
+                                    <img src="{{ \App\Support\GalleryPath::path($item->image) }}" alt="{{ $item->title }}">
                                 </div>
                                 <div class="car-content">
                                     <div class="post-cat">

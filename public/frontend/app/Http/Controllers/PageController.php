@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Url;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Schema;
 
 class PageController extends Controller
 {
+    private ?bool $hasUrlsTable = null;
+
     public function home(): Response
     {
         return response()->view(config('pages.home', 'index'));
@@ -15,10 +18,13 @@ class PageController extends Controller
 
     public function show(string $slug): Response|RedirectResponse
     {
-        $groupUrl = Url::where('group_slug', strtolower($slug))
-            ->where('is_active', true)
-            ->orderBy('id')
-            ->first();
+        $groupUrl = null;
+        if ($this->hasUrlsTable()) {
+            $groupUrl = Url::where('group_slug', strtolower($slug))
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->first();
+        }
 
         if ($groupUrl) {
             return redirect()->to('/'.$groupUrl->group_slug.'/'.$groupUrl->slug, 302);
@@ -34,6 +40,10 @@ class PageController extends Controller
 
     public function showNested(string $groupSlug, string $slug): Response
     {
+        if (! $this->hasUrlsTable()) {
+            abort(404);
+        }
+
         $url = Url::where('group_slug', strtolower($groupSlug))
             ->where('slug', strtolower($slug))
             ->where('is_active', true)
@@ -100,5 +110,20 @@ class PageController extends Controller
             'city-transfers', 'cruise-port-transfers' => 'airport',
             default => null,
         };
+    }
+
+    private function hasUrlsTable(): bool
+    {
+        if ($this->hasUrlsTable !== null) {
+            return $this->hasUrlsTable;
+        }
+
+        try {
+            $this->hasUrlsTable = Schema::hasTable((new Url())->getTable());
+        } catch (\Throwable $e) {
+            $this->hasUrlsTable = false;
+        }
+
+        return $this->hasUrlsTable;
     }
 }

@@ -4,16 +4,16 @@
                 <div class="row g-4">
                     <!-- <div class="col-lg-6 wow fadeInUp" data-wow-delay=".4s">
                         <div class="faq-image">
-                            <img src="assets/img/faq.png" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/143') }}" alt="img">
                             <div class="color-shape float-bob-y">
-                                <img src="assets/img/faq-color-shape.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/144') }}" alt="img">
                             </div>
                         </div>
                     </div> -->
                     <div class="col-lg-12">
                         <div class="faq-content">
                             <div class="section-title">
-                                <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                                <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                                 <span class="wow fadeInUp" data-wow-delay=".2s">{{ $faqSubtitle ?? 'Frequently asked questions' }}</span>
                                 <h2 class="wow fadeInUp" data-wow-delay=".4s">
                                     {{ $faqTitle ?? 'Question & Answers' }}

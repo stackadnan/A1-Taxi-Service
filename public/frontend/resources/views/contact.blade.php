@@ -1,6 +1,6 @@
-﻿<?php
+<?php
 $headTitle = 'A1 Airport Cars ';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'Contact';
 $SubTitle = 'Contact';
@@ -16,7 +16,7 @@ $SubTitle = 'Contact';
                 <div class="col-lg-9">
                     <div class="contact-content">
                         <div class="section-title">
-                            <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                            <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                             <span class="wow fadeInUp" data-wow-delay=".2s">contact us</span>
                             <h2 class="wow fadeInUp" data-wow-delay=".4s">
                                 Drop us a Line
@@ -63,11 +63,11 @@ $SubTitle = 'Contact';
                 <div class="col-lg-3">
                     <div class="contact-right-items">
                         <div class="contact-img">
-                            <img src="assets/img/contact.jpg" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/41') }}" alt="img">
                         </div>
                         <div class="icon-items">
                             <div class="icon">
-                                <img src="assets/img/question.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/42') }}" alt="img">
                             </div>
                             <div class="content">
                                 <p>Have Question?</p>
@@ -76,7 +76,7 @@ $SubTitle = 'Contact';
                         </div>
                         <div class="icon-items">
                             <div class="icon">
-                                <img src="assets/img/email.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/43') }}" alt="img">
                             </div>
                             <div class="content">
                                 <p>Write Email</p>
@@ -85,7 +85,7 @@ $SubTitle = 'Contact';
                         </div>
                         <div class="icon-items">
                             <div class="icon">
-                                <img src="assets/img/location.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/44') }}" alt="img">
                             </div>
                             <div class="content">
                                 <p>Visit Office</p>
@@ -129,7 +129,7 @@ $SubTitle = 'Contact';
                     .3s">
                 <div class="logo-thumb">
                     <a href="./">
-                        <img src="assets/img/logo/white-logo.svg" alt="logo-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/21') }}" alt="logo-img">
                     </a>
                 </div>
                 <h4 class="text-white">Save big with our cheap car rental</h4>

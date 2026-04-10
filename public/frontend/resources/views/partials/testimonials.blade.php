@@ -1,13 +1,13 @@
 <section class="testimonial-section fix section-padding">
     <div class="testimonial-bg-shape">
-        <img src="assets/img/testimonial/testimonial-bg.jpg" alt="shape-img">
+        <img src="{{ \App\Support\GalleryPath::path('i/11') }}" alt="shape-img">
     </div>
     <div class="container">
         <div class="section-title-area">
             <div class="row align-items-center g-4">
                 <div class="col-lg-6">
                     <div class="section-title">
-                        <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                        <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                         <span class="wow fadeInUp" data-wow-delay=".2s">{{ $testimonialSectionTitle ?? 'Our Testimonials' }}</span>
                         <h2 class="wow fadeInUp" data-wow-delay=".4s">
                             {{ $testimonialSectionHeading ?? 'What They’re Saying About A1 Airport Cars' }}

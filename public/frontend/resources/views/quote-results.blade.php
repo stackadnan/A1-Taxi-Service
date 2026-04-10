@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Auto-detect API URL based on current host.
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 if (str_contains($host, 'executiveairportcars.com')) {
@@ -8,7 +8,7 @@ if (str_contains($host, 'executiveairportcars.com')) {
 }
 
 $headTitle = 'Quote Results';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'Quote Results';
 $SubTitle = 'Choose Your Vehicle';
@@ -59,7 +59,7 @@ $SubTitle = 'Choose Your Vehicle';
       key: 'saloon',
       label: 'Saloon',
       tag: 'Affordable',
-      image: 'assets/img/car/saloon.png',
+      image: "{{ \App\Support\GalleryPath::path('i/307') }}",
       desc: 'Toyota Prius, Ford Mondeo, VW Passat or similar.',
       seats: 4,
       suitcases: 2,
@@ -69,7 +69,7 @@ $SubTitle = 'Choose Your Vehicle';
       key: 'business',
       label: 'Business Class',
       tag: 'Luxury',
-      image: 'assets/img/car/executive.png',
+      image: "{{ \App\Support\GalleryPath::path('i/158') }}",
       desc: 'Mercedes E Class, BMW 5 Series or similar.',
       seats: 4,
       suitcases: 2,
@@ -79,7 +79,7 @@ $SubTitle = 'Choose Your Vehicle';
       key: 'mpv6',
       label: 'MPV6',
       tag: 'Family',
-      image: 'assets/img/car/mpv6.png',
+      image: "{{ \App\Support\GalleryPath::path('i/159') }}",
       desc: 'VW Sharan, Seat Alhambra, Ford Galaxy or similar.',
       seats: 6,
       suitcases: 3,
@@ -89,7 +89,7 @@ $SubTitle = 'Choose Your Vehicle';
       key: 'mpv8',
       label: 'MPV8',
       tag: 'Group',
-      image: 'assets/img/car/mpv8.png',
+      image: "{{ \App\Support\GalleryPath::path('i/160') }}",
       desc: 'Mercedes V Class, VW Transporter or similar.',
       seats: 8,
       suitcases: 8,

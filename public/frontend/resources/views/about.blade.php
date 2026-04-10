@@ -1,6 +1,6 @@
-﻿<?php
+<?php
 $headTitle = 'A1 Airport Cars ';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'About Us';
 $SubTitle = 'About us';
@@ -17,13 +17,13 @@ $SubTitle = 'About us';
             <div class="row g-4">
                 <div class="col-lg-6 wow fadeInUp" data-wow-delay=".3s">
                     <div class="about-image">
-                        <img src="assets/img/about/01.png" alt="about-image">
+                        <img src="{{ \App\Support\GalleryPath::path('i/1') }}" alt="about-image">
                     </div>
                 </div>
                 <div class="col-lg-6">
                     <div class="about-content">
                         <div class="section-title">
-                            <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                            <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                             <span class="wow fadeInUp" data-wow-delay=".2s">Get to know us</span>
                             <h2 class="wow fadeInUp" data-wow-delay=".4s">
                                 Trusted & Leading in
@@ -75,7 +75,7 @@ $SubTitle = 'About us';
 <section class="team-section fix section-padding pt-0">
     <div class="container">
         <div class="section-title text-center">
-            <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+            <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
             <span class="wow fadeInUp" data-wow-delay=".2s">Our expert people</span>
             <h2 class="wow fadeInUp" data-wow-delay=".4s">
                 Meet Our Professional <br>
@@ -86,10 +86,10 @@ $SubTitle = 'About us';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".3s">
                 <div class="team-card-items">
                     <div class="border-shape">
-                        <img src="assets/img/team/border.png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/3') }}" alt="img">
                     </div>
                     <div class="team-image">
-                        <img src="assets/img/team/team-01.jpg" alt="team-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/4') }}" alt="team-img">
                     </div>
                     <div class="team-content">
                         <h3><a href="about">Mike Hardson</a></h3>
@@ -106,10 +106,10 @@ $SubTitle = 'About us';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".5s">
                 <div class="team-card-items">
                     <div class="border-shape">
-                        <img src="assets/img/team/border.png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/3') }}" alt="img">
                     </div>
                     <div class="team-image">
-                        <img src="assets/img/team/team-02.jpg" alt="team-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/5') }}" alt="team-img">
                     </div>
                     <div class="team-content">
                         <h3><a href="about">Aleesha Brown</a></h3>
@@ -126,10 +126,10 @@ $SubTitle = 'About us';
             <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".7s">
                 <div class="team-card-items">
                     <div class="border-shape">
-                        <img src="assets/img/team/border.png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/3') }}" alt="img">
                     </div>
                     <div class="team-image">
-                        <img src="assets/img/team/team-03.jpg" alt="team-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/6') }}" alt="team-img">
                     </div>
                     <div class="team-content">
                         <h3><a href="about">David Jhonson</a></h3>
@@ -149,13 +149,13 @@ $SubTitle = 'About us';
 
 <!-- Funfact Section Start -->
 <section class="funfact-section section-padding fix bg-cover mt-0"
-    style="background-image: url('assets/img/funfact-bg.jpg');">
+    style="background-image: url('{{ \App\Support\GalleryPath::path('i/22') }}');">
     <div class="container">
         <div class="funfact-wrapper mt-0">
             <div class="row g-4 align-items-center">
                 <div class="col-lg-6">
                     <div class="section-title mb-0">
-                        <img src="assets/img/sub-icon-2.png" alt="icon-img" class="wow fadeInUp">
+                        <img src="{{ \App\Support\GalleryPath::path('i/7') }}" alt="icon-img" class="wow fadeInUp">
                         <span class="wow fadeInUp" data-wow-delay=".2s">fun facts</span>
                         <h2 class="text-white wow fadeInUp" data-wow-delay=".4s">
                             Save Time & Money <br>
@@ -168,7 +168,7 @@ $SubTitle = 'About us';
                     <div class="funfact-counter-area">
                         <div class="funfact-items wow fadeInUp" data-wow-delay=".3s">
                             <div class="icon">
-                                <img src="assets/img/icon/car.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/8') }}" alt="img">
                             </div>
                             <h2><span class="count">990</span></h2>
                             <p>
@@ -178,7 +178,7 @@ $SubTitle = 'About us';
                         </div>
                         <div class="funfact-items wow fadeInUp" data-wow-delay=".5s">
                             <div class="icon">
-                                <img src="assets/img/icon/center.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/9') }}" alt="img">
                             </div>
                             <h2><span class="count">230</span></h2>
                             <p>
@@ -188,7 +188,7 @@ $SubTitle = 'About us';
                         </div>
                         <div class="funfact-items wow fadeInUp" data-wow-delay=".7s">
                             <div class="icon">
-                                <img src="assets/img/icon/like.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/10') }}" alt="img">
                             </div>
                             <h2><span class="count">660</span></h2>
                             <p>
@@ -206,15 +206,15 @@ $SubTitle = 'About us';
 <!-- Testimonial Section Start -->
 <section class="testimonial-section fix section-padding">
     <div class="testimonial-bg-shape">
-        <img src="assets/img/testimonial/testimonial-bg.jpg" alt="shape-img">
+        <img src="{{ \App\Support\GalleryPath::path('i/11') }}" alt="shape-img">
     </div>
     <div class="container">
         <div class="section-title-area">
             <div class="section-title">
-                <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                 <span class="wow fadeInUp" data-wow-delay=".2s">our testimonials</span>
                 <h2 class="wow fadeInUp" data-wow-delay=".4s">
-                    What Theyâ€™re Talking <br>
+                    What They’re Talking <br>
                     About A1 Airport Cars 
                 </h2>
             </div>
@@ -246,7 +246,7 @@ $SubTitle = 'About us';
                         </div>
                         <div class="client-info-items d-flex align-items-center gap-3">
                             <div class="client-img bg-cover"
-                                style="background-image: url('assets/img/testimonial/client-1.png');"></div>
+                                style="background-image: url('{{ \App\Support\GalleryPath::path('i/309') }}');"></div>
                             <div class="content">
                                 <h5>
                                     Jessica Brown
@@ -278,7 +278,7 @@ $SubTitle = 'About us';
                         </div>
                         <div class="client-info-items d-flex align-items-center gap-3">
                             <div class="client-img bg-cover"
-                                style="background-image: url('assets/img/testimonial/client-2.png');"></div>
+                                style="background-image: url('{{ \App\Support\GalleryPath::path('i/310') }}');"></div>
                             <div class="content">
                                 <h5>
                                     Kevin Martin
@@ -310,7 +310,7 @@ $SubTitle = 'About us';
                         </div>
                         <div class="client-info-items d-flex align-items-center gap-3">
                             <div class="client-img bg-cover"
-                                style="background-image: url('assets/img/testimonial/client-3.png');"></div>
+                                style="background-image: url('{{ \App\Support\GalleryPath::path('i/311') }}');"></div>
                             <div class="content">
                                 <h5>
                                     Jessica Brown
@@ -330,13 +330,13 @@ $SubTitle = 'About us';
     <div class="container-fluid">
         <div class="car-sale-wrapper">
             <div class="sale-shape">
-                <img src="assets/img/bg-shape-saleoff.png" alt="shape-img">
+                <img src="{{ \App\Support\GalleryPath::path('i/12') }}" alt="shape-img">
             </div>
             <div class="badge-shape">
-                <img src="assets/img/bagde.png" alt="shape-img">
+                <img src="{{ \App\Support\GalleryPath::path('i/13') }}" alt="shape-img">
             </div>
             <div class="car-shape">
-                <img src="assets/img/car.png" alt="img">
+                <img src="{{ \App\Support\GalleryPath::path('i/14') }}" alt="img">
             </div>
             <div class="car-sale-content">
                 <h2 class="wow fadeInUp" data-wow-delay=".3s">Sale 50% Off</h2>
@@ -359,32 +359,32 @@ $SubTitle = 'About us';
             <div class="swiper-wrapper">
                 <div class="swiper-slide">
                     <div class="brand-image style-color">
-                        <img src="assets/img/brand/01.png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/15') }}" alt="img">
                     </div>
                 </div>
                 <div class="swiper-slide">
                     <div class="brand-image style-color">
-                        <img src="assets/img/brand/02.png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/16') }}" alt="img">
                     </div>
                 </div>
                 <div class="swiper-slide">
                     <div class="brand-image style-color">
-                        <img src="assets/img/brand/03.png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/17') }}" alt="img">
                     </div>
                 </div>
                 <div class="swiper-slide">
                     <div class="brand-image style-color">
-                        <img src="assets/img/brand/04.png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/18') }}" alt="img">
                     </div>
                 </div>
                 <div class="swiper-slide">
                     <div class="brand-image style-color">
-                        <img src="assets/img/brand/05.png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/19') }}" alt="img">
                     </div>
                 </div>
                 <div class="swiper-slide">
                     <div class="brand-image style-color">
-                        <img src="assets/img/brand/06.png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/20') }}" alt="img">
                     </div>
                 </div>
             </div>
@@ -400,7 +400,7 @@ $SubTitle = 'About us';
                     .3s">
                 <div class="logo-thumb">
                     <a href="./">
-                        <img src="assets/img/logo/white-logo.svg" alt="logo-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/21') }}" alt="logo-img">
                     </a>
                 </div>
                 <h4 class="text-white">Save big with our cheap car rental</h4>

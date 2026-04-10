@@ -38,10 +38,10 @@
                     <div class="header-left">
                         <div class="logo">
                             <a href="{{ $homeUrl }}" class="header-logo-1">
-                                <img src="{{ $logoLight }}" alt="logo-img">
+                                <img src="{{ \App\Support\GalleryPath::path($logoLight) }}" alt="logo-img">
                             </a>
                             <a href="{{ $homeUrl }}" class="header-logo-2">
-                                <img src="{{ $logoDark }}" alt="logo-img">
+                                <img src="{{ \App\Support\GalleryPath::path($logoDark) }}" alt="logo-img">
                             </a>
                         </div>
                         <div class="mean__menu-wrapper">
@@ -69,6 +69,7 @@
                                         </li>
                                         <li><a href="{{ $baseUrl.'/fleet' }}"><i class="fas fa-car"></i> Fleet</a></li>
                                         <li><a href="{{ $baseUrl.'/faq' }}"><i class="fas fa-message"></i> FAQ's</a></li>
+                                        <li><a href="{{ $baseUrl.'/complainet/lost-found' }}"><i class="fas fa-box-open"></i> Complainet / Lost Found</a></li>
                                     </ul>
                                 </nav>
                             </div>

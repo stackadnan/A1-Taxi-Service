@@ -1,6 +1,6 @@
-﻿<?php
+<?php
 $headTitle = 'A1 Airport Cars ';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'Gallery';
 $SubTitle = 'Gallery';
@@ -16,9 +16,9 @@ $SubTitle = 'Gallery';
         <div class="galley-wrapper-2">
             <div class="gallery-items">
                 <div class="g-items">
-                    <img src="assets/img/gallery/g-14.jpg" alt="ga-img">
+                    <img src="{{ \App\Support\GalleryPath::path('i/51') }}" alt="ga-img">
                     <div class="icon-box">
-                        <a href="assets/img/gallery/g-14.jpg" class="icon img-popup-2">
+                        <a href="{{ \App\Support\GalleryPath::path('i/51') }}" class="icon img-popup-2">
                             <i class="fa-solid fa-plus"></i>
                         </a>
                     </div>
@@ -26,9 +26,9 @@ $SubTitle = 'Gallery';
                     <div class="mask-second"></div>
                 </div>
                 <div class="g-items">
-                    <img src="assets/img/gallery/g-15.jpg" alt="ga-img">
+                    <img src="{{ \App\Support\GalleryPath::path('i/52') }}" alt="ga-img">
                     <div class="icon-box">
-                        <a href="assets/img/gallery/g-15.jpg" class="icon img-popup-2">
+                        <a href="{{ \App\Support\GalleryPath::path('i/52') }}" class="icon img-popup-2">
                             <i class="fa-solid fa-plus"></i>
                         </a>
                     </div>
@@ -36,9 +36,9 @@ $SubTitle = 'Gallery';
                     <div class="mask-second"></div>
                 </div>
                 <div class="g-items">
-                    <img src="assets/img/gallery/g-16.jpg" alt="ga-img">
+                    <img src="{{ \App\Support\GalleryPath::path('i/53') }}" alt="ga-img">
                     <div class="icon-box">
-                        <a href="assets/img/gallery/g-16.jpg" class="icon img-popup-2">
+                        <a href="{{ \App\Support\GalleryPath::path('i/53') }}" class="icon img-popup-2">
                             <i class="fa-solid fa-plus"></i>
                         </a>
                     </div>
@@ -48,9 +48,9 @@ $SubTitle = 'Gallery';
             </div>
             <div class="gallery-items gallery-items-two">
                 <div class="g-items">
-                    <img src="assets/img/gallery/g-17.jpg" alt="ga-img">
+                    <img src="{{ \App\Support\GalleryPath::path('i/54') }}" alt="ga-img">
                     <div class="icon-box">
-                        <a href="assets/img/gallery/g-17.jpg" class="icon img-popup-2">
+                        <a href="{{ \App\Support\GalleryPath::path('i/54') }}" class="icon img-popup-2">
                             <i class="fa-solid fa-plus"></i>
                         </a>
                     </div>
@@ -58,9 +58,9 @@ $SubTitle = 'Gallery';
                     <div class="mask-second"></div>
                 </div>
                 <div class="g-items">
-                    <img src="assets/img/gallery/g-18.jpg" alt="ga-img">
+                    <img src="{{ \App\Support\GalleryPath::path('i/55') }}" alt="ga-img">
                     <div class="icon-box">
-                        <a href="assets/img/gallery/g-18.jpg" class="icon img-popup-2">
+                        <a href="{{ \App\Support\GalleryPath::path('i/55') }}" class="icon img-popup-2">
                             <i class="fa-solid fa-plus"></i>
                         </a>
                     </div>
@@ -70,9 +70,9 @@ $SubTitle = 'Gallery';
             </div>
             <div class="gallery-items gallery-items-three">
                 <div class="g-items">
-                    <img src="assets/img/gallery/g-19.jpg" alt="ga-img">
+                    <img src="{{ \App\Support\GalleryPath::path('i/56') }}" alt="ga-img">
                     <div class="icon-box">
-                        <a href="assets/img/gallery/g-19.jpg" class="icon img-popup-2">
+                        <a href="{{ \App\Support\GalleryPath::path('i/56') }}" class="icon img-popup-2">
                             <i class="fa-solid fa-plus"></i>
                         </a>
                     </div>
@@ -80,9 +80,9 @@ $SubTitle = 'Gallery';
                     <div class="mask-second"></div>
                 </div>
                 <div class="g-items">
-                    <img src="assets/img/gallery/g-20.jpg" alt="ga-img">
+                    <img src="{{ \App\Support\GalleryPath::path('i/57') }}" alt="ga-img">
                     <div class="icon-box">
-                        <a href="assets/img/gallery/g-20.jpg" class="icon img-popup-2">
+                        <a href="{{ \App\Support\GalleryPath::path('i/57') }}" class="icon img-popup-2">
                             <i class="fa-solid fa-plus"></i>
                         </a>
                     </div>
@@ -103,7 +103,7 @@ $SubTitle = 'Gallery';
                     .3s">
                 <div class="logo-thumb">
                     <a href="./">
-                        <img src="assets/img/logo/white-logo.svg" alt="logo-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/21') }}" alt="logo-img">
                     </a>
                 </div>
                 <h4 class="text-white">Save big with our cheap car rental</h4>

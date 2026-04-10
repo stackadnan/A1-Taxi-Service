@@ -1,5 +1,5 @@
 <!--<< Breadcrumb Section Start >>-->
-<div class="breadcrumb-wrapper bg-cover" style="background-image: url({{ $img ?? 'assets/img/breadcrumb-banner.png' }});">
+<div class="breadcrumb-wrapper bg-cover" style="background-image: url({{ \App\Support\GalleryPath::path($img ?? 'i/151') }});">
     <div class="container">
         <div class="page-heading">
             <ul class="breadcrumb-items wow fadeInUp" data-wow-delay=".3s">

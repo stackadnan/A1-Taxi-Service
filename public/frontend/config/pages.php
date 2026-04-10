@@ -22,6 +22,7 @@ return [
         'london-city-airport-taxi' => 'airport',
         'luton-airport-taxi' => 'airport',
         'manchester-airport-taxi' => 'airport',
+        'manage-booking' => 'manage-booking',
         'news' => 'news',
         'news-details' => 'news-details',
         'quote-results' => 'quote-results',

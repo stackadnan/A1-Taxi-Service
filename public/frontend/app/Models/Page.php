@@ -29,4 +29,9 @@ class Page extends Model
         'bottom_title',
         'bottom_description',
     ];
+
+    public function seo()
+    {
+        return $this->hasMany(Seo::class, 'page_id');
+    }
 }

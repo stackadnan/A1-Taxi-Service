@@ -1,6 +1,6 @@
-﻿<?php
+<?php
 $headTitle = 'A1 Airport Cars ';
-$img = 'assets/img/bg-header-banner.jpg';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'blog details';
 $SubTitle = 'blog details';
@@ -18,7 +18,7 @@ $SubTitle = 'blog details';
                 <div class="col-lg-8">
                     <div class="news-details-items">
                         <div class="news-image">
-                            <img src="assets/img/news/news-details.jpg" alt="news-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/58') }}" alt="news-img">
                         </div>
                         <div class="news-details-content">
                             <ul class="list-admin">
@@ -91,7 +91,7 @@ $SubTitle = 'blog details';
                         <h3>2 Reviews</h3>
                         <div class="single-comment d-flex gap-4 pb-5">
                             <div class="image">
-                                <img src="assets/img/car/comment01.png" alt="image">
+                                <img src="{{ \App\Support\GalleryPath::path('i/33') }}" alt="image">
                             </div>
                             <div class="content">
                                 <div class="head d-flex flex-wrap gap-3 align-items-center justify-content-between">
@@ -109,7 +109,7 @@ $SubTitle = 'blog details';
                         </div>
                         <div class="single-comment d-flex gap-4 pt-5 pb-5">
                             <div class="image">
-                                <img src="assets/img/car/comment02.png" alt="image">
+                                <img src="{{ \App\Support\GalleryPath::path('i/34') }}" alt="image">
                             </div>
                             <div class="content">
                                 <div class="head d-flex flex-wrap gap-3 align-items-center justify-content-between">
@@ -169,7 +169,7 @@ $SubTitle = 'blog details';
                             <div class="recent-post-area">
                                 <div class="recent-items">
                                     <div class="recent-thumb">
-                                        <img src="assets/img/news/pp1.jpg" alt="img">
+                                        <img src="{{ \App\Support\GalleryPath::path('i/59') }}" alt="img">
                                     </div>
                                     <div class="recent-content">
                                         <ul>
@@ -188,7 +188,7 @@ $SubTitle = 'blog details';
                                 </div>
                                 <div class="recent-items">
                                     <div class="recent-thumb">
-                                        <img src="assets/img/news/pp2.jpg" alt="img">
+                                        <img src="{{ \App\Support\GalleryPath::path('i/60') }}" alt="img">
                                     </div>
                                     <div class="recent-content">
                                         <ul>
@@ -207,7 +207,7 @@ $SubTitle = 'blog details';
                                 </div>
                                 <div class="recent-items">
                                     <div class="recent-thumb">
-                                        <img src="assets/img/news/pp3.jpg" alt="img">
+                                        <img src="{{ \App\Support\GalleryPath::path('i/61') }}" alt="img">
                                     </div>
                                     <div class="recent-content">
                                         <ul>
@@ -275,7 +275,7 @@ $SubTitle = 'blog details';
                     .3s">
                 <div class="logo-thumb">
                     <a href="./">
-                        <img src="assets/img/logo/white-logo.svg" alt="logo-img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/21') }}" alt="logo-img">
                     </a>
                 </div>
                 <h4 class="text-white">Save big with our cheap car rental</h4>

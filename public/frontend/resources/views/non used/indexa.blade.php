@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <?php $headTitle = 'A1 Airport Cars '; ?>
 @include('partials.head')
@@ -30,9 +30,9 @@
         <div class="swiper hero-slider">
             <div class="swiper-wrapper">
                 <div class="swiper-slide">
-                    <div class="hero-image bg-cover" style="background-image: url('assets/img/hero/hero-1.jpg');">
+                    <div class="hero-image bg-cover" style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
                         <div class="overlay-shape">
-                            <img src="assets/img/hero/overlay.png" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/113') }}" alt="img">
                         </div>
                     </div>
                     <div class="container">
@@ -51,9 +51,9 @@
                     </div>
                 </div>
                 <div class="swiper-slide">
-                    <div class="hero-image bg-cover" style="background-image: url('assets/img/hero/hero-2.jpg');">
+                    <div class="hero-image bg-cover" style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
                         <div class="overlay-shape">
-                            <img src="assets/img/hero/overlay.png" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/113') }}" alt="img">
                         </div>
                     </div>
                     <div class="container">
@@ -76,7 +76,7 @@
     </section>
 
     <!-- Pick Up Location Section Start -->
-    <div class="pickup-loaction-area bg-cover" style="background-image: url('assets/img/brand-bg.png');">
+    <div class="pickup-loaction-area bg-cover" style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
         <div class="container">
             <div class="pickup-wrapper wow fadeInUp" data-wow-delay=".4s">
                 <div class="pickup-items">
@@ -153,32 +153,32 @@
                     <div class="swiper-wrapper">
                         <div class="swiper-slide">
                             <div class="brand-image">
-                                <img src="assets/img/brand/01.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/15') }}" alt="img">
                             </div>
                         </div>
                         <div class="swiper-slide">
                             <div class="brand-image">
-                                <img src="assets/img/brand/02.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/16') }}" alt="img">
                             </div>
                         </div>
                         <div class="swiper-slide">
                             <div class="brand-image">
-                                <img src="assets/img/brand/03.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/17') }}" alt="img">
                             </div>
                         </div>
                         <div class="swiper-slide">
                             <div class="brand-image">
-                                <img src="assets/img/brand/04.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/18') }}" alt="img">
                             </div>
                         </div>
                         <div class="swiper-slide">
                             <div class="brand-image">
-                                <img src="assets/img/brand/05.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/19') }}" alt="img">
                             </div>
                         </div>
                         <div class="swiper-slide">
                             <div class="brand-image">
-                                <img src="assets/img/brand/06.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/20') }}" alt="img">
                             </div>
                         </div>
                     </div>
@@ -191,7 +191,7 @@
     <section class="feature-benefit section section-padding fix">
         <div class="container">
             <div class="section-title text-center">
-                <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                 <span class="wow fadeInUp" data-wow-delay=".2s">our benefits</span>
                 <h2 class="wow fadeInUp" data-wow-delay=".4s">
                     Why You Should Use <br>
@@ -202,10 +202,10 @@
                 <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".3s">
                     <div class="feature-benefit-items">
                         <div class="icon-box-shape">
-                            <img src="assets/img/feature-benefit/box-icon-bg1.png" alt="shape-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/114') }}" alt="shape-img">
                         </div>
                         <div class="bg-button-shape">
-                            <img src="assets/img/feature-benefit/bg-button-iconbox.png" alt="shape-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/115') }}" alt="shape-img">
                         </div>
                         <div class="feature-content">
                             <h4>
@@ -216,7 +216,7 @@
                             </h4>
                             <p>Neque porro quisquam est, qui fre dolorem ipsum quia dolor.</p>
                             <div class="icon">
-                                <img src="assets/img/feature-benefit/icon-1.png" alt="icon-img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/116') }}" alt="icon-img">
                             </div>
                         </div>
                         <div class="feature-button">
@@ -228,10 +228,10 @@
                 <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".5s">
                     <div class="feature-benefit-items">
                         <div class="icon-box-shape">
-                            <img src="assets/img/feature-benefit/box-icon-bg2.png" alt="shape-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/117') }}" alt="shape-img">
                         </div>
                         <div class="bg-button-shape">
-                            <img src="assets/img/feature-benefit/bg-button-iconbox.png" alt="shape-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/115') }}" alt="shape-img">
                         </div>
                         <div class="feature-content">
                             <h4>
@@ -242,7 +242,7 @@
                             </h4>
                             <p>Neque porro quisquam est, qui fre dolorem ipsum quia dolor.</p>
                             <div class="icon">
-                                <img src="assets/img/feature-benefit/icon-2.png" alt="icon-img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/118') }}" alt="icon-img">
                             </div>
                         </div>
                         <div class="feature-button">
@@ -254,10 +254,10 @@
                 <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".7s">
                     <div class="feature-benefit-items">
                         <div class="icon-box-shape">
-                            <img src="assets/img/feature-benefit/box-icon-bg3.png" alt="shape-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/119') }}" alt="shape-img">
                         </div>
                         <div class="bg-button-shape">
-                            <img src="assets/img/feature-benefit/bg-button-iconbox.png" alt="shape-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/115') }}" alt="shape-img">
                         </div>
                         <div class="feature-content">
                             <h4>
@@ -268,7 +268,7 @@
                             </h4>
                             <p>Neque porro quisquam est, qui fre dolorem ipsum quia dolor.</p>
                             <div class="icon">
-                                <img src="assets/img/feature-benefit/icon-3.png" alt="icon-img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/120') }}" alt="icon-img">
                             </div>
                         </div>
                         <div class="feature-button">
@@ -289,10 +289,10 @@
                     <div class="col-lg-6">
                         <div class="about-image-items">
                             <div class="color-shape">
-                                <img src="assets/img/about/secondary-shape-color-full.png" alt="shape-img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/121') }}" alt="shape-img">
                             </div>
                             <div class="car-shape wow fadeInUp" data-wow-delay=".7s">
-                                <img src="assets/img/about/car-shape.png" alt="shape-img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/122') }}" alt="shape-img">
                             </div>
                             <div class="counter-content wow fadeInLeft" data-wow-delay=".4s">
                                 <h2 class="text-white"><span class="count">50</span></h2>
@@ -302,17 +302,17 @@
                                 </p>
                             </div>
                             <div class="about-image-1 wow fadeInDown" data-wow-delay=".3s">
-                                <img src="assets/img/about/01.jpg" alt="about-image">
+                                <img src="{{ \App\Support\GalleryPath::path('i/123') }}" alt="about-image">
                             </div>
                             <div class="about-image-2 wow fadeInLeft" data-wow-delay=".5s">
-                                <img src="assets/img/about/02.jpg" alt="about-image">
+                                <img src="{{ \App\Support\GalleryPath::path('i/124') }}" alt="about-image">
                             </div>
                         </div>
                     </div>
                     <div class="col-lg-6">
                         <div class="about-content">
                             <div class="section-title">
-                                <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                                <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                                 <span class="wow fadeInUp" data-wow-delay=".2s">Get to know us</span>
                                 <h2 class="wow fadeInUp" data-wow-delay=".4s">
                                     Services with a Wide
@@ -356,10 +356,10 @@
     <section class="car-rentals-section section-padding fix">
         <div class="container">
             <div class="section-title text-center">
-                <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                 <span class="wow fadeInUp" data-wow-delay=".2s">Checkout our new cars</span>
                 <h2 class="wow fadeInUp" data-wow-delay=".4s">
-                    Cars Weâ€™re Offering <br>
+                    Cars We’re Offering <br>
                     for Rentals
                 </h2>
             </div>
@@ -374,7 +374,7 @@
                     <div class="swiper-slide">
                         <div class="car-rentals-items">
                             <div class="car-image">
-                                <img src="assets/img/car/01.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/87') }}" alt="img">
                             </div>
                             <div class="car-content">
                                 <div class="post-cat">
@@ -393,21 +393,21 @@
                                 <div class="icon-items">
                                     <ul>
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                     </ul>
                                     <ul>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -420,7 +420,7 @@
                     <div class="swiper-slide">
                         <div class="car-rentals-items">
                             <div class="car-image">
-                                <img src="assets/img/car/02.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/88') }}" alt="img">
                             </div>
                             <div class="car-content">
                                 <div class="post-cat">
@@ -439,21 +439,21 @@
                                 <div class="icon-items">
                                     <ul>
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                     </ul>
                                     <ul>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -466,7 +466,7 @@
                     <div class="swiper-slide">
                         <div class="car-rentals-items">
                             <div class="car-image">
-                                <img src="assets/img/car/03.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/89') }}" alt="img">
                             </div>
                             <div class="car-content">
                                 <div class="post-cat">
@@ -485,21 +485,21 @@
                                 <div class="icon-items">
                                     <ul>
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                     </ul>
                                     <ul>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -512,7 +512,7 @@
                     <div class="swiper-slide">
                         <div class="car-rentals-items">
                             <div class="car-image">
-                                <img src="assets/img/car/04.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/125') }}" alt="img">
                             </div>
                             <div class="car-content">
                                 <div class="post-cat">
@@ -531,21 +531,21 @@
                                 <div class="icon-items">
                                     <ul>
                                         <li>
-                                            <img src="assets/img/car/seat.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/29') }}" alt="img" class="me-1">
                                             6 Seats
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/door.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/28') }}" alt="img" class="me-1">
                                             2 Doors
                                         </li>
                                     </ul>
                                     <ul>
                                         <li>
-                                            <img src="assets/img/car/automatic.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/30') }}" alt="img" class="me-1">
                                             Automatic
                                         </li>
                                         <li>
-                                            <img src="assets/img/car/petrol.svg" alt="img" class="me-1">
+                                            <img src="{{ \App\Support\GalleryPath::path('i/31') }}" alt="img" class="me-1">
                                             Petrol
                                         </li>
                                     </ul>
@@ -565,14 +565,14 @@
         <div class="container">
             <div class="car-service-wrapper">
                 <div class="shape-image">
-                    <img src="assets/img/car/shape-column.png" alt="shape-img">
+                    <img src="{{ \App\Support\GalleryPath::path('i/126') }}" alt="shape-img">
                 </div>
                 <div class="row align-items-center">
                     <div class="col-lg-6">
                         <div class="service-car-image">
-                            <img src="assets/img/decor-image-contact-home.jpg" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/127') }}" alt="img">
                             <div class="color-shape">
-                                <img src="assets/img/car/secondary-shape-color.png" alt="shape-img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/128') }}" alt="shape-img">
                             </div>
                             <div class="booking-content">
                                 <p>Call for booking</p>
@@ -599,13 +599,13 @@
 
     <!-- Funfact Section Start -->
     <section class="funfact-section section-padding bg-cover"
-        style="background-image: url('assets/img/funfact-bg.jpg');">
+        style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
         <div class="container">
             <div class="funfact-wrapper">
                 <div class="row g-4 align-items-center">
                     <div class="col-lg-6">
                         <div class="section-title mb-0">
-                            <img src="assets/img/sub-icon-2.png" alt="icon-img" class="wow fadeInUp">
+                            <img src="{{ \App\Support\GalleryPath::path('i/7') }}" alt="icon-img" class="wow fadeInUp">
                             <span class="wow fadeInUp" data-wow-delay=".2s">fun facts</span>
                             <h2 class="text-white wow fadeInUp" data-wow-delay=".4s">
                                 Save Time & Money <br>
@@ -618,7 +618,7 @@
                         <div class="funfact-counter-area">
                             <div class="funfact-items wow fadeInUp" data-wow-delay=".3s">
                                 <div class="icon">
-                                    <img src="assets/img/icon/car.png" alt="img">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/8') }}" alt="img">
                                 </div>
                                 <h2><span class="count">990</span></h2>
                                 <p>
@@ -628,7 +628,7 @@
                             </div>
                             <div class="funfact-items wow fadeInUp" data-wow-delay=".5s">
                                 <div class="icon">
-                                    <img src="assets/img/icon/center.png" alt="img">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/9') }}" alt="img">
                                 </div>
                                 <h2><span class="count">230</span></h2>
                                 <p>
@@ -638,7 +638,7 @@
                             </div>
                             <div class="funfact-items wow fadeInUp" data-wow-delay=".7s">
                                 <div class="icon">
-                                    <img src="assets/img/icon/like.png" alt="img">
+                                    <img src="{{ \App\Support\GalleryPath::path('i/10') }}" alt="img">
                                 </div>
                                 <h2><span class="count">660</span></h2>
                                 <p>
@@ -657,10 +657,10 @@
     <section class="popular-car-section fix section-padding">
         <div class="container">
             <div class="section-title text-center">
-                <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                 <span class="wow fadeInUp" data-wow-delay=".2s">select car types</span>
                 <h2 class="wow fadeInUp" data-wow-delay=".4s">
-                    Weâ€™re Offering Popular <br>
+                    We’re Offering Popular <br>
                     Cars Models
                 </h2>
             </div>
@@ -672,7 +672,7 @@
                             <p>Available for Rent</p>
                         </div>
                         <div class="car-image">
-                            <img src="assets/img/car/popular-car-1.jpg" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/75') }}" alt="img">
                         </div>
                     </div>
                 </div>
@@ -683,7 +683,7 @@
                             <p>Available for Rent</p>
                         </div>
                         <div class="car-image">
-                            <img src="assets/img/car/popular-car-2.jpg" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/77') }}" alt="img">
                         </div>
                     </div>
                 </div>
@@ -694,7 +694,7 @@
                             <p>Available for Rent</p>
                         </div>
                         <div class="car-image">
-                            <img src="assets/img/car/popular-car-3.jpg" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/79') }}" alt="img">
                         </div>
                     </div>
                 </div>
@@ -705,7 +705,7 @@
                             <p>Available for Rent</p>
                         </div>
                         <div class="car-image">
-                            <img src="assets/img/car/popular-car-4.jpg" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/81') }}" alt="img">
                         </div>
                     </div>
                 </div>
@@ -716,7 +716,7 @@
                             <p>Available for Rent</p>
                         </div>
                         <div class="car-image">
-                            <img src="assets/img/car/popular-car-5.jpg" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/83') }}" alt="img">
                         </div>
                     </div>
                 </div>
@@ -727,7 +727,7 @@
                             <p>Available for Rent</p>
                         </div>
                         <div class="car-image">
-                            <img src="assets/img/car/popular-car-6.jpg" alt="img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/85') }}" alt="img">
                         </div>
                     </div>
                 </div>
@@ -742,15 +742,15 @@
     <!-- Testimonial Section Start -->
     <section class="testimonial-section fix section-padding">
         <div class="testimonial-bg-shape">
-            <img src="assets/img/testimonial/testimonial-bg.jpg" alt="shape-img">
+            <img src="{{ \App\Support\GalleryPath::path('i/11') }}" alt="shape-img">
         </div>
         <div class="container">
             <div class="section-title-area">
                 <div class="section-title">
-                    <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                    <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                     <span class="wow fadeInUp" data-wow-delay=".2s">our testimonials</span>
                     <h2 class="wow fadeInUp" data-wow-delay=".4s">
-                        What Theyâ€™re Talking <br>
+                        What They’re Talking <br>
                         About A1 Airport Cars 
                     </h2>
                 </div>
@@ -782,7 +782,7 @@
                             </div>
                             <div class="client-info-items d-flex align-items-center gap-3">
                                 <div class="client-img bg-cover"
-                                    style="background-image: url('assets/img/testimonial/client-1.png');"></div>
+                                    style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');"></div>
                                 <div class="content">
                                     <h5>
                                         Jessica Brown
@@ -814,7 +814,7 @@
                             </div>
                             <div class="client-info-items d-flex align-items-center gap-3">
                                 <div class="client-img bg-cover"
-                                    style="background-image: url('assets/img/testimonial/client-2.png');"></div>
+                                    style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');"></div>
                                 <div class="content">
                                     <h5>
                                         Kevin Martin
@@ -846,7 +846,7 @@
                             </div>
                             <div class="client-info-items d-flex align-items-center gap-3">
                                 <div class="client-img bg-cover"
-                                    style="background-image: url('assets/img/testimonial/client-3.png');"></div>
+                                    style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');"></div>
                                 <div class="content">
                                     <h5>
                                         Jessica Brown
@@ -871,9 +871,9 @@
                             <div class="row g-4">
                                 <div class="col-md-12">
                                     <div class="gallery-image">
-                                        <img src="assets/img/gallery/g-1.jpg" alt="img">
+                                        <img src="{{ \App\Support\GalleryPath::path('i/129') }}" alt="img">
                                         <div class="icon-box">
-                                            <a href="assets/img/gallery/g-1.jpg" class="icon img-popup-2">
+                                            <a href="{{ \App\Support\GalleryPath::path('i/129') }}" class="icon img-popup-2">
                                                 <i class="fa-solid fa-plus"></i>
                                             </a>
                                         </div>
@@ -883,9 +883,9 @@
                                 </div>
                                 <div class="col-md-12">
                                     <div class="gallery-image">
-                                        <img src="assets/img/gallery/g-2.jpg" alt="img">
+                                        <img src="{{ \App\Support\GalleryPath::path('i/130') }}" alt="img">
                                         <div class="icon-box">
-                                            <a href="assets/img/gallery/g-2.jpg" class="icon img-popup-2">
+                                            <a href="{{ \App\Support\GalleryPath::path('i/130') }}" class="icon img-popup-2">
                                                 <i class="fa-solid fa-plus"></i>
                                             </a>
                                         </div>
@@ -897,9 +897,9 @@
                         </div>
                         <div class="col-lg-6 col-md-6 col-sm-6">
                             <div class="gallery-image">
-                                <img src="assets/img/gallery/g-3.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/131') }}" alt="img">
                                 <div class="icon-box">
-                                    <a href="assets/img/gallery/g-3.jpg" class="icon img-popup-2 style-two">
+                                    <a href="{{ \App\Support\GalleryPath::path('i/131') }}" class="icon img-popup-2 style-two">
                                         <i class="fa-solid fa-plus"></i>
                                     </a>
                                 </div>
@@ -913,9 +913,9 @@
                     <div class="row g-4">
                         <div class="col-md-4 col-sm-6">
                             <div class="gallery-image">
-                                <img src="assets/img/gallery/g-4.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/132') }}" alt="img">
                                 <div class="icon-box">
-                                    <a href="assets/img/gallery/g-4.jpg" class="icon img-popup-2">
+                                    <a href="{{ \App\Support\GalleryPath::path('i/132') }}" class="icon img-popup-2">
                                         <i class="fa-solid fa-plus"></i>
                                     </a>
                                 </div>
@@ -925,9 +925,9 @@
                         </div>
                         <div class="col-md-4 col-sm-6">
                             <div class="gallery-image">
-                                <img src="assets/img/gallery/g-5.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/133') }}" alt="img">
                                 <div class="icon-box">
-                                    <a href="assets/img/gallery/g-5.jpg" class="icon img-popup-2">
+                                    <a href="{{ \App\Support\GalleryPath::path('i/133') }}" class="icon img-popup-2">
                                         <i class="fa-solid fa-plus"></i>
                                     </a>
                                 </div>
@@ -937,9 +937,9 @@
                         </div>
                         <div class="col-md-4 col-sm-6">
                             <div class="gallery-image">
-                                <img src="assets/img/gallery/g-6.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/134') }}" alt="img">
                                 <div class="icon-box">
-                                    <a href="assets/img/gallery/g-6.jpg" class="icon img-popup-2">
+                                    <a href="{{ \App\Support\GalleryPath::path('i/134') }}" class="icon img-popup-2">
                                         <i class="fa-solid fa-plus"></i>
                                     </a>
                                 </div>
@@ -949,9 +949,9 @@
                         </div>
                         <div class="col-md-4 col-sm-6">
                             <div class="gallery-image">
-                                <img src="assets/img/gallery/g-7.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/135') }}" alt="img">
                                 <div class="icon-box">
-                                    <a href="assets/img/gallery/g-7.jpg" class="icon img-popup-2">
+                                    <a href="{{ \App\Support\GalleryPath::path('i/135') }}" class="icon img-popup-2">
                                         <i class="fa-solid fa-plus"></i>
                                     </a>
                                 </div>
@@ -961,9 +961,9 @@
                         </div>
                         <div class="col-md-8">
                             <div class="gallery-image">
-                                <img src="assets/img/gallery/g-8.jpg" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/136') }}" alt="img">
                                 <div class="icon-box">
-                                    <a href="assets/img/gallery/g-8.jpg" class="icon img-popup-2">
+                                    <a href="{{ \App\Support\GalleryPath::path('i/136') }}" class="icon img-popup-2">
                                         <i class="fa-solid fa-plus"></i>
                                     </a>
                                 </div>
@@ -975,9 +975,9 @@
                 </div>
                 <div class="col-xxl-2 col-xl-4 col-lg-4 col-md-6 col-sm-6">
                     <div class="gallery-image style-2">
-                        <img src="assets/img/gallery/g-9.jpg" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/137') }}" alt="img">
                         <div class="icon-box">
-                            <a href="assets/img/gallery/g-9.jpg" class="icon img-popup-2 style-two">
+                            <a href="{{ \App\Support\GalleryPath::path('i/137') }}" class="icon img-popup-2 style-two">
                                 <i class="fa-solid fa-plus"></i>
                             </a>
                         </div>
@@ -993,7 +993,7 @@
     <section class="news-section section-padding fix">
         <div class="container">
             <div class="section-title text-center">
-                <img src="assets/img/sub-icon.png" alt="icon-img" class="wow fadeInUp">
+                <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
                 <span class="wow fadeInUp" data-wow-delay=".2s">From the Blog</span>
                 <h2 class="wow fadeInUp" data-wow-delay=".4s">
                     Latest News & <br>
@@ -1004,7 +1004,7 @@
                 <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".3s">
                     <div class="news-card-items">
                         <div class="news-image">
-                            <img src="assets/img/news/01.jpg" alt="news-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/62') }}" alt="news-img">
                             <div class="post-date">
                                 <h6>
                                     20 <br>
@@ -1014,12 +1014,12 @@
                         </div>
                         <div class="news-content">
                             <div class="post-client">
-                                <img src="assets/img/news/client.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/63') }}" alt="img">
                             </div>
                             <div class="news-cont">
                                 <span>by Mike Hardson</span>
                                 <h3><a href="news-details">The best fastest and most powerful road car</a></h3>
-                                <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatemâ€¦</p>
+                                <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem…</p>
                             </div>
                             <ul>
                                 <li>
@@ -1039,7 +1039,7 @@
                 <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".5s">
                     <div class="news-card-items">
                         <div class="news-image">
-                            <img src="assets/img/news/02.jpg" alt="news-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/64') }}" alt="news-img">
                             <div class="post-date">
                                 <h6>
                                     26 <br>
@@ -1049,12 +1049,12 @@
                         </div>
                         <div class="news-content">
                             <div class="post-client">
-                                <img src="assets/img/news/client.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/63') }}" alt="img">
                             </div>
                             <div class="news-cont">
                                 <span>by Mike Hardson</span>
                                 <h3><a href="news-details">The best fastest and most powerful road car</a></h3>
-                                <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatemâ€¦</p>
+                                <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem…</p>
                             </div>
                             <ul>
                                 <li>
@@ -1074,7 +1074,7 @@
                 <div class="col-xl-4 col-lg-6 col-md-6 wow fadeInUp" data-wow-delay=".7s">
                     <div class="news-card-items">
                         <div class="news-image">
-                            <img src="assets/img/news/03.jpg" alt="news-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/65') }}" alt="news-img">
                             <div class="post-date">
                                 <h6>
                                     29 <br>
@@ -1084,12 +1084,12 @@
                         </div>
                         <div class="news-content">
                             <div class="post-client">
-                                <img src="assets/img/news/client.png" alt="img">
+                                <img src="{{ \App\Support\GalleryPath::path('i/63') }}" alt="img">
                             </div>
                             <div class="news-cont">
                                 <span>by Mike Hardson</span>
                                 <h3><a href="news-details">The best fastest and most powerful road car</a></h3>
-                                <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatemâ€¦</p>
+                                <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem…</p>
                             </div>
                             <ul>
                                 <li>
@@ -1112,7 +1112,7 @@
 
     <!-- Cta Rental Section Start -->
     <section class="cta-rental-section bg-cover fix section-padding"
-        style="background-image: url('assets/img/cta/bg-app.jpg');">
+        style="background-image: url('{{ \App\Support\GalleryPath::path('') }}');">
         <div class="container">
             <div class="row g-4 justify-content-between align-items-center">
                 <div class="col-lg-6">
@@ -1139,7 +1139,7 @@
                 </div>
                 <div class="col-lg-5 wow fadeInUp" data-wow-delay=".4s">
                     <div class="mobile-A1 Airport Cars -image">
-                        <img src="assets/img/mobile-A1 Airport Cars .png" alt="img">
+                        <img src="{{ \App\Support\GalleryPath::path('i/138') }}" alt="img">
                     </div>
                 </div>
             </div>
@@ -1154,7 +1154,7 @@
                     .3s">
                     <div class="logo-thumb">
                         <a href="./">
-                            <img src="assets/img/logo/white-logo.svg" alt="logo-img">
+                            <img src="{{ \App\Support\GalleryPath::path('i/21') }}" alt="logo-img">
                         </a>
                     </div>
                     <h4 class="text-white">Save big with our cheap car rental</h4>

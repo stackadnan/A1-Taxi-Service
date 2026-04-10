@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'booking_reference_prefix' => env('BOOKING_REFERENCE_PREFIX', 'CD'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

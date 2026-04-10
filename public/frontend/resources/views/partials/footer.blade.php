@@ -1,4 +1,4 @@
-﻿ @php($baseUrl = rtrim(request()->getBaseUrl(), '/'))
+ @php($baseUrl = rtrim(request()->getBaseUrl(), '/'))
  <section class="cta-cheap-rental-section">
         <div class="container">
             <div class="cta-cheap-rental">
@@ -6,7 +6,7 @@
                     .3s">
                     <div class="logo-thumb">
                         <a href="./">
-                            <img src="{{ $footerLogo ?? 'assets/img/logo/white-logo-2.png' }}" alt="logo-img">
+                            <img src="{{ \App\Support\GalleryPath::path($footerLogo ?? 'i/152') }}" alt="logo-img">
                         </a>
                     </div>
                     <h4 class="text-white">{{ $footerTagline ?? 'Your go to option for reliable Airport Transfers' }}</h4>
@@ -57,6 +57,9 @@
                                     <a href="{{ $baseUrl.'/'.ltrim($link['url'], '/') }}">{{ $link['label'] }}</a>
                                 </li>
                             @endforeach
+                            <li>
+                                <a href="{{ $baseUrl.'/complainet/lost-found' }}">Complainet / Lost Found</a>
+                            </li>
                         </ul>
                     </div>
                 </div>

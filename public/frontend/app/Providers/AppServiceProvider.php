@@ -8,15 +8,19 @@ use App\Models\CardFleet;
 use App\Models\FeatureBenefit;
 use App\Models\FaqItem;
 use App\Models\Footer;
+use App\Models\Gallery;
 use App\Models\Header;
 use App\Models\Offcanvas;
 use App\Models\Page;
 use App\Models\PagePartial;
 use App\Models\QuoteSection;
+use App\Models\Seo;
 use App\Models\StepItem;
 use App\Models\Testimonial;
 use App\Models\Url;
 use App\Models\WhyUs;
+use App\Support\GalleryPath;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -35,6 +39,142 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::composer('*', function ($view) {
+            static $galleryImageIdMap = null;
+            static $galleryImagePathMap = null;
+
+            $normalizePath = static function (?string $path): ?string {
+                if (!is_string($path)) {
+                    return null;
+                }
+
+                $path = trim($path);
+                if ($path === '') {
+                    return null;
+                }
+
+                $path = preg_replace('/[?#].*$/', '', $path) ?? $path;
+                $path = str_replace('\\\\', '/', $path);
+
+                $assetsPos = stripos($path, '/assets/');
+                if ($assetsPos !== false) {
+                    $path = substr($path, $assetsPos + 1);
+                }
+
+                $path = ltrim($path, '/');
+
+                return $path === '' ? null : $path;
+            };
+
+            if ($galleryImageIdMap === null || $galleryImagePathMap === null) {
+                if (Schema::hasTable('gallery')) {
+                    $galleryRows = Gallery::where('is_active', true)
+                        ->get(['id', 'source_path', 'short_url', 'image_path', 'meta']);
+
+                    $galleryImageIdMap = [];
+                    $galleryImagePathMap = [];
+
+                    foreach ($galleryRows as $row) {
+                        $sourcePath = $normalizePath($row->source_path);
+                        $shortUrl = $normalizePath($row->short_url);
+                        $imagePath = $normalizePath($row->image_path);
+                        $renderPath = $shortUrl ?? $imagePath;
+
+                        if ($sourcePath === null && $renderPath === null) {
+                            continue;
+                        }
+
+                        if ($sourcePath === null) {
+                            $sourcePath = $renderPath;
+                        }
+
+                        if ($renderPath === null) {
+                            $renderPath = $sourcePath;
+                        }
+
+                        $galleryImageIdMap[$sourcePath] = (int) $row->id;
+                        $galleryImagePathMap[$sourcePath] = $renderPath;
+
+                        if (!isset($galleryImageIdMap[$renderPath])) {
+                            $galleryImageIdMap[$renderPath] = (int) $row->id;
+                        }
+
+                        if (!isset($galleryImagePathMap[$renderPath])) {
+                            $galleryImagePathMap[$renderPath] = $renderPath;
+                        }
+
+                        $aliases = is_array($row->meta['aliases'] ?? null) ? $row->meta['aliases'] : [];
+                        foreach ($aliases as $aliasPath) {
+                            $aliasPath = $normalizePath(is_string($aliasPath) ? $aliasPath : null);
+                            if ($aliasPath === null) {
+                                continue;
+                            }
+
+                            $galleryImageIdMap[$aliasPath] = (int) $row->id;
+                            $galleryImagePathMap[$aliasPath] = $renderPath;
+                        }
+                    }
+                } else {
+                    $galleryImageIdMap = [];
+                    $galleryImagePathMap = [];
+                }
+            }
+
+            $view->with('galleryImageIdMap', $galleryImageIdMap);
+            $view->with('galleryImagePathMap', $galleryImagePathMap);
+        });
+
+        View::composer('partials.head', function ($view) {
+            $seo = null;
+
+            if (Schema::hasTable('seo')) {
+                $pageId = request()->attributes->get('url_page_id');
+                $requestPath = trim((string) request()->path(), '/');
+                $routeCandidates = $requestPath === '' ? ['', '/'] : [$requestPath, '/'.$requestPath];
+
+                $baseQuery = Seo::query()
+                    ->where('is_active', true)
+                    ->orderByDesc('date')
+                    ->orderByDesc('id');
+
+                $seo = (clone $baseQuery)
+                    ->whereIn('route_path', $routeCandidates)
+                    ->first();
+
+                if (!$seo && is_numeric($pageId)) {
+                    $seo = (clone $baseQuery)
+                        ->where('page_id', (int) $pageId)
+                        ->first();
+                }
+
+                if (!$seo && is_numeric($pageId)) {
+                    $seo = (clone $baseQuery)
+                        ->whereNull('route_path')
+                        ->where('page_id', (int) $pageId)
+                        ->first();
+                }
+
+                if (!$seo) {
+                    $seo = (clone $baseQuery)
+                        ->whereNull('page_id')
+                        ->whereNull('route_path')
+                        ->first();
+                }
+            }
+
+            $view->with([
+                'seoMetaTitle' => $seo?->meta_title,
+                'seoMetaDescription' => $seo?->meta_description,
+                'seoMetaKeywords' => $seo?->meta_keywords,
+                'seoCanonical' => $seo?->canonical,
+                'seoSchemaScript' => $seo?->schema_script,
+                'seoRobots' => $seo?->robots,
+                'seoOgTitle' => $seo?->og_title,
+                'seoOgDescription' => $seo?->og_description,
+                'seoOgImage' => $seo?->og_image,
+            ]);
+        });
+
         View::composer('partials.card-fleet', function ($view) {
             $fleetItems = CardFleet::orderBy('order')->get();
 
@@ -105,15 +245,23 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('partials.offcanvas', function ($view) {
-            $offcanvas = Offcanvas::where('section_key', 'offcanvas')->first();
+            $offcanvas = null;
+
+            if (Schema::hasTable('offcanvas')) {
+                try {
+                    $offcanvas = Offcanvas::where('section_key', 'offcanvas')->first();
+                } catch (\Throwable $e) {
+                    $offcanvas = null;
+                }
+            }
 
             $view->with([
-                'logo' => $offcanvas->logo ?? 'assets/img/logo/black-logo.png',
+                'logo' => $offcanvas->logo ?? GalleryPath::path('i/154'),
                 'address' => $offcanvas->address ?? '960 Capability Green, LU1 3PE Luton',
                 'email' => $offcanvas->email ?? 'info@a1airportcars.co.uk',
                 'phone' => $offcanvas->phone ?? '(+44) - 1582 - 801 - 611',
                 'buttonText' => $offcanvas->button_text ?? 'Manage My Booking',
-                'buttonLink' => $offcanvas->button_link ?? 'contact',
+                'buttonLink' => $offcanvas->button_link ?? 'manage-booking',
                 'socialLinks' => $offcanvas->social_links ?? [
                     ['icon' => 'fab fa-facebook-f', 'link' => '#'],
                     ['icon' => 'fab fa-twitter', 'link' => '#'],
@@ -183,7 +331,7 @@ class AppServiceProvider extends ServiceProvider
             ];
 
             $view->with([
-                'footerLogo' => $footer->logo ?? 'assets/img/logo/white-logo-2.png',
+                'footerLogo' => $footer->logo ?? GalleryPath::path('i/152'),
                 'footerTagline' => $footer->tagline ?? 'Your go to option for reliable Airport Transfers',
                 'contactAddress' => $footer->contact_address ?? '960 Capability Green, LU1 3PE Luton, United Kingdom',
                 'contactEmail' => $footer->contact_email ?? 'info@a1airportcars.co.uk',
@@ -215,13 +363,21 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::composer('partials.header', function ($view) {
-            $header = Header::where('section_key', 'header')->first();
+            $header = null;
+
+            if (Schema::hasTable('headers')) {
+                try {
+                    $header = Header::where('section_key', 'header')->first();
+                } catch (\Throwable $e) {
+                    $header = null;
+                }
+            }
 
             $view->with([
                 'topEmail' => $header->top_email ?? 'info@example.com',
                 'topAddress' => $header->top_address ?? '88 Broklyn Golden Street. New York',
                 'topLinks' => $header->top_links ?? [
-                    ['label' => 'Manage Bookings', 'url' => 'contact'],
+                    ['label' => 'Manage Bookings', 'url' => 'manage-booking'],
                     ['label' => 'Support', 'url' => 'contact'],
                     ['label' => 'Contact', 'url' => 'contact'],
                 ],
@@ -231,12 +387,12 @@ class AppServiceProvider extends ServiceProvider
                     ['icon' => 'fa-brands fa-linkedin-in', 'url' => '#'],
                     ['icon' => 'fa-brands fa-youtube', 'url' => '#'],
                 ],
-                'logoLight' => $header->logo_light ?? 'assets/img/logo/white-logo-2.png',
-                'logoDark' => $header->logo_dark ?? 'assets/img/logo/black-logo.png',
+                'logoLight' => $header->logo_light ?? GalleryPath::path('i/152'),
+                'logoDark' => $header->logo_dark ?? GalleryPath::path('i/154'),
                 'phoneLabel' => $header->phone_label ?? 'Call Anytime',
                 'phoneNumber' => $header->phone_number ?? '+92 (8800) - 9850',
                 'buttonText' => $header->button_text ?? 'Manage Bookings',
-                'buttonLink' => $header->button_link ?? 'car-details',
+                'buttonLink' => $header->button_link ?? 'manage-booking',
                 'airportLinks' => $header->airport_links ?? [
                     ['label' => 'Heathrow Airport Transfers', 'url' => '/airport-transfers/heathrow-airport-transfers'],
                     ['label' => 'Gatwick Airport Transfers', 'url' => '/airport-transfers/gatwick-airport-transfers'],
@@ -445,7 +601,7 @@ class AppServiceProvider extends ServiceProvider
             $breadcrumb = Breadcrumb::where('page_key', $pageKey)->first();
 
             $view->with([
-                'img' => $breadcrumb->img ?? 'assets/img/breadcrumb-banner.png',
+                'img' => $breadcrumb->img ?? GalleryPath::path('i/151'),
                 'Title' => $breadcrumb->title ?? 'Home',
                 'Title2' => $breadcrumb->title2 ?? ucfirst(str_replace('-', ' ', $pageKey)),
                 'SubTitle' => $breadcrumb->subtitle ?? '',
