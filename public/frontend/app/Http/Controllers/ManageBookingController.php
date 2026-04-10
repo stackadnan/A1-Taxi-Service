@@ -58,64 +58,114 @@ class ManageBookingController extends Controller
         }
 
         $validated = $validator->validated();
-        $backendUrl = config('services.booking_api_url', 'https://admin.executiveairportcars.com/api/booking/save');
+        $isReturnBooking = (($validated['trip_type'] ?? 'one-way') === 'return');
 
-        $proxyPayload = [
-            'quote_ref' => $validated['quote_ref'] ?? null,
-            'return_ref' => $validated['return_ref'] ?? null,
-            'pickup' => $validated['pickup'],
-            'dropoff' => $validated['dropoff'],
-            'pickup_date' => $validated['pickup_date'],
-            'pickup_time' => $validated['pickup_time'],
+        try {
+            $newStatusId = $this->resolveNewStatusId();
+        } catch (\Throwable $e) {
+            Log::error('Booking status resolution failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not create booking because booking status configuration is missing.',
+            ], 500);
+        }
+
+        $now = now();
+        $basePrice = array_key_exists('price', $validated) && $validated['price'] !== null
+            ? (float) $validated['price']
+            : null;
+        $perLegBasePrice = ($isReturnBooking && $basePrice !== null)
+            ? round($basePrice / 2, 2)
+            : $basePrice;
+
+        $basePayload = [
+            'user_id' => 1,
+            'status_id' => $newStatusId,
             'passenger_name' => $validated['passenger_name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
-            'passengers' => $validated['passengers'],
-            'suitcases' => $validated['suitcases'],
-            'flight_number' => $validated['flight_number'] ?? null,
-            'flight_landing_time' => $validated['flight_time'] ?? null,
-            'meet_and_greet' => $validated['meet_and_greet'] ?? false,
-            'baby_seat' => $validated['baby_seat'] ?? false,
-            'baby_seat_age' => $validated['baby_seat_age'] ?? null,
-            'return_pickup_date' => $validated['return_pickup_date'] ?? null,
-            'return_pickup_time' => $validated['return_pickup_time'] ?? null,
-            'return_flight_number' => $validated['return_flight_number'] ?? null,
-            'return_flight_time' => $validated['return_flight_time'] ?? null,
-            'return_meet_and_greet' => $validated['return_meet_and_greet'] ?? false,
-            'return_baby_seat' => $validated['return_baby_seat'] ?? false,
-            'message_to_driver' => $validated['message_to_driver'] ?? null,
-            'vehicle_type' => $validated['vehicle_type'] ?? null,
-            'price' => $validated['price'] ?? null,
-            'trip_type' => $validated['trip_type'] ?? 'one-way',
+            'email' => strtolower(trim($validated['email'])),
+            'phone' => trim($validated['phone']),
+            'passengers_count' => (int) $validated['passengers'],
+            'luggage_count' => (int) $validated['suitcases'],
+            'vehicle_type' => $this->blankToNull($validated['vehicle_type'] ?? null),
             'payment_type' => $validated['payment_type'],
-            'source_url' => $request->input('source_url') ?? $request->fullUrl(),
+            'message_to_driver' => $this->blankToNull($validated['message_to_driver'] ?? null),
+            'created_by_user_id' => 1,
+            'currency' => 'GBP',
+            'created_at' => $now,
+            'updated_at' => $now,
         ];
 
         try {
-            $response = Http::acceptJson()
-                ->timeout(30)
-                ->post($backendUrl, $proxyPayload);
-
-            $payload = $response->json();
-
-            if (! $response->ok()) {
-                Log::error('Booking submit proxy failed', [
-                    'backend_url' => $backendUrl,
-                    'status' => $response->status(),
-                    'payload' => $payload,
+            $createdBookings = DB::transaction(function () use ($validated, $basePayload, $isReturnBooking, $perLegBasePrice) {
+                $outboundCode = $this->generateBookingCode();
+                $outboundPayload = array_merge($basePayload, [
+                    'booking_code' => $outboundCode,
+                    'pickup_address' => trim($validated['pickup']),
+                    'dropoff_address' => trim($validated['dropoff']),
+                    'pickup_date' => $validated['pickup_date'],
+                    'pickup_time' => $validated['pickup_time'],
+                    'flight_number' => $this->blankToNull($validated['flight_number'] ?? null),
+                    'flight_arrival_time' => $this->combineDateAndTime($validated['pickup_date'] ?? null, $validated['flight_time'] ?? null),
+                    'meet_and_greet' => (int) ($validated['meet_and_greet'] ?? 0),
+                    'total_price' => $this->applyMeetAndGreetCharge($perLegBasePrice, (bool) ($validated['meet_and_greet'] ?? false)),
+                    'baby_seat' => (int) ($validated['baby_seat'] ?? 0),
+                    'baby_seat_age' => $this->blankToNull($validated['baby_seat_age'] ?? null),
                 ]);
 
-                return response()->json([
-                    'success' => false,
-                    'message' => $payload['message'] ?? 'Could not save booking. Please try again.',
-                ], $response->status());
-            }
+                $outboundId = DB::table('executiveairport_database.bookings')->insertGetId($outboundPayload);
 
-            return response()->json($payload, $response->status());
+                $created = [
+                    'outbound' => [
+                        'id' => $outboundId,
+                        'code' => $outboundCode,
+                    ],
+                ];
+
+                if ($isReturnBooking) {
+                    $returnCode = $this->generateBookingCode();
+                    $returnPayload = array_merge($basePayload, [
+                        'booking_code' => $returnCode,
+                        'pickup_address' => trim($validated['dropoff']),
+                        'dropoff_address' => trim($validated['pickup']),
+                        'pickup_date' => $validated['return_pickup_date'],
+                        'pickup_time' => $validated['return_pickup_time'],
+                        'flight_number' => $this->blankToNull($validated['return_flight_number'] ?? null),
+                        'flight_arrival_time' => $this->combineDateAndTime($validated['return_pickup_date'] ?? null, $validated['return_flight_time'] ?? null),
+                        'meet_and_greet' => (int) ($validated['return_meet_and_greet'] ?? 0),
+                        'total_price' => $this->applyMeetAndGreetCharge($perLegBasePrice, (bool) ($validated['return_meet_and_greet'] ?? false)),
+                        'baby_seat' => (int) ($validated['return_baby_seat'] ?? 0),
+                        'baby_seat_age' => null,
+                    ]);
+
+                    $returnId = DB::table('executiveairport_database.bookings')->insertGetId($returnPayload);
+
+                    DB::table('executiveairport_database.bookings')->where('id', $outboundId)->update([
+                        'return_booking' => 1,
+                        'return_booking_id' => $returnId,
+                        'updated_at' => now(),
+                    ]);
+
+                    DB::table('executiveairport_database.bookings')->where('id', $returnId)->update([
+                        'return_booking' => 1,
+                        'return_booking_id' => $outboundId,
+                        'updated_at' => now(),
+                    ]);
+
+                    $created['return'] = [
+                        'id' => $returnId,
+                        'code' => $returnCode,
+                    ];
+                }
+
+                return $created;
+            });
         } catch (\Throwable $e) {
-            Log::error('Booking submit proxy exception', [
-                'backend_url' => $backendUrl,
+            Log::error('Booking submit insert failed', [
                 'error' => $e->getMessage(),
+                'payload' => $validated,
             ]);
 
             return response()->json([
@@ -123,6 +173,72 @@ class ManageBookingController extends Controller
                 'message' => 'Could not save booking. Please try again.',
             ], 500);
         }
+
+        $primaryBookingId = (int) $createdBookings['outbound']['id'];
+        $primaryBookingCode = (string) $createdBookings['outbound']['code'];
+        $returnBookingId = isset($createdBookings['return']['id']) ? (int) $createdBookings['return']['id'] : null;
+        $returnBookingCode = isset($createdBookings['return']['code']) ? (string) $createdBookings['return']['code'] : null;
+
+        $this->notifyAdminsForNewBooking(
+            $primaryBookingCode,
+            (string) ($validated['passenger_name'] ?? ''),
+            (string) ($validated['pickup'] ?? ''),
+            (string) ($validated['dropoff'] ?? '')
+        );
+
+        if (($validated['payment_type'] ?? 'cash') === 'card') {
+            try {
+                $checkoutUrl = $this->createStripeCheckoutSession(
+                    $validated,
+                    $primaryBookingId,
+                    $primaryBookingCode,
+                    $returnBookingId,
+                    $returnBookingCode
+                );
+            } catch (\Throwable $e) {
+                Log::error('Stripe Checkout session creation failed', [
+                    'error' => $e->getMessage(),
+                    'primary_booking_id' => $primaryBookingId,
+                    'return_booking_id' => $returnBookingId,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Card payment could not be started. Please try again.',
+                ], 500);
+            }
+
+            $this->sendBookingEmails($primaryBookingId, $primaryBookingCode, $validated, $returnBookingId, $returnBookingCode);
+
+            return response()->json([
+                'success' => true,
+                'created_count' => $returnBookingId ? 2 : 1,
+                'booking_code' => $primaryBookingCode,
+                'return_booking_code' => $returnBookingCode,
+                'redirect_url' => $checkoutUrl,
+            ]);
+        }
+
+        $this->sendBookingEmails($primaryBookingId, $primaryBookingCode, $validated, $returnBookingId, $returnBookingCode);
+
+        session()->flash('booking_confirmation', [
+            'booking_id' => $primaryBookingId,
+            'booking_code' => $primaryBookingCode,
+            'return_booking_id' => $returnBookingId,
+            'return_booking_code' => $returnBookingCode,
+            'created_count' => $returnBookingId ? 2 : 1,
+            'passenger_name' => $validated['passenger_name'],
+            'email' => strtolower(trim($validated['email'])),
+            'payment_type' => $validated['payment_type'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'created_count' => $returnBookingId ? 2 : 1,
+            'booking_code' => $primaryBookingCode,
+            'return_booking_code' => $returnBookingCode,
+            'redirect_url' => route('booking.thank-you'),
+        ]);
     }
 
     public function stripeSuccess(Request $request): RedirectResponse
@@ -570,6 +686,67 @@ class ManageBookingController extends Controller
         $value = trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    private function notifyAdminsForNewBooking(string $bookingCode, string $passengerName, string $pickup, string $dropoff): void
+    {
+        try {
+            $adminIds = DB::table('executiveairport_database.users as users')
+                ->leftJoin('executiveairport_database.user_roles as user_roles', 'user_roles.user_id', '=', 'users.id')
+                ->leftJoin('executiveairport_database.roles as roles', 'roles.id', '=', 'user_roles.role_id')
+                ->leftJoin('executiveairport_database.role_permissions as role_permissions', 'role_permissions.role_id', '=', 'roles.id')
+                ->where(function ($query) {
+                    $query->where('users.is_admin', 1)
+                        ->orWhereNotNull('role_permissions.permission_id');
+                })
+                ->whereNull('users.deleted_at')
+                ->distinct()
+                ->pluck('users.id');
+
+            if ($adminIds->isEmpty()) {
+                return;
+            }
+
+            $title = 'New Booking Received';
+            $message = sprintf(
+                'New booking #%s has been created for %s from %s to %s.',
+                $bookingCode !== '' ? $bookingCode : 'N/A',
+                trim($passengerName) !== '' ? $passengerName : 'a passenger',
+                trim($pickup) !== '' ? $pickup : 'an unknown pickup location',
+                trim($dropoff) !== '' ? $dropoff : 'an unknown dropoff location'
+            );
+
+            $now = now();
+            $recentSince = $now->copy()->subSeconds(30);
+
+            foreach ($adminIds as $adminId) {
+                $exists = DB::table('executiveairport_database.user_notifications')
+                    ->where('user_id', (int) $adminId)
+                    ->where('title', $title)
+                    ->where('message', $message)
+                    ->where('created_at', '>=', $recentSince)
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                DB::table('executiveairport_database.user_notifications')->insert([
+                    'user_id' => (int) $adminId,
+                    'title' => $title,
+                    'message' => $message,
+                    'is_read' => 0,
+                    'read_at' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Could not create admin notifications for frontend booking', [
+                'booking_code' => $bookingCode,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function decodeBookingMeta(mixed $meta): array

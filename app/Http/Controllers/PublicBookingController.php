@@ -31,10 +31,6 @@ class PublicBookingController extends Controller
             'passengers' => ['nullable', 'integer', 'min:1', 'max:16'],
             'suitcases' => ['nullable', 'integer', 'min:0', 'max:20'],
             'meet_and_greet' => ['nullable', 'boolean'],
-            'return_meet_and_greet' => ['nullable', 'boolean'],
-            'baby_seat' => ['nullable', 'boolean'],
-            'return_baby_seat' => ['nullable', 'boolean'],
-            'baby_seat_age' => ['nullable', 'string', 'max:50'],
             'message_to_driver' => ['nullable', 'string', 'max:2000'],
             'vehicle_type' => ['required', 'string', 'max:100'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -42,8 +38,6 @@ class PublicBookingController extends Controller
             'payment_type' => ['nullable', 'in:cash,card'],
             'flight_number' => ['nullable', 'string', 'max:100'],
             'flight_landing_time' => ['nullable', 'string', 'max:20'],
-            'return_flight_number' => ['nullable', 'string', 'max:100'],
-            'return_flight_time' => ['nullable', 'string', 'max:20'],
             'source_url' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -80,10 +74,9 @@ class PublicBookingController extends Controller
                     'pickup_date' => $data['pickup_date'],
                     'pickup_time' => $data['pickup_time'],
                     'flight_number' => $isReturn ? null : ($data['flight_number'] ?? null),
-                    'flight_arrival_time' => $isReturn ? null : ($data['flight_landing_time'] ?? null),
                     'meet_and_greet' => (bool) ($data['meet_and_greet'] ?? false),
-                    'baby_seat' => (bool) ($data['baby_seat'] ?? false),
-                    'baby_seat_age' => $data['baby_seat_age'] ?? null,
+                    'baby_seat' => false,
+                    'baby_seat_age' => null,
                     'meta' => array_merge($basePayload['meta'], [
                         'trip_leg' => $isReturn ? 'outbound' : 'single',
                     ]),
@@ -98,14 +91,13 @@ class PublicBookingController extends Controller
                         'dropoff_address' => $data['pickup'],
                         'pickup_date' => $data['return_pickup_date'] ?? null,
                         'pickup_time' => $data['return_pickup_time'] ?? null,
-                        'flight_number' => $data['return_flight_number'] ?? null,
-                        'flight_arrival_time' => $data['return_flight_time'] ?? null,
+                        'flight_number' => $data['flight_number'] ?? null,
                         'meet_and_greet' => (bool) ($data['meet_and_greet'] ?? false),
-                        'baby_seat' => (bool) ($data['return_baby_seat'] ?? false),
+                        'baby_seat' => false,
                         'baby_seat_age' => null,
                         'meta' => array_merge($basePayload['meta'], [
                             'trip_leg' => 'return',
-                            'flight_landing_time' => $data['return_flight_time'] ?? null,
+                            'flight_landing_time' => $data['flight_landing_time'] ?? null,
                         ]),
                     ]));
 

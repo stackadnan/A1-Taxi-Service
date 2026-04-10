@@ -4,6 +4,7 @@ $img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
 $Title2 = 'Passenger Information';
 $SubTitle = 'Complete Your Booking';
+
 ?>
 
 @include('partials.layouts.layoutsTop')
@@ -36,6 +37,8 @@ $SubTitle = 'Complete Your Booking';
               <span class="wow fadeInUp" data-wow-delay=".2s">passenger details</span>
               <h2 class="wow fadeInUp" data-wow-delay=".4s">Passenger Information</h2>
             </div>
+
+            <div id="booking-submit-status" class="alert alert-info d-none mb-4" role="alert"></div>
 
             <form id="passenger-form" class="contact-form-items mt-4">
               <input type="hidden" name="payment_type" id="payment_type" value="cash">

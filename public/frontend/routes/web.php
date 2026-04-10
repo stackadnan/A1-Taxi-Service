@@ -34,7 +34,6 @@ Route::get('/booking-thank-you', [ManageBookingController::class, 'thankYou'])
 Route::get('/i/{id}', [GalleryImageController::class, 'show'])
     ->whereNumber('id')
     ->name('gallery.short');
-
 Route::get('/{groupSlug}/{slug}', [PageController::class, 'showNested'])
     ->where('groupSlug', '[A-Za-z0-9_-]+')
     ->where('slug', '[A-Za-z0-9_-]+')
