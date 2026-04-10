@@ -63,6 +63,9 @@ class AdminController extends Controller
         // --- driver status for dashboard (used in the small status panel) ---
         $drivers = $this->prepareDriverStatuses();
 
+        // Build real urgent-attention rows for the dashboard panel.
+        [$urgentAttentionItems, $urgentAttentionCount] = $this->buildUrgentAttentionItems();
+
 
         // Count bookings for each section
         $counts = [];
@@ -117,8 +120,89 @@ class AdminController extends Controller
             'totalLastMonth','confirmedLastMonth','completedLastMonth','cancelledLastMonth',
             'broadcasts',
             'sections', 'active', 'counts', 'bookings',
-            'drivers'
+            'drivers',
+            'urgentAttentionItems', 'urgentAttentionCount'
         ));
+    }
+
+    /**
+     * Build dashboard urgent-attention data from live bookings.
+     *
+     * @return array{0: \Illuminate\Support\Collection, 1: int}
+     */
+    protected function buildUrgentAttentionItems(): array
+    {
+        $now = now();
+        $urgentThreshold = $now->copy()->addMinutes(30);
+
+        $candidates = Booking::with('status')
+            ->whereHas('status', function ($q) {
+                $q->whereIn('name', ['new', 'pending', 'confirmed', 'in_progress', 'pob']);
+            })
+            ->orderBy('pickup_date')
+            ->orderBy('pickup_time')
+            ->orderBy('scheduled_at')
+            ->limit(80)
+            ->get();
+
+        $items = collect();
+
+        foreach ($candidates as $booking) {
+            $meta = is_array($booking->meta) ? $booking->meta : [];
+            $statusName = optional($booking->status)->name;
+
+            $pickupAt = null;
+            if ($booking->pickup_date && $booking->pickup_time) {
+                $pickupAt = Carbon::parse($booking->pickup_date->format('Y-m-d') . ' ' . $booking->pickup_time);
+            } elseif ($booking->scheduled_at) {
+                $pickupAt = Carbon::parse($booking->scheduled_at);
+            }
+
+            $isPob = $statusName === 'pob';
+            $isInRoute = isset($meta['in_route']) && $meta['in_route'] === true;
+            $isArrived = isset($meta['arrived_at_pickup']) && $meta['arrived_at_pickup'] === true;
+            $isUrgent = !$isPob && !$isInRoute && !$isArrived && $pickupAt && $pickupAt->lte($urgentThreshold);
+
+            // Only show records that need attention now: POB, urgent soon/late, or active waiting bookings.
+            if (!($isPob || $isUrgent || in_array($statusName, ['new', 'pending', 'confirmed', 'in_progress'], true))) {
+                continue;
+            }
+
+            if ($isPob) {
+                $label = 'POB';
+                $class = 'bg-blue-100 text-blue-700';
+                $priority = 1;
+            } elseif ($isUrgent) {
+                $label = 'Urgent';
+                $class = 'bg-red-100 text-red-700';
+                $priority = 0;
+            } else {
+                $label = 'Waiting';
+                $class = 'bg-yellow-100 text-yellow-700';
+                $priority = 2;
+            }
+
+            $items->push([
+                'booking_id' => $booking->booking_code ?: ('B' . $booking->id),
+                'pickup' => $booking->pickup_address ?: '-',
+                'dropoff' => $booking->dropoff_address ?: '-',
+                'pickup_display' => $pickupAt ? $pickupAt->format('H:i m/d/Y') : '-',
+                'status_label' => $label,
+                'status_class' => $class,
+                'priority' => $priority,
+                'pickup_sort' => $pickupAt ? $pickupAt->timestamp : PHP_INT_MAX,
+            ]);
+        }
+
+        $items = $items
+            ->sortBy([
+                ['priority', 'asc'],
+                ['pickup_sort', 'asc'],
+            ])
+            ->take(10)
+            ->values();
+
+        return [$items, $items->count()];
     }
 
     protected function countForSection(string $key): int

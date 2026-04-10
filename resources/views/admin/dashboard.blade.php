@@ -5,7 +5,7 @@
   <!-- Panels side-by-side -->
   <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
     <div class="p-4 rounded-lg bg-white border shadow-sm">
-      <h3 class="font-semibold mb-3 text-lg text-red-600">Urgent Attention <span class="ml-2 inline-block bg-red-600 text-white text-xs px-2 py-0.5 rounded">3</span></h3>
+      <h3 class="font-semibold mb-3 text-lg text-red-600">Urgent Attention <span class="ml-2 inline-block bg-red-600 text-white text-xs px-2 py-0.5 rounded">{{ $urgentAttentionCount ?? 0 }}</span></h3>
       <div class="overflow-auto">
         <table class="w-full text-sm table-fixed">
           <thead>
@@ -18,27 +18,19 @@
             </tr>
           </thead>
           <tbody>
-            <tr class="border-t">
-              <td class="px-2 py-3">B12345</td>
-              <td class="px-2 py-3">Heathrow Arrivals</td>
-              <td class="px-2 py-3">City Centre</td>
-              <td class="px-2 py-3">19:00 01/14/2026</td>
-              <td class="px-2 py-3"><span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">POB</span></td>
-            </tr>
-            <tr class="border-t">
-              <td class="px-2 py-3">B12346</td>
-              <td class="px-2 py-3">Gatwick</td>
-              <td class="px-2 py-3">Airport Hotel</td>
-              <td class="px-2 py-3">14:00 01/15/2026</td>
-              <td class="px-2 py-3"><span class="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700">Waiting</span></td>
-            </tr>
-            <tr class="border-t">
-              <td class="px-2 py-3">B12347</td>
-              <td class="px-2 py-3">City Terminal</td>
-              <td class="px-2 py-3">Heathrow Short Stay</td>
-              <td class="px-2 py-3">13:00 01/17/2026</td>
-              <td class="px-2 py-3"><span class="text-xs px-2 py-1 rounded bg-red-100 text-red-700">Urgent</span></td>
-            </tr>
+            @forelse(($urgentAttentionItems ?? collect()) as $item)
+              <tr class="border-t">
+                <td class="px-2 py-3">{{ $item['booking_id'] }}</td>
+                <td class="px-2 py-3">{{ $item['pickup'] }}</td>
+                <td class="px-2 py-3">{{ $item['dropoff'] }}</td>
+                <td class="px-2 py-3">{{ $item['pickup_display'] }}</td>
+                <td class="px-2 py-3"><span class="text-xs px-2 py-1 rounded {{ $item['status_class'] }}">{{ $item['status_label'] }}</span></td>
+              </tr>
+            @empty
+              <tr class="border-t">
+                <td colspan="5" class="px-2 py-3 text-center text-gray-500">No urgent bookings right now.</td>
+              </tr>
+            @endforelse
           </tbody>
         </table>
       </div>
