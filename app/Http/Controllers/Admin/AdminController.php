@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BookingStatus;
 use App\Models\UserNotification;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class AdminController extends Controller
@@ -47,9 +48,13 @@ class AdminController extends Controller
         $completedLastMonth = Booking::whereBetween('created_at', [$lastStart, $lastEnd])->where('status_id', $statuses['completed'] ?? 0)->count();
         $cancelledLastMonth = Booking::whereBetween('created_at', [$lastStart, $lastEnd])->where('status_id', $statuses['cancelled'] ?? 0)->count();
 
-        // Dashboard charts (this month)
-        $bookingSourceChart = $this->buildBookingSourceChartData($startMonth, $endMonth);
-        $airportJobsChart = $this->buildAirportJobsChartData($startMonth, $endMonth);
+        // Dashboard charts (range-selectable)
+        $chartRange = $this->resolveChartRange(request()->get('chart_range'));
+        [$chartFrom, $chartTo] = $this->resolveChartDateWindow($chartRange);
+        $chartRangeLabel = $this->chartRangeLabel($chartRange);
+
+        $bookingSourceChart = $this->buildBookingSourceChartData($chartFrom, $chartTo);
+        $airportJobsChart = $this->buildAirportJobsChartData($chartFrom, $chartTo);
 
         // Load recent broadcasts (only those scheduled at or before now)
         $broadcasts = \App\Models\Broadcast::where(function($q){
@@ -124,7 +129,7 @@ class AdminController extends Controller
             'pickupToday','newBookings','inProgress','confirmed','completed',
             'totalThisMonth','confirmedThisMonth','completedThisMonth','cancelledThisMonth',
             'totalLastMonth','confirmedLastMonth','completedLastMonth','cancelledLastMonth',
-            'bookingSourceChart', 'airportJobsChart',
+            'bookingSourceChart', 'airportJobsChart', 'chartRange', 'chartRangeLabel',
             'broadcasts',
             'sections', 'active', 'counts', 'bookings',
             'drivers',
@@ -135,16 +140,55 @@ class AdminController extends Controller
     /**
      * Return chart data as JSON for periodic dashboard refresh.
      */
-    public function chartData()
+    public function chartData(Request $request)
     {
-        $today = Carbon::today();
-        $startMonth = $today->copy()->startOfMonth();
-        $endMonth = $today->copy()->endOfMonth();
+        $chartRange = $this->resolveChartRange($request->get('chart_range'));
+        [$from, $to] = $this->resolveChartDateWindow($chartRange);
 
         return response()->json([
-            'bookingSourceChart' => $this->buildBookingSourceChartData($startMonth, $endMonth),
-            'airportJobsChart' => $this->buildAirportJobsChartData($startMonth, $endMonth),
+            'chart_range' => $chartRange,
+            'chart_range_label' => $this->chartRangeLabel($chartRange),
+            'bookingSourceChart' => $this->buildBookingSourceChartData($from, $to),
+            'airportJobsChart' => $this->buildAirportJobsChartData($from, $to),
         ]);
+    }
+
+    protected function resolveChartRange(?string $range): string
+    {
+        $allowed = ['week', 'month', 'year', 'two_years'];
+        $normalized = strtolower(trim((string) $range));
+
+        return in_array($normalized, $allowed, true) ? $normalized : 'month';
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    protected function resolveChartDateWindow(string $range): array
+    {
+        $now = Carbon::now();
+
+        switch ($range) {
+            case 'week':
+                return [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()];
+            case 'year':
+                return [$now->copy()->startOfYear(), $now->copy()->endOfYear()];
+            case 'two_years':
+                return [$now->copy()->subYears(2)->startOfDay(), $now->copy()->endOfDay()];
+            case 'month':
+            default:
+                return [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()];
+        }
+    }
+
+    protected function chartRangeLabel(string $range): string
+    {
+        return match ($range) {
+            'week' => 'This Week',
+            'year' => 'This Year',
+            'two_years' => '2 Years',
+            default => 'This Month',
+        };
     }
 
     /**

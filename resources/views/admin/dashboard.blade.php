@@ -2,10 +2,20 @@
 
 @section('content')
 <div class="container mx-auto py-8">
+  <div class="mb-4 p-4 rounded-lg bg-white border shadow-sm">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-sm font-medium text-gray-700 mr-2">Chart Range:</span>
+      <button type="button" class="chart-range-btn px-3 py-1.5 rounded border text-sm {{ ($chartRange ?? 'month') === 'week' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300' }}" data-range="week">This Week</button>
+      <button type="button" class="chart-range-btn px-3 py-1.5 rounded border text-sm {{ ($chartRange ?? 'month') === 'month' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300' }}" data-range="month">This Month</button>
+      <button type="button" class="chart-range-btn px-3 py-1.5 rounded border text-sm {{ ($chartRange ?? 'month') === 'year' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300' }}" data-range="year">This Year</button>
+      <button type="button" class="chart-range-btn px-3 py-1.5 rounded border text-sm {{ ($chartRange ?? 'month') === 'two_years' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300' }}" data-range="two_years">2 Years</button>
+    </div>
+  </div>
+
   <!-- Top charts -->
   <div class="mb-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
     <div class="p-4 rounded-lg bg-white border shadow-sm" data-default-subtitle="Distribution of where bookings came from">
-      <h3 class="font-semibold mb-1 text-lg">Booking Source (This Month)</h3>
+      <h3 class="font-semibold mb-1 text-lg">Booking Source (<span class="js-chart-range-label">{{ $chartRangeLabel ?? 'This Month' }}</span>)</h3>
       <p class="chart-subtitle text-xs text-gray-500 mb-3">Distribution of where bookings came from</p>
       <div class="h-72">
         <canvas id="bookingSourceChart"></canvas>
@@ -13,7 +23,7 @@
     </div>
 
     <div class="p-4 rounded-lg bg-white border shadow-sm" data-default-subtitle="Jobs grouped by airport names in pickup/dropoff">
-      <h3 class="font-semibold mb-1 text-lg">Airport Jobs (This Month)</h3>
+      <h3 class="font-semibold mb-1 text-lg">Airport Jobs (<span class="js-chart-range-label">{{ $chartRangeLabel ?? 'This Month' }}</span>)</h3>
       <p class="chart-subtitle text-xs text-gray-500 mb-3">Jobs grouped by airport names in pickup/dropoff</p>
       <div class="h-72">
         <canvas id="airportJobsChart"></canvas>
@@ -154,8 +164,18 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
 
       var sourceCtx = document.getElementById('bookingSourceChart');
       var airportCtx = document.getElementById('airportJobsChart');
+      var rangeButtons = document.querySelectorAll('.chart-range-btn');
+      var rangeLabels = document.querySelectorAll('.js-chart-range-label');
       var sourceChart = null;
       var airportChart = null;
+      var currentRange = @json($chartRange ?? 'month');
+
+      var rangeLabelMap = {
+        week: 'This Week',
+        month: 'This Month',
+        year: 'This Year',
+        two_years: '2 Years'
+      };
 
       var initialSource = @json($bookingSourceChart ?? ['labels' => [], 'values' => [], 'is_dummy' => false]);
       var initialAirport = @json($airportJobsChart ?? ['labels' => [], 'values' => [], 'is_dummy' => false]);
@@ -177,6 +197,22 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
           sub.classList.remove('text-amber-600');
           sub.classList.add('text-gray-500');
         }
+      }
+
+      function setRangeUi(range, label) {
+        rangeButtons.forEach(function(btn){
+          var active = btn.dataset.range === range;
+          btn.classList.toggle('bg-indigo-600', active);
+          btn.classList.toggle('text-white', active);
+          btn.classList.toggle('border-indigo-600', active);
+          btn.classList.toggle('bg-white', !active);
+          btn.classList.toggle('text-gray-700', !active);
+          btn.classList.toggle('border-gray-300', !active);
+        });
+
+        rangeLabels.forEach(function(el){
+          el.textContent = label || rangeLabelMap[range] || 'This Month';
+        });
       }
 
       function applySourceData(payload) {
@@ -246,18 +282,31 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
       }
 
       function refreshChartData() {
-        fetch('{{ route('admin.dashboard.chart-data') }}', {
+        fetch('{{ route('admin.dashboard.chart-data') }}?chart_range=' + encodeURIComponent(currentRange), {
           headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
           credentials: 'same-origin'
         })
           .then(function(r){ return r.json(); })
           .then(function(json){
             if (!json) return;
+            setRangeUi(json.chart_range || currentRange, json.chart_range_label || null);
             applySourceData(json.bookingSourceChart);
             applyAirportData(json.airportJobsChart);
           })
           .catch(function(err){ console.warn('Chart refresh failed', err); });
       }
+
+      rangeButtons.forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var nextRange = btn.dataset.range || 'month';
+          if (nextRange === currentRange) return;
+          currentRange = nextRange;
+          setRangeUi(currentRange, rangeLabelMap[currentRange]);
+          refreshChartData();
+        });
+      });
+
+      setRangeUi(currentRange, rangeLabelMap[currentRange]);
 
       setInterval(refreshChartData, 60000);
     })();
