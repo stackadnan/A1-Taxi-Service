@@ -73,7 +73,7 @@ class ManageBookingController extends Controller
             ], 500);
         }
 
-        $now = now();
+        $now = now('Europe/London');
         $basePrice = array_key_exists('price', $validated) && $validated['price'] !== null
             ? (float) $validated['price']
             : null;
@@ -99,7 +99,7 @@ class ManageBookingController extends Controller
         ];
 
         try {
-            $createdBookings = DB::transaction(function () use ($validated, $basePayload, $isReturnBooking, $perLegBasePrice) {
+            $createdBookings = DB::transaction(function () use ($validated, $basePayload, $isReturnBooking, $perLegBasePrice, $now) {
                 $outboundCode = $this->generateBookingCode();
                 $outboundPayload = array_merge($basePayload, [
                     'booking_code' => $outboundCode,
@@ -145,13 +145,13 @@ class ManageBookingController extends Controller
                     DB::table('executiveairport_database.bookings')->where('id', $outboundId)->update([
                         'return_booking' => 1,
                         'return_booking_id' => $returnId,
-                        'updated_at' => now(),
+                        'updated_at' => $now,
                     ]);
 
                     DB::table('executiveairport_database.bookings')->where('id', $returnId)->update([
                         'return_booking' => 1,
                         'return_booking_id' => $outboundId,
-                        'updated_at' => now(),
+                        'updated_at' => $now,
                     ]);
 
                     $created['return'] = [
@@ -737,7 +737,7 @@ class ManageBookingController extends Controller
                 trim($dropoff) !== '' ? $dropoff : 'an unknown dropoff location'
             );
 
-            $now = now();
+            $now = now('Europe/London');
             $recentSince = $now->copy()->subSeconds(30);
 
             foreach ($adminIds as $adminId) {
@@ -816,7 +816,7 @@ class ManageBookingController extends Controller
                 ($paymentId !== null && trim((string) $paymentId) !== '') ? ' (Payment ID: ' . trim((string) $paymentId) . ')' : ''
             );
 
-            $now = now();
+            $now = now('Europe/London');
             $recentSince = $now->copy()->subSeconds(60);
 
             foreach ($adminIds as $adminId) {

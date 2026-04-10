@@ -148,6 +148,8 @@ Route::name('admin.')->group(function () {
 
         Route::get('settings', function(){ return view('admin.settings.index'); })->name('settings.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.view');
         Route::get('notifications', function(){ return view('admin.notifications.index'); })->name('notifications.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':notification.view');
+        Route::get('driver-broadcasts', [\App\Http\Controllers\Admin\DriverBroadcastController::class, 'index'])->name('driver-broadcasts.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':notifications.view');
+        Route::post('driver-broadcasts', [\App\Http\Controllers\Admin\DriverBroadcastController::class, 'store'])->name('driver-broadcasts.store')->middleware(\App\Http\Middleware\EnsurePermission::class.':notifications.edit');
         Route::get('reviews', [\App\Http\Controllers\Admin\ReviewsController::class, 'index'])->name('reviews.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':review.view');
         Route::get('complaints-lost-found', [\App\Http\Controllers\Admin\ComplaintLostFoundController::class, 'index'])->name('complaints.index');
         Route::get('complaints-lost-found/{complaint}/edit', [\App\Http\Controllers\Admin\ComplaintLostFoundController::class, 'edit'])->name('complaints.edit');
