@@ -734,7 +734,7 @@
           if (data.notifications && data.notifications.length > 0) {
             var html = '';
             data.notifications.forEach(function(notification) {
-              var date = new Date(notification.created_at);
+              var date = parseNotificationDate(notification);
               var timeAgo = getTimeAgo(date);
               html += `
                 <div class="p-3 border-b hover:bg-gray-50">
@@ -889,13 +889,34 @@
 
       // Helper function to format time ago
       function getTimeAgo(date) {
+        if (!(date instanceof Date) || isNaN(date.getTime())) return 'Just now';
+
         var now = new Date();
         var diff = Math.floor((now - date) / 1000); // seconds
+
+        if (diff < 0) diff = 0;
         
         if (diff < 60) return 'Just now';
         if (diff < 3600) return Math.floor(diff / 60) + ' minutes ago';
         if (diff < 86400) return Math.floor(diff / 3600) + ' hours ago';
         return Math.floor(diff / 86400) + ' days ago';
+      }
+
+      // Prefer ISO timestamp from backend; fallback handles old "YYYY-MM-DD HH:mm:ss" format.
+      function parseNotificationDate(notification) {
+        var raw = (notification && (notification.created_at_iso || notification.created_at)) || '';
+        if (!raw) return new Date();
+
+        var parsed = new Date(raw);
+        if (!isNaN(parsed.getTime())) return parsed;
+
+        var normalized = String(raw).trim().replace(' ', 'T');
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(normalized)) {
+          parsed = new Date(normalized + 'Z');
+          if (!isNaN(parsed.getTime())) return parsed;
+        }
+
+        return new Date();
       }
 
       // ============================================

@@ -691,17 +691,31 @@ class ManageBookingController extends Controller
     private function notifyAdminsForNewBooking(string $bookingCode, string $passengerName, string $pickup, string $dropoff): void
     {
         try {
-            $adminIds = DB::table('executiveairport_database.users as users')
-                ->leftJoin('executiveairport_database.user_roles as user_roles', 'user_roles.user_id', '=', 'users.id')
-                ->leftJoin('executiveairport_database.roles as roles', 'roles.id', '=', 'user_roles.role_id')
-                ->leftJoin('executiveairport_database.role_permissions as role_permissions', 'role_permissions.role_id', '=', 'roles.id')
-                ->where(function ($query) {
-                    $query->where('users.is_admin', 1)
-                        ->orWhereNotNull('role_permissions.permission_id');
-                })
-                ->whereNull('users.deleted_at')
-                ->distinct()
-                ->pluck('users.id');
+            // Resolve admin-capable users via roles/permissions when available.
+            // Fallback to all role-assigned users if schema/data differs across environments.
+            try {
+                $adminIds = DB::table('executiveairport_database.user_roles as user_roles')
+                    ->join('executiveairport_database.roles as roles', 'roles.id', '=', 'user_roles.role_id')
+                    ->leftJoin('executiveairport_database.role_permissions as role_permissions', 'role_permissions.role_id', '=', 'roles.id')
+                    ->where(function ($query) {
+                        $query->where('roles.name', 'Super Admin')
+                            ->orWhereNotNull('role_permissions.permission_id');
+                    })
+                    ->distinct()
+                    ->pluck('user_roles.user_id');
+            } catch (\Throwable $roleQueryError) {
+                Log::warning('Admin recipient role-query failed; falling back to user_roles only', [
+                    'booking_code' => $bookingCode,
+                    'error' => $roleQueryError->getMessage(),
+                ]);
+                $adminIds = collect();
+            }
+
+            if ($adminIds->isEmpty()) {
+                $adminIds = DB::table('executiveairport_database.user_roles')
+                    ->distinct()
+                    ->pluck('user_id');
+            }
 
             if ($adminIds->isEmpty()) {
                 return;

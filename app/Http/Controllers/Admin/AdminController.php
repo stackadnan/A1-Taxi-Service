@@ -254,9 +254,21 @@ class AdminController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $payload = $notifications->map(function (UserNotification $notification) {
+            return [
+                'id' => $notification->id,
+                'title' => $notification->title,
+                'message' => $notification->message,
+                'is_read' => (bool) $notification->is_read,
+                // Keep legacy format for compatibility and include ISO with timezone for accurate client parsing.
+                'created_at' => optional($notification->created_at)->toDateTimeString(),
+                'created_at_iso' => optional($notification->created_at)->toIso8601String(),
+            ];
+        })->values();
+
         return response()->json([
-            'count' => $notifications->count(),
-            'notifications' => $notifications
+            'count' => $payload->count(),
+            'notifications' => $payload,
         ]);
     }
 
