@@ -376,6 +376,13 @@ class ManageBookingController extends Controller
                 ]);
             }
 
+            $this->notifyAdminsForCardPayment(
+                $primaryBookingCode,
+                $returnBookingCode !== '' ? $returnBookingCode : null,
+                $paymentId,
+                $passengerName
+            );
+
             session()->flash('booking_confirmation', [
                 'booking_id' => $primaryBookingId,
                 'booking_code' => $primaryBookingCode,
@@ -758,6 +765,86 @@ class ManageBookingController extends Controller
         } catch (\Throwable $e) {
             Log::warning('Could not create admin notifications for frontend booking', [
                 'booking_code' => $bookingCode,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function notifyAdminsForCardPayment(string $primaryBookingCode, ?string $returnBookingCode, ?string $paymentId, ?string $passengerName): void
+    {
+        try {
+            try {
+                $adminIds = DB::table('executiveairport_database.user_roles as user_roles')
+                    ->join('executiveairport_database.roles as roles', 'roles.id', '=', 'user_roles.role_id')
+                    ->leftJoin('executiveairport_database.role_permissions as role_permissions', 'role_permissions.role_id', '=', 'roles.id')
+                    ->where(function ($query) {
+                        $query->where('roles.name', 'Super Admin')
+                            ->orWhereNotNull('role_permissions.permission_id');
+                    })
+                    ->distinct()
+                    ->pluck('user_roles.user_id');
+            } catch (\Throwable $roleQueryError) {
+                Log::warning('Admin recipient role-query failed for payment notification; falling back to user_roles only', [
+                    'booking_code' => $primaryBookingCode,
+                    'error' => $roleQueryError->getMessage(),
+                ]);
+                $adminIds = collect();
+            }
+
+            if ($adminIds->isEmpty()) {
+                $adminIds = DB::table('executiveairport_database.user_roles')
+                    ->distinct()
+                    ->pluck('user_id');
+            }
+
+            if ($adminIds->isEmpty()) {
+                return;
+            }
+
+            $title = 'Customer Payment Received';
+            $refs = array_values(array_filter([
+                trim((string) $primaryBookingCode),
+                trim((string) ($returnBookingCode ?? '')),
+            ]));
+            $bookingRefText = empty($refs) ? 'N/A' : implode(', ', $refs);
+            $customerText = trim((string) ($passengerName ?? ''));
+
+            $message = sprintf(
+                'Card payment is completed for booking #%s%s%s.',
+                $bookingRefText,
+                $customerText !== '' ? ' by ' . $customerText : '',
+                ($paymentId !== null && trim((string) $paymentId) !== '') ? ' (Payment ID: ' . trim((string) $paymentId) . ')' : ''
+            );
+
+            $now = now();
+            $recentSince = $now->copy()->subSeconds(60);
+
+            foreach ($adminIds as $adminId) {
+                $exists = DB::table('executiveairport_database.user_notifications')
+                    ->where('user_id', (int) $adminId)
+                    ->where('title', $title)
+                    ->where('message', $message)
+                    ->where('created_at', '>=', $recentSince)
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                DB::table('executiveairport_database.user_notifications')->insert([
+                    'user_id' => (int) $adminId,
+                    'title' => $title,
+                    'message' => $message,
+                    'is_read' => 0,
+                    'read_at' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Could not create admin payment notifications for frontend booking', [
+                'booking_code' => $primaryBookingCode,
+                'payment_id' => $paymentId,
                 'error' => $e->getMessage(),
             ]);
         }
