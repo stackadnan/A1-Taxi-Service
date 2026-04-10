@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Booking;
+use App\Models\DriverNotification;
 use App\Models\UserNotification;
 use App\Events\DriverResponseUpdated;
 
@@ -308,7 +309,7 @@ class DriverDashboardController extends Controller
     }
 
     /**
-     * Return unread driver notifications and mark them as delivered (is_read=true)
+     * Return unread driver notifications.
      */
     public function unreadNotifications()
     {
@@ -317,23 +318,98 @@ class DriverDashboardController extends Controller
             return response()->json(['count' => 0, 'notifications' => []]);
         }
 
-        $notes = \App\Models\DriverNotification::where('driver_id', $driver->id)
+        $notes = DriverNotification::where('driver_id', $driver->id)
             ->where('is_read', false)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $count = $notes->count();
+        return response()->json([
+            'count' => $notes->count(),
+            'notifications' => $notes,
+        ]);
+    }
 
-        // mark as read so they are not delivered repeatedly
-        try {
-            if ($count) {
-                \App\Models\DriverNotification::where('driver_id', $driver->id)->where('is_read', false)->update(['is_read' => true, 'read_at' => now()]);
-            }
-        } catch (\Exception $e) {
-            logger()->warning('Failed to mark driver notifications as read: ' . $e->getMessage());
+    /**
+     * Return latest driver notifications (read + unread) for the notification panel.
+     */
+    public function listNotifications()
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) {
+            return response()->json(['unread_count' => 0, 'notifications' => []]);
         }
 
-        return response()->json(['count' => $count, 'notifications' => $notes]);
+        $notes = DriverNotification::where('driver_id', $driver->id)
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function (DriverNotification $note) {
+                return [
+                    'id' => $note->id,
+                    'title' => $note->title,
+                    'message' => $note->message,
+                    'is_read' => (bool) $note->is_read,
+                    'created_at' => optional($note->created_at)->format('Y-m-d H:i:s'),
+                    'created_at_iso' => optional($note->created_at)->toIso8601String(),
+                ];
+            });
+
+        $unreadCount = DriverNotification::where('driver_id', $driver->id)
+            ->where('is_read', false)
+            ->count();
+
+        return response()->json([
+            'unread_count' => $unreadCount,
+            'notifications' => $notes,
+        ]);
+    }
+
+    /**
+     * Mark selected or all driver notifications as read.
+     */
+    public function markNotificationsRead(Request $request)
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) {
+            return response()->json(['success' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $ids = $request->input('ids', []);
+
+        $query = DriverNotification::where('driver_id', $driver->id)
+            ->where('is_read', false);
+
+        if (is_array($ids) && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        $updated = $query->update([
+            'is_read' => true,
+            'read_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'updated' => $updated,
+        ]);
+    }
+
+    /**
+     * Delete all notifications for the authenticated driver.
+     */
+    public function clearNotifications()
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) {
+            return response()->json(['success' => false, 'message' => 'Not authenticated'], 401);
+        }
+
+        $deleted = DriverNotification::where('driver_id', $driver->id)->delete();
+
+        return response()->json([
+            'success' => true,
+            'deleted' => $deleted,
+        ]);
     }
 
     /**

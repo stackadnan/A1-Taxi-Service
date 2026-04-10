@@ -9,7 +9,10 @@
       <h1 class="text-2xl font-bold">Booking #{{ $job->booking_code ?? $job->id }}</h1>
       <p class="text-sm text-gray-600">{{ optional($job->pickup_date)->format('M d, Y') }} @if($job->pickup_time) at {{ $job->pickup_time }}@endif</p>
     </div>
-    <a href="{{ url()->previous() ?: route('driver.dashboard') }}" class="px-3 py-2 bg-gray-200 rounded">Back</a>
+    <a href="{{ url()->previous() ?: route('driver.dashboard') }}" class="driver-back-btn">
+      <i class="fas fa-arrow-left"></i>
+      <span>Back</span>
+    </a>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

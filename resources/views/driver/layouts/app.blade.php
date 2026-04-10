@@ -92,6 +92,8 @@
         html.dark nav span                   { color: #cbd5e1 !important; }
         html.dark #theme-toggle              { border-color: #475569 !important; color: #94a3b8 !important; }
         html.dark #theme-toggle:hover        { background-color: #334155 !important; color: #e2e8f0 !important; }
+        html.dark #driverNotificationButton  { border-color: #475569 !important; color: #94a3b8 !important; }
+        html.dark #driverNotificationButton:hover { background-color: #334155 !important; color: #e2e8f0 !important; }
         html.dark nav button[type="submit"]  { color: #94a3b8 !important; }
         html.dark nav button[type="submit"]:hover { color: #e2e8f0 !important; }
 
@@ -154,6 +156,104 @@
 
         /* Theme toggle transition */
         #theme-toggle { transition: background 0.2s, color 0.2s; }
+
+        /* Shared back button style across driver pages */
+        .driver-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid #cbd5e1;
+            background-color: #f8fafc;
+            color: #1f2937;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.55rem 0.95rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .driver-back-btn:hover {
+            background-color: #ffffff;
+            border-color: #94a3b8;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .driver-back-btn i {
+            color: #4f46e5;
+            font-size: 0.8rem;
+        }
+
+        html.dark .driver-back-btn {
+            background-color: #1f2937;
+            border-color: #475569;
+            color: #e2e8f0;
+        }
+
+        html.dark .driver-back-btn:hover {
+            background-color: #334155;
+            border-color: #64748b;
+            color: #f8fafc;
+            box-shadow: 0 8px 22px rgba(2, 6, 23, 0.45);
+        }
+
+        html.dark .driver-back-btn i {
+            color: #a5b4fc;
+        }
+
+        /* Driver notification panel */
+        #driverNotificationDropdown {
+            max-height: 28rem;
+        }
+
+        #driverNotificationList .driver-note-title,
+        #driverNotificationList .driver-note-message {
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 640px) {
+            #driverNotificationDropdown {
+                position: fixed;
+                left: 0.5rem;
+                right: 0.5rem;
+                width: auto;
+                max-width: none;
+                top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+                margin-top: 0;
+            }
+        }
+
+        html.dark #driverNotificationDropdown {
+            background-color: #0f172a;
+            border-color: #334155;
+        }
+
+        html.dark #driverNotificationDropdown .driver-note-header {
+            background-color: #1e293b;
+            border-color: #334155;
+        }
+
+        html.dark #driverNotificationList .driver-note-item {
+            border-color: #1e293b;
+            color: #cbd5e1;
+        }
+
+        html.dark #driverNotificationList .driver-note-item-unread {
+            background-color: #1e293b;
+        }
+
+        html.dark #driverNotificationList .driver-note-item-read {
+            background-color: #0f172a;
+        }
+
+        html.dark #driverNotificationList .driver-note-title {
+            color: #f1f5f9;
+        }
+
+        html.dark #driverNotificationList .driver-note-time {
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -171,6 +271,28 @@
                 <!-- User Menu -->
                 <div class="flex items-center space-x-3">
                     <span class="text-sm text-gray-600 hidden sm:inline">{{ auth('driver')->user()->name }}</span>
+
+                    <div class="relative">
+                        <button id="driverNotificationButton" class="relative w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none" title="Notifications">
+                            <i class="fas fa-bell text-sm"></i>
+                            <span id="driverNotificationBadge" class="hidden absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[11px] leading-5 text-center font-semibold">0</span>
+                        </button>
+
+                        <div id="driverNotificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                            <div class="driver-note-header p-3 border-b border-gray-200 bg-gray-50">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
+                                    <div class="flex items-center gap-3">
+                                        <button id="driverMarkAllRead" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark all read</button>
+                                        <button id="driverClearAll" class="text-xs text-red-600 hover:text-red-700 font-medium">Clear all</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="driverNotificationList" class="max-h-80 overflow-y-auto">
+                                <div class="p-4 text-sm text-gray-500 text-center">No notifications yet</div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Dark / Light Toggle -->
                     <button id="theme-toggle" title="Toggle dark/light mode"
@@ -215,23 +337,252 @@
             baseUrl: '{{ url('/') }}',
             driverAcceptUrl: '{{ route('driver.jobs.accept', ':id') }}',
             driverDeclineUrl: '{{ route('driver.jobs.decline', ':id') }}',
-            driverDashboardUrl: '{{ route('driver.dashboard') }}'
+            driverDashboardUrl: '{{ route('driver.dashboard') }}',
+            driverNotificationsListUrl: '{{ route('driver.notifications.list') }}',
+            driverNotificationsMarkReadUrl: '{{ route('driver.notifications.mark-read') }}',
+            driverNotificationsClearUrl: '{{ route('driver.notifications.clear') }}'
         };
         
-        // Basic notification system
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
-                type === 'success' ? 'bg-green-500' : 'bg-red-500'
-            } text-white`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
+        // Driver notification panel state
+        const driverNotificationState = {
+            items: [],
+            unreadCount: 0,
+        };
+
+        const driverNotificationButton = document.getElementById('driverNotificationButton');
+        const driverNotificationBadge = document.getElementById('driverNotificationBadge');
+        const driverNotificationDropdown = document.getElementById('driverNotificationDropdown');
+        const driverNotificationList = document.getElementById('driverNotificationList');
+        const driverMarkAllRead = document.getElementById('driverMarkAllRead');
+        const driverClearAll = document.getElementById('driverClearAll');
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
+
+        function parseNotificationDate(note) {
+            const raw = note.created_at_iso || note.created_at || null;
+            if (!raw) return null;
+            const date = new Date(raw);
+            return Number.isNaN(date.getTime()) ? null : date;
+        }
+
+        function formatNotificationAge(note) {
+            const dt = parseNotificationDate(note);
+            if (!dt) return 'Just now';
+
+            const diffMs = Date.now() - dt.getTime();
+            const sec = Math.max(0, Math.floor(diffMs / 1000));
+            if (sec < 10) return 'Just now';
+            if (sec < 60) return sec + ' sec ago';
+            const min = Math.floor(sec / 60);
+            if (min < 60) return min + (min === 1 ? ' min ago' : ' mins ago');
+            const hr = Math.floor(min / 60);
+            if (hr < 24) return hr + (hr === 1 ? ' hour ago' : ' hours ago');
+            const day = Math.floor(hr / 24);
+            return day + (day === 1 ? ' day ago' : ' days ago');
+        }
+
+        function normalizeNotification(note) {
+            return {
+                id: note.id,
+                title: note.title || 'Notification',
+                message: note.message || '',
+                is_read: !!note.is_read,
+                created_at: note.created_at || null,
+                created_at_iso: note.created_at_iso || note.created_at || new Date().toISOString(),
+            };
+        }
+
+        function updateDriverNotificationBadge() {
+            if (!driverNotificationBadge) return;
+            const unread = Math.max(0, Number(driverNotificationState.unreadCount || 0));
+            if (unread > 0) {
+                driverNotificationBadge.textContent = unread > 99 ? '99+' : String(unread);
+                driverNotificationBadge.classList.remove('hidden');
+            } else {
+                driverNotificationBadge.classList.add('hidden');
+            }
+        }
+
+        function renderDriverNotificationPanel() {
+            if (!driverNotificationList) return;
+
+            if (!driverNotificationState.items.length) {
+                driverNotificationList.innerHTML = '<div class="p-4 text-sm text-gray-500 text-center">No notifications yet</div>';
+                updateDriverNotificationBadge();
+                return;
+            }
+
+            driverNotificationList.innerHTML = driverNotificationState.items.map(function(note) {
+                const readClass = note.is_read ? 'driver-note-item-read' : 'driver-note-item-unread';
+                return '' +
+                    '<div class="driver-note-item ' + readClass + ' px-4 py-3 border-b border-gray-100" data-driver-note-id="' + escapeHtml(note.id) + '">' +
+                        '<div class="flex items-start justify-between gap-3">' +
+                            '<p class="driver-note-title text-sm font-semibold text-gray-800">' + escapeHtml(note.title) + '</p>' +
+                            '<span class="driver-note-time text-xs text-gray-500 whitespace-nowrap">' + escapeHtml(formatNotificationAge(note)) + '</span>' +
+                        '</div>' +
+                        '<p class="driver-note-message text-sm text-gray-600 mt-1">' + escapeHtml(note.message) + '</p>' +
+                    '</div>';
+            }).join('');
+
+            updateDriverNotificationBadge();
+        }
+
+        async function fetchDriverNotifications() {
+            try {
+                const response = await fetch(window.Laravel.driverNotificationsListUrl, {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': window.Laravel.csrfToken }
+                });
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const rows = Array.isArray(data.notifications) ? data.notifications : [];
+
+                driverNotificationState.items = rows.map(normalizeNotification);
+                driverNotificationState.unreadCount = Number(data.unread_count || 0);
+                renderDriverNotificationPanel();
+            } catch (error) {
+                console.error('Failed to fetch driver notifications:', error);
+            }
+        }
+
+        async function markDriverNotificationsRead(ids) {
+            try {
+                await fetch(window.Laravel.driverNotificationsMarkReadUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': window.Laravel.csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(Array.isArray(ids) && ids.length ? { ids: ids } : {})
+                });
+            } catch (error) {
+                console.error('Failed to mark driver notifications as read:', error);
+            }
+        }
+
+        async function clearDriverNotifications() {
+            try {
+                await fetch(window.Laravel.driverNotificationsClearUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': window.Laravel.csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+            } catch (error) {
+                console.error('Failed to clear driver notifications:', error);
+            }
+        }
+
+        function prependDriverNotification(note) {
+            const normalized = normalizeNotification(note);
+
+            const existingIndex = driverNotificationState.items.findIndex(function(item) {
+                return String(item.id) === String(normalized.id);
+            });
+
+            if (existingIndex >= 0) {
+                driverNotificationState.items.splice(existingIndex, 1);
+            }
+
+            normalized.is_read = false;
+            driverNotificationState.items.unshift(normalized);
+            driverNotificationState.items = driverNotificationState.items.slice(0, 50);
+            driverNotificationState.unreadCount += 1;
+            renderDriverNotificationPanel();
+        }
+
+        // Replace toast with panel insertion for client-side notifications.
+        function showNotification(message, type = 'info') {
+            prependDriverNotification({
+                id: 'local-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                title: type === 'error' ? 'Action Error' : 'Update',
+                message: message,
+                created_at_iso: new Date().toISOString(),
+                is_read: false,
+            });
+        }
+
+        if (driverNotificationButton && driverNotificationDropdown) {
+            driverNotificationButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                driverNotificationDropdown.classList.toggle('hidden');
+                if (!driverNotificationDropdown.classList.contains('hidden')) {
+                    fetchDriverNotifications();
+                }
+            });
+        }
+
+        if (driverMarkAllRead) {
+            driverMarkAllRead.addEventListener('click', async function(e) {
+                e.preventDefault();
+                await markDriverNotificationsRead([]);
+                driverNotificationState.items = driverNotificationState.items.map(function(note) {
+                    note.is_read = true;
+                    return note;
+                });
+                driverNotificationState.unreadCount = 0;
+                renderDriverNotificationPanel();
+            });
+        }
+
+        if (driverClearAll) {
+            driverClearAll.addEventListener('click', async function(e) {
+                e.preventDefault();
+
+                const ok = window.confirm('Clear all notifications? This cannot be undone.');
+                if (!ok) return;
+
+                await clearDriverNotifications();
+                driverNotificationState.items = [];
+                driverNotificationState.unreadCount = 0;
+                renderDriverNotificationPanel();
+            });
+        }
+
+        if (driverNotificationList) {
+            driverNotificationList.addEventListener('click', async function(e) {
+                const row = e.target.closest('[data-driver-note-id]');
+                if (!row) return;
+
+                const id = row.getAttribute('data-driver-note-id');
+                const note = driverNotificationState.items.find(function(item) {
+                    return String(item.id) === String(id);
+                });
+
+                if (!note || note.is_read) return;
+
+                note.is_read = true;
+                driverNotificationState.unreadCount = Math.max(0, driverNotificationState.unreadCount - 1);
+                renderDriverNotificationPanel();
+
+                if (/^\d+$/.test(String(id))) {
+                    await markDriverNotificationsRead([Number(id)]);
+                }
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!driverNotificationDropdown || !driverNotificationButton) return;
+            if (driverNotificationDropdown.classList.contains('hidden')) return;
+
+            if (!e.target.closest('#driverNotificationDropdown') && !e.target.closest('#driverNotificationButton')) {
+                driverNotificationDropdown.classList.add('hidden');
+            }
+        });
+
+        // Load initial notification history for panel state.
+        fetchDriverNotifications();
         
         // Job action handlers
         function acceptJob(bookingId) {
@@ -317,7 +668,7 @@
         }
 
         // Real-time notifications using Server-Sent Events (no polling!)
-        window.Laravel.driverNotificationsUrl = '{{ route('driver.notifications.unread') }}';
+        window.Laravel.driverNotificationsUrl = '{{ route('driver.notifications.list') }}';
         window.Laravel.driverNewJobsUrl = '{{ route('driver.jobs.new') }}?partial=1';
         window.Laravel.driverAcceptedJobsUrl = '{{ route('driver.jobs.accepted') }}?partial=1';
         window.Laravel.driverDashboardCountsUrl = '{{ route('driver.dashboard.counts') }}';
@@ -392,8 +743,8 @@
                     processedDriverNotificationIds.add(notification.id);
                     console.log('Processing NEW driver notification:', notification.id);
 
-                    // Immediate lightweight feedback
-                    if (typeof showNotification === 'function') showNotification(notification.message, 'success');
+                    // Add incoming notification to persistent panel
+                    prependDriverNotification(notification);
 
                     // ONE-TIME refresh for this notification (no debouncing)
                     if (__driverIsRefreshing) {

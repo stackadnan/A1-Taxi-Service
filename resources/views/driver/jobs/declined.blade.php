@@ -10,8 +10,9 @@
             <h1 class="text-2xl font-bold text-gray-900">Declined Jobs</h1>
             <p class="text-gray-600">Jobs you have declined</p>
         </div>
-        <a href="{{ route('driver.dashboard') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
-            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        <a href="{{ route('driver.dashboard') }}" class="driver-back-btn">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back to Dashboard</span>
         </a>
     </div>
 

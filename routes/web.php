@@ -228,6 +228,9 @@ Route::prefix('driver')->name('driver.')->group(function () {
 
         // Driver notifications
         Route::get('notifications/unread', [DriverDashboardController::class, 'unreadNotifications'])->name('notifications.unread');
+        Route::get('notifications/list', [DriverDashboardController::class, 'listNotifications'])->name('notifications.list');
+        Route::post('notifications/mark-read', [DriverDashboardController::class, 'markNotificationsRead'])->name('notifications.mark-read');
+        Route::post('notifications/clear', [DriverDashboardController::class, 'clearNotifications'])->name('notifications.clear');
         Route::get('notifications/stream', [\App\Http\Controllers\Driver\NotificationStreamController::class, 'stream'])->name('notifications.stream');
         // Expo push token registration
         Route::post('push-token', [DriverDashboardController::class, 'storePushToken'])->name('push-token.store');

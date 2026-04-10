@@ -83,7 +83,10 @@
 
     <div class="mt-4">
       <button class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
-      <a href="{{ route('driver.documents.expired') }}" class="ml-3 text-sm text-gray-600">Back</a>
+      <a href="{{ route('driver.documents.expired') }}" class="driver-back-btn ml-3">
+        <i class="fas fa-arrow-left"></i>
+        <span>Back</span>
+      </a>
     </div>
   </form>
 </div>

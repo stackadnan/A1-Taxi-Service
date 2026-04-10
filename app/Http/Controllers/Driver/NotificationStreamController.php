@@ -50,16 +50,6 @@ class NotificationStreamController extends Controller
                         ob_flush();
                         flush();
                         $lastId = $notification->id;
-
-                        // Mark as delivered so this won't be re-sent on subsequent SSE loops or reconnects
-                        try {
-                            $notification->is_read = true;
-                            $notification->read_at = now();
-                            $notification->save();
-                            \Log::info('DriverNotificationStreamController: marked delivered', ['driver_id' => $driver->id, 'notification_id' => $notification->id]);
-                        } catch (\Exception $e) {
-                            \Log::warning('DriverNotificationStreamController: failed to mark delivered', ['error' => $e->getMessage(), 'notification_id' => $notification->id]);
-                        }
                     }
                 }
 
