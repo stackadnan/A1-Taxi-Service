@@ -63,6 +63,7 @@ Route::name('admin.')->group(function () {
     Route::middleware([\App\Http\Middleware\Authenticate::class, \App\Http\Middleware\EnsureUserIsAdmin::class, \App\Http\Middleware\LogoutIfIdle::class])->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [AdminController::class, 'index'])->name('dashboard');
+        Route::get('dashboard/chart-data', [AdminController::class, 'chartData'])->name('dashboard.chart-data');
 
         // Admin notifications
         Route::get('notifications/unread', [AdminController::class, 'getUnreadNotifications'])->name('notifications.unread');

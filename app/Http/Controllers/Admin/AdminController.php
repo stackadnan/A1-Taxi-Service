@@ -10,6 +10,8 @@ use Carbon\Carbon;
 
 class AdminController extends Controller
 {
+    protected int $chartRealDataThreshold = 5;
+
     public function index()
     {
         // Log admin dashboard page load for debugging SSE / notification issues
@@ -44,6 +46,10 @@ class AdminController extends Controller
         $confirmedLastMonth = Booking::whereBetween('created_at', [$lastStart, $lastEnd])->where('status_id', $statuses['confirmed'] ?? 0)->count();
         $completedLastMonth = Booking::whereBetween('created_at', [$lastStart, $lastEnd])->where('status_id', $statuses['completed'] ?? 0)->count();
         $cancelledLastMonth = Booking::whereBetween('created_at', [$lastStart, $lastEnd])->where('status_id', $statuses['cancelled'] ?? 0)->count();
+
+        // Dashboard charts (this month)
+        $bookingSourceChart = $this->buildBookingSourceChartData($startMonth, $endMonth);
+        $airportJobsChart = $this->buildAirportJobsChartData($startMonth, $endMonth);
 
         // Load recent broadcasts (only those scheduled at or before now)
         $broadcasts = \App\Models\Broadcast::where(function($q){
@@ -118,11 +124,27 @@ class AdminController extends Controller
             'pickupToday','newBookings','inProgress','confirmed','completed',
             'totalThisMonth','confirmedThisMonth','completedThisMonth','cancelledThisMonth',
             'totalLastMonth','confirmedLastMonth','completedLastMonth','cancelledLastMonth',
+            'bookingSourceChart', 'airportJobsChart',
             'broadcasts',
             'sections', 'active', 'counts', 'bookings',
             'drivers',
             'urgentAttentionItems', 'urgentAttentionCount'
         ));
+    }
+
+    /**
+     * Return chart data as JSON for periodic dashboard refresh.
+     */
+    public function chartData()
+    {
+        $today = Carbon::today();
+        $startMonth = $today->copy()->startOfMonth();
+        $endMonth = $today->copy()->endOfMonth();
+
+        return response()->json([
+            'bookingSourceChart' => $this->buildBookingSourceChartData($startMonth, $endMonth),
+            'airportJobsChart' => $this->buildAirportJobsChartData($startMonth, $endMonth),
+        ]);
     }
 
     /**
@@ -203,6 +225,134 @@ class AdminController extends Controller
             ->values();
 
         return [$items, $items->count()];
+    }
+
+    /**
+     * Build booking-source chart dataset for a date range.
+     */
+    protected function buildBookingSourceChartData(Carbon $from, Carbon $to): array
+    {
+        $rawSources = Booking::whereBetween('created_at', [$from, $to])
+            ->pluck('source_url');
+
+        $counts = [];
+
+        foreach ($rawSources as $source) {
+            $label = $this->normalizeBookingSourceLabel($source);
+            $counts[$label] = ($counts[$label] ?? 0) + 1;
+        }
+
+        $realTotal = array_sum($counts);
+
+        if ($realTotal < $this->chartRealDataThreshold) {
+            return [
+                'labels' => ['Website', 'Google Ads', 'Phone Booking', 'WhatsApp', 'Partner'],
+                'values' => [42, 26, 18, 9, 5],
+                'is_dummy' => true,
+            ];
+        }
+
+        arsort($counts);
+
+        // Keep chart readable by limiting to top 7 sources.
+        $top = array_slice($counts, 0, 7, true);
+        $others = array_slice($counts, 7, null, true);
+
+        if (!empty($others)) {
+            $top['Others'] = array_sum($others);
+        }
+
+        return [
+            'labels' => array_keys($top),
+            'values' => array_values($top),
+            'is_dummy' => false,
+        ];
+    }
+
+    /**
+     * Build airport-jobs chart dataset by matching airport keywords in pickup/dropoff.
+     */
+    protected function buildAirportJobsChartData(Carbon $from, Carbon $to): array
+    {
+        $airportKeywords = [
+            'Heathrow' => ['heathrow'],
+            'Gatwick' => ['gatwick'],
+            'Luton' => ['luton'],
+            'Stansted' => ['stansted'],
+            'London City' => ['london city', 'city airport'],
+            'Southend' => ['southend'],
+        ];
+
+        $counts = [];
+        foreach (array_keys($airportKeywords) as $airport) {
+            $counts[$airport] = 0;
+        }
+        $counts['Other'] = 0;
+
+        $bookings = Booking::whereBetween('created_at', [$from, $to])
+            ->get(['pickup_address', 'dropoff_address']);
+
+        foreach ($bookings as $booking) {
+            $haystack = strtolower(trim(($booking->pickup_address ?? '') . ' ' . ($booking->dropoff_address ?? '')));
+            $matchedAirport = null;
+
+            foreach ($airportKeywords as $airport => $keywords) {
+                foreach ($keywords as $keyword) {
+                    if ($haystack !== '' && str_contains($haystack, $keyword)) {
+                        $matchedAirport = $airport;
+                        break 2;
+                    }
+                }
+            }
+
+            if ($matchedAirport) {
+                $counts[$matchedAirport]++;
+            } else {
+                $counts['Other']++;
+            }
+        }
+
+        $realTotal = array_sum($counts);
+
+        if ($realTotal < $this->chartRealDataThreshold) {
+            return [
+                'labels' => ['Heathrow', 'Gatwick', 'Luton', 'Stansted', 'London City', 'Southend', 'Other'],
+                'values' => [48, 34, 21, 15, 9, 6, 12],
+                'is_dummy' => true,
+            ];
+        }
+
+        return [
+            'labels' => array_keys($counts),
+            'values' => array_values($counts),
+            'is_dummy' => false,
+        ];
+    }
+
+    /**
+     * Normalize source_url into a compact chart-friendly label.
+     */
+    protected function normalizeBookingSourceLabel($rawSource): string
+    {
+        $raw = trim((string) $rawSource);
+
+        if ($raw === '') {
+            return 'Direct/Unknown';
+        }
+
+        if ($raw[0] === '/') {
+            return 'Internal Link';
+        }
+
+        $url = preg_match('#^https?://#i', $raw) ? $raw : ('https://' . $raw);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if ($host) {
+            $host = preg_replace('/^www\./i', '', $host);
+            return $host ?: 'Direct/Unknown';
+        }
+
+        return strlen($raw) > 32 ? substr($raw, 0, 32) . '...' : $raw;
     }
 
     protected function countForSection(string $key): int

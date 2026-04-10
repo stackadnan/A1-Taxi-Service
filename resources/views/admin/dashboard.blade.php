@@ -2,6 +2,25 @@
 
 @section('content')
 <div class="container mx-auto py-8">
+  <!-- Top charts -->
+  <div class="mb-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <div class="p-4 rounded-lg bg-white border shadow-sm" data-default-subtitle="Distribution of where bookings came from">
+      <h3 class="font-semibold mb-1 text-lg">Booking Source (This Month)</h3>
+      <p class="chart-subtitle text-xs text-gray-500 mb-3">Distribution of where bookings came from</p>
+      <div class="h-72">
+        <canvas id="bookingSourceChart"></canvas>
+      </div>
+    </div>
+
+    <div class="p-4 rounded-lg bg-white border shadow-sm" data-default-subtitle="Jobs grouped by airport names in pickup/dropoff">
+      <h3 class="font-semibold mb-1 text-lg">Airport Jobs (This Month)</h3>
+      <p class="chart-subtitle text-xs text-gray-500 mb-3">Jobs grouped by airport names in pickup/dropoff</p>
+      <div class="h-72">
+        <canvas id="airportJobsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
   <!-- Panels side-by-side -->
   <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
     <div class="p-4 rounded-lg bg-white border shadow-sm">
@@ -128,9 +147,121 @@
 Please cooperate, stay alert, and ensure all duties continue smoothly during this period.</div>
       </div>
     </div>
-
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    (function(){
+      if (typeof Chart === 'undefined') return;
+
+      var sourceCtx = document.getElementById('bookingSourceChart');
+      var airportCtx = document.getElementById('airportJobsChart');
+      var sourceChart = null;
+      var airportChart = null;
+
+      var initialSource = @json($bookingSourceChart ?? ['labels' => [], 'values' => [], 'is_dummy' => false]);
+      var initialAirport = @json($airportJobsChart ?? ['labels' => [], 'values' => [], 'is_dummy' => false]);
+
+      function setSubTitle(chartId, isDummy) {
+        var chartEl = document.getElementById(chartId);
+        if (!chartEl) return;
+        var panel = chartEl.closest('.p-4.rounded-lg');
+        if (!panel) return;
+
+        var sub = panel.querySelector('.chart-subtitle');
+        if (!sub) return;
+        if (isDummy) {
+          sub.textContent = 'Showing sample data until enough live bookings are available';
+          sub.classList.remove('text-gray-500');
+          sub.classList.add('text-amber-600');
+        } else {
+          sub.textContent = panel.dataset.defaultSubtitle || sub.textContent;
+          sub.classList.remove('text-amber-600');
+          sub.classList.add('text-gray-500');
+        }
+      }
+
+      function applySourceData(payload) {
+        if (!sourceChart || !payload) return;
+        sourceChart.data.labels = payload.labels || [];
+        sourceChart.data.datasets[0].data = payload.values || [];
+        sourceChart.update();
+        setSubTitle('bookingSourceChart', !!payload.is_dummy);
+      }
+
+      function applyAirportData(payload) {
+        if (!airportChart || !payload) return;
+        airportChart.data.labels = payload.labels || [];
+        airportChart.data.datasets[0].data = payload.values || [];
+        airportChart.update();
+        setSubTitle('airportJobsChart', !!payload.is_dummy);
+      }
+
+      if (sourceCtx) {
+        sourceChart = new Chart(sourceCtx, {
+          type: 'doughnut',
+          data: {
+            labels: initialSource.labels || [],
+            datasets: [{
+              data: initialSource.values || [],
+              backgroundColor: ['#2563eb','#7c3aed','#0891b2','#16a34a','#f59e0b','#dc2626','#6b7280','#14b8a6'],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom' }
+            }
+          }
+        });
+        setSubTitle('bookingSourceChart', !!initialSource.is_dummy);
+      }
+
+      if (airportCtx) {
+        airportChart = new Chart(airportCtx, {
+          type: 'bar',
+          data: {
+            labels: initialAirport.labels || [],
+            datasets: [{
+              label: 'Jobs',
+              data: initialAirport.values || [],
+              backgroundColor: '#4f46e5',
+              borderRadius: 6,
+              maxBarThickness: 36
+            }]
+          },
+          options: {
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { precision: 0 }
+              }
+            },
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+        setSubTitle('airportJobsChart', !!initialAirport.is_dummy);
+      }
+
+      function refreshChartData() {
+        fetch('{{ route('admin.dashboard.chart-data') }}', {
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        })
+          .then(function(r){ return r.json(); })
+          .then(function(json){
+            if (!json) return;
+            applySourceData(json.bookingSourceChart);
+            applyAirportData(json.airportJobsChart);
+          })
+          .catch(function(err){ console.warn('Chart refresh failed', err); });
+      }
+
+      setInterval(refreshChartData, 60000);
+    })();
+
     (function(){
       // Booking tabs functionality
       var tabs = document.querySelectorAll('.dashboard-tab');
@@ -167,31 +298,24 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
             var href = a.getAttribute('href');
             if (!href) return;
             
-            // Find the active tab to get the current section (try multiple selectors)
             var activeTab = document.querySelector('.dashboard-tab.active') || 
                            document.querySelector('.dashboard-tab.bg-indigo-600') ||
                            document.querySelector('.tab-link.active');
             var section = activeTab ? activeTab.dataset.section : '{{ $active ?? "new" }}';
             
-            // Ensure URL has proper parameters for partial loading
             var url = href;
             var hasQuery = url.indexOf('?') !== -1;
             var separator = hasQuery ? '&' : '?';
             
-            // Add partial=1 if not present
             if (url.indexOf('partial=1') === -1) {
               url += separator + 'partial=1';
               separator = '&';
             }
             
-            // Add section if not present
             if (url.indexOf('section=') === -1) {
               url += separator + 'section=' + section;
             }
             
-            console.log('Loading pagination with URL:', url); // Debug log
-            
-            // Load content via AJAX
             if (!listContainer) return;
             listContainer.innerHTML = '<div class="p-4 text-gray-600">Loading…</div>';
             
@@ -210,17 +334,18 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
         });
       }
 
-      function attachRowHandlers(container){
-        // Row click navigation disabled on dashboard bookings list — clicks intentionally do nothing.
-        // Links (View/Edit) inside rows will continue to function normally.
-        return;
-      }
-
       function attachBookingViewButtons(container){
         var buttons = container.querySelectorAll('.booking-view-button');
         buttons.forEach(function(btn){
           if (btn.dataset.bound) return; btn.dataset.bound='1';
-          btn.addEventListener('click', function(e){ e.preventDefault(); if (typeof window.openPostcodeModal === 'function') { window.openPostcodeModal(btn.getAttribute('href'), btn.dataset.title || 'View Booking'); } else { window.location = btn.getAttribute('href'); } });
+          btn.addEventListener('click', function(e){
+            e.preventDefault();
+            if (typeof window.openPostcodeModal === 'function') {
+              window.openPostcodeModal(btn.getAttribute('href'), btn.dataset.title || 'View Booking');
+            } else {
+              window.location = btn.getAttribute('href');
+            }
+          });
         });
       }
 
@@ -242,7 +367,6 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
           });
       }
 
-      // Attach tab click handlers
       tabs.forEach(function(tab){ 
         tab.addEventListener('click', function(e){ 
           e.preventDefault(); 
@@ -250,11 +374,9 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
         }); 
       });
 
-      // Attach handlers to initial content
       attachPagination(listContainer);
       attachBookingViewButtons(listContainer);
 
-      // Global function to refresh current tab (called from notification system)
       window.refreshBookingList = function() {
         var activeTab = document.querySelector('.dashboard-tab.active') || 
                        document.querySelector('.dashboard-tab.bg-indigo-600') ||
@@ -263,16 +385,21 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
           loadTab(activeTab.href, activeTab);
         }
 
-        // Also refresh counts for booking tabs
         try {
-          fetch('{{ route('admin.bookings.counts') }}', { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' })
+          fetch('{{ route('admin.bookings.counts') }}', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            credentials: 'same-origin'
+          })
             .then(function(r){ return r.json(); })
-            .then(function(json){ if (json && json.counts) {
-              Object.keys(json.counts).forEach(function(k){
-                var el = document.querySelector('[data-count-for="' + k + '"]');
-                if (el) el.textContent = json.counts[k] || 0;
-              });
-            } }).catch(function(){/* ignore */});
+            .then(function(json){
+              if (json && json.counts) {
+                Object.keys(json.counts).forEach(function(k){
+                  var el = document.querySelector('[data-count-for="' + k + '"]');
+                  if (el) el.textContent = json.counts[k] || 0;
+                });
+              }
+            })
+            .catch(function(){ /* ignore */ });
         } catch(e){ console.warn('Failed to refresh booking counts', e); }
       };
     })();
