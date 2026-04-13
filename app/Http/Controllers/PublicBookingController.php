@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\AdminSetting;
 use App\Models\BookingStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -162,7 +163,10 @@ class PublicBookingController extends Controller
 
     protected function generateBookingCode(): string
     {
-        $prefix = 'CD';
+        $rawPrefix = strtoupper((string) AdminSetting::get('booking_reference_prefix', 'CD'));
+        $lettersOnly = preg_replace('/[^A-Z]/', '', $rawPrefix) ?? '';
+        $prefix = strlen($lettersOnly) >= 2 ? substr($lettersOnly, 0, 2) : 'CD';
+
         for ($i = 0; $i < 10; $i++) {
             try {
                 $num = random_int(100000, 999999);

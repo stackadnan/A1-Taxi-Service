@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Driver;
+use App\Models\AdminSetting;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
@@ -14,6 +15,7 @@ class DriverController extends Controller
     {
         $q = trim($request->get('q', ''));
         $tab = $request->get('tab', 'active');
+        $timingSettings = AdminSetting::driverWarningThresholds();
 
         $query = Driver::query();
 
@@ -211,12 +213,12 @@ class DriverController extends Controller
                 return view('admin.drivers._documents', compact('drivers'));
             }
             if ($tab === 'status') {
-                return view('admin.drivers._status', compact('drivers'));
+                return view('admin.drivers._status', compact('drivers', 'timingSettings'));
             }
             return view('admin.drivers._list', compact('drivers'));
         }
 
-        return view('admin.drivers.index', compact('drivers','tab'));
+        return view('admin.drivers.index', compact('drivers', 'tab', 'timingSettings'));
     }
 
     public function show(Request $request, Driver $driver)

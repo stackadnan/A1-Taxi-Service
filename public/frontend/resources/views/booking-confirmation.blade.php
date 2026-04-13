@@ -5,6 +5,44 @@ $Title = 'Home';
 $Title2 = 'Passenger Information';
 $SubTitle = 'Complete Your Booking';
 
+$stripePublishableKey = (function () {
+  $defaultKey = (string) config('services.stripe.key', '');
+  $tables = [
+    'executiveairport_database.admin_settings',
+    'admin_settings',
+  ];
+
+  foreach ($tables as $table) {
+    try {
+      $row = \Illuminate\Support\Facades\DB::table($table)->first();
+      if (!$row) {
+        continue;
+      }
+
+      $misc = [];
+      $rawMisc = $row->misc ?? null;
+
+      if (is_array($rawMisc)) {
+        $misc = $rawMisc;
+      } elseif (is_string($rawMisc) && trim($rawMisc) !== '') {
+        $decoded = json_decode($rawMisc, true);
+        if (is_array($decoded)) {
+          $misc = $decoded;
+        }
+      }
+
+      $dbKey = trim((string) ($misc['stripe_public_key'] ?? ''));
+      if ($dbKey !== '') {
+        return $dbKey;
+      }
+    } catch (\Throwable $e) {
+      continue;
+    }
+  }
+
+  return $defaultKey;
+})();
+
 ?>
 
 @include('partials.layouts.layoutsTop')
@@ -254,6 +292,8 @@ $SubTitle = 'Complete Your Booking';
   var bdata = {};
   var selectedPaymentType = 'cash';
   var bookingSubmitUrl = <?php echo json_encode(route('booking.submit')); ?>;
+  var stripePublishableKey = <?php echo json_encode($stripePublishableKey); ?>;
+  var stripeJsLoader = null;
 
   try {
     bdata = JSON.parse(localStorage.getItem('booking_data') || '{}');
@@ -336,6 +376,71 @@ $SubTitle = 'Complete Your Booking';
     status.classList.remove('d-none');
   }
 
+  function loadStripeJs() {
+    if (window.Stripe) {
+      return Promise.resolve(window.Stripe);
+    }
+
+    if (stripeJsLoader) {
+      return stripeJsLoader;
+    }
+
+    stripeJsLoader = new Promise(function(resolve, reject) {
+      var script = document.createElement('script');
+      script.src = 'https://js.stripe.com/v3/';
+      script.async = true;
+      script.onload = function() {
+        if (window.Stripe) {
+          resolve(window.Stripe);
+        } else {
+          reject(new Error('Stripe.js failed to initialize.'));
+        }
+      };
+      script.onerror = function() {
+        reject(new Error('Unable to load Stripe.js.'));
+      };
+      document.head.appendChild(script);
+    });
+
+    return stripeJsLoader;
+  }
+
+  function redirectToStripeCheckout(sessionId, fallbackUrl) {
+    if (!sessionId || !stripePublishableKey) {
+      if (fallbackUrl) {
+        window.location.href = fallbackUrl;
+        return;
+      }
+
+      setStatus('Card payment could not be started. Please try again.', 'danger');
+      return;
+    }
+
+    setStatus('Redirecting to secure card checkout...', 'info');
+
+    loadStripeJs()
+      .then(function(Stripe) {
+        var stripe = Stripe(stripePublishableKey);
+        return stripe.redirectToCheckout({ sessionId: sessionId });
+      })
+      .then(function(result) {
+        if (result && result.error) {
+          if (fallbackUrl) {
+            window.location.href = fallbackUrl;
+            return;
+          }
+          setStatus(result.error.message || 'Unable to redirect to card checkout.', 'danger');
+        }
+      })
+      .catch(function(err) {
+        if (fallbackUrl) {
+          window.location.href = fallbackUrl;
+          return;
+        }
+        setStatus('Unable to open Stripe checkout: ' + err.message, 'danger');
+      });
+  }
+
   document.getElementById('passenger-form').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -415,6 +520,12 @@ $SubTitle = 'Complete Your Booking';
       try {
         localStorage.setItem('booking_result', JSON.stringify(result.payload));
       } catch (storageError) {}
+
+      var isCardPayment = selectedPaymentType === 'card';
+      if (isCardPayment && result.payload.stripe_session_id) {
+        redirectToStripeCheckout(result.payload.stripe_session_id, result.payload.redirect_url || '');
+        return;
+      }
 
       if (result.payload.redirect_url) {
         window.location.href = result.payload.redirect_url;

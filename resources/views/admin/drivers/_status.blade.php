@@ -1,4 +1,11 @@
 <div class="grid grid-cols-12 gap-6" style="max-width:100%; overflow-x:hidden;">
+  @php
+    $timingSettings = $timingSettings ?? [];
+    $twoHourMinutes = (int) ($timingSettings['two_hour_minutes'] ?? 120);
+    $urgentMinutes = (int) ($timingSettings['urgent_minutes'] ?? 25);
+    $etaBufferMinutes = (int) ($timingSettings['eta_buffer_minutes'] ?? 30);
+  @endphp
+
   <!-- Driver List Section -->
   <div class="col-span-8">
     <div class="overflow-x-auto">
@@ -38,8 +45,8 @@
               $m = abs($rowRemainingMinutes) % 60;
               $rowRemainingLabel = ($rowRemainingMinutes < 0 ? 'Overdue' : (($h > 0 ? $h.'h ' : '') . $m . 'm'));
               if ($rowRemainingMinutes < 0)       { $rowRemainingClass = 'text-red-600 font-semibold'; }
-              elseif ($rowRemainingMinutes <= 25 && !$rowIsInRoute && !$rowIsPob)  { $rowRemainingClass = 'text-red-600 font-semibold'; }
-              elseif ($rowRemainingMinutes <= 120 && !$rowIsInRoute && !$rowIsPob) { $rowRemainingClass = 'text-orange-500 font-semibold'; }
+              elseif ($rowRemainingMinutes <= $urgentMinutes && !$rowIsInRoute && !$rowIsPob)  { $rowRemainingClass = 'text-red-600 font-semibold'; }
+              elseif ($rowRemainingMinutes <= $twoHourMinutes && !$rowIsInRoute && !$rowIsPob) { $rowRemainingClass = 'text-orange-500 font-semibold'; }
               else                                { $rowRemainingClass = 'text-gray-700'; }
             }
           }
@@ -701,6 +708,11 @@
 
   // ─── Remaining-Time Polling & Late-Warning System ────────────────────────
   const _csrf = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
+  const _timing = {
+    twoHourMinutes: {{ $twoHourMinutes }},
+    urgentMinutes: {{ $urgentMinutes }},
+    etaBufferMinutes: {{ $etaBufferMinutes }}
+  };
 
   // Per-driver warning state (session-only; resets on page reload)
   const _warnState = {}; // { [driverId]: { twoHourDone: bool, urgentLast: timestamp } }
@@ -719,8 +731,8 @@
   function _remainingClass(minutes, isInRoute, isPob) {
     if (isInRoute || isPob) return 'text-gray-400';
     if (minutes < 0)        return 'text-red-600 font-semibold';
-    if (minutes <= 25)      return 'text-red-600 font-semibold';
-    if (minutes <= 120)     return 'text-orange-500 font-semibold';
+    if (minutes <= _timing.urgentMinutes)  return 'text-red-600 font-semibold';
+    if (minutes <= _timing.twoHourMinutes) return 'text-orange-500 font-semibold';
     return 'text-gray-700';
   }
 
@@ -775,8 +787,8 @@
         }, function(result, status) {
           if (status === 'OK') {
             var etaMins = Math.round(result.routes[0].legs[0].duration.value / 60);
-            // Warn if buffer (remaining – eta) < 30 minutes
-            if ((remainingMinutes - etaMins) < 30) {
+            // Warn if buffer (remaining – eta) falls below the configured threshold.
+            if ((remainingMinutes - etaMins) < _timing.etaBufferMinutes) {
               _sendWarning(driverId, bookingId, 'two_hour_warning', remainingMinutes, etaMins);
             }
           } else {
@@ -829,7 +841,7 @@
     .catch(function(e){ console.warn('[timing] refresh error:', e); });
   }
 
-  // Run every minute: check 25-minute urgent threshold & 2-hour ETA threshold
+  // Run every minute: check urgent threshold and primary warning window.
   function _checkWarnings() {
     var rows = document.querySelectorAll('[data-driver-id]');
     rows.forEach(function(row) {
@@ -845,8 +857,8 @@
       if (!_warnState[driverId]) _warnState[driverId] = {};
       var state = _warnState[driverId];
 
-      // ── 25-minute urgent warning: every ~1 minute ──
-      if (remaining > 0 && remaining <= 25) {
+      // ── Urgent warning: every ~1 minute ──
+      if (remaining > 0 && remaining <= _timing.urgentMinutes) {
         var now = Date.now();
         if (!state.urgentLast || (now - state.urgentLast) >= 55000) {
           state.urgentLast = now;
@@ -854,8 +866,8 @@
         }
       }
 
-      // ── 2-hour ETA check: once per session per driver ──
-      if (remaining > 25 && remaining <= 120 && !state.twoHourDone) {
+      // ── Main warning window check: once per session per driver ──
+      if (remaining > _timing.urgentMinutes && remaining <= _timing.twoHourMinutes && !state.twoHourDone) {
         state.twoHourDone = true;
         _checkETA2Hour(driverId, bookingId, remaining, pickupAddress);
       }

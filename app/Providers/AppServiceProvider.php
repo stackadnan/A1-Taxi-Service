@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
+use App\Models\AdminSetting;
 use App\Events\DriverResponseUpdated;
 use App\Listeners\SendAdminNotificationOnDriverResponse;
 
@@ -43,8 +44,24 @@ class AppServiceProvider extends ServiceProvider
             $broadcasts = \App\Models\Broadcast::where(function($q){
                 $q->whereNull('scheduled_at')->orWhere('scheduled_at', '<=', now());
             })->orderBy('created_at','desc')->limit(5)->get();
+
+            try {
+                $themeMode = (string) AdminSetting::get('admin_theme_mode', 'light');
+                if (!in_array($themeMode, ['light', 'dark'], true)) {
+                    $themeMode = 'light';
+                }
+
+                $idleTimeoutMinutes = (int) AdminSetting::get('idle_timeout_minutes', 10);
+                $idleTimeoutMinutes = max(10, min(15, $idleTimeoutMinutes));
+                $idleTimeoutSeconds = $idleTimeoutMinutes * 60;
+            } catch (\Throwable $e) {
+                $themeMode = 'light';
+                $idleTimeoutSeconds = (int) config('session.idle_seconds', 600);
+            }
             
-            $view->with('broadcasts', $broadcasts);
+            $view->with('broadcasts', $broadcasts)
+                ->with('adminThemeMode', $themeMode)
+                ->with('idleTimeoutSeconds', $idleTimeoutSeconds);
         });
     }
 }

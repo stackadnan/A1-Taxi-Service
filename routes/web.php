@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Driver\DriverAuthController;
 use App\Http\Controllers\Driver\DriverDashboardController;
 
@@ -147,7 +148,8 @@ Route::name('admin.')->group(function () {
             Route::delete('others/{other}', [\App\Http\Controllers\Admin\Pricing\OtherController::class, 'destroy'])->name('others.destroy')->middleware('App\\Http\\Middleware\\EnsurePermission:pricing.edit');
         });
 
-        Route::get('settings', function(){ return view('admin.settings.index'); })->name('settings.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.view');
+        Route::get('settings', [AdminSettingsController::class, 'index'])->name('settings.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.view');
+        Route::put('settings', [AdminSettingsController::class, 'update'])->name('settings.update')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.edit');
         Route::get('notifications', function(){ return view('admin.notifications.index'); })->name('notifications.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':notification.view');
         Route::get('driver-broadcasts', [\App\Http\Controllers\Admin\DriverBroadcastController::class, 'index'])->name('driver-broadcasts.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':notifications.view');
         Route::post('driver-broadcasts', [\App\Http\Controllers\Admin\DriverBroadcastController::class, 'store'])->name('driver-broadcasts.store')->middleware(\App\Http\Middleware\EnsurePermission::class.':notifications.edit');

@@ -223,6 +223,109 @@
       border-color: #6366f1;
       background-color: #ede9fe;
     }
+
+    /* Dark mode styling for manual booking panel */
+    body.admin-theme-dark .manual-card {
+      background: #0f172a;
+      border-color: #334155;
+      box-shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
+    }
+
+    body.admin-theme-dark #manual-booking-form .section-header {
+      color: #a5b4fc;
+      border-bottom-color: #334155;
+    }
+
+    body.admin-theme-dark #manual-booking-form .form-label {
+      color: #cbd5e1;
+    }
+
+    body.admin-theme-dark #manual-booking-form .input-icon {
+      color: #94a3b8;
+    }
+
+    body.admin-theme-dark #manual-booking-form .form-input,
+    body.admin-theme-dark #manual-booking-form input,
+    body.admin-theme-dark #manual-booking-form select,
+    body.admin-theme-dark #manual-booking-form textarea {
+      background-color: #0b1220;
+      border-color: #334155;
+      color: #e5e7eb;
+    }
+
+    body.admin-theme-dark #manual-booking-form .form-input::placeholder,
+    body.admin-theme-dark #manual-booking-form input::placeholder,
+    body.admin-theme-dark #manual-booking-form textarea::placeholder {
+      color: #94a3b8;
+    }
+
+    body.admin-theme-dark #manual-booking-form .form-input:read-only,
+    body.admin-theme-dark #manual-booking-form .form-input:disabled {
+      background-color: #111827;
+      color: #94a3b8;
+      border-color: #334155;
+    }
+
+    body.admin-theme-dark #manual-booking-form .border-gray-200 {
+      border-color: #334155 !important;
+    }
+
+    body.admin-theme-dark #manual-booking-form .bg-gray-50 {
+      background: #1f2937 !important;
+    }
+
+    body.admin-theme-dark #manual-booking-form .text-gray-800,
+    body.admin-theme-dark #manual-booking-form .text-gray-700,
+    body.admin-theme-dark #manual-booking-form .text-gray-600,
+    body.admin-theme-dark #manual-booking-form .text-gray-500 {
+      color: #d1d5db !important;
+    }
+
+    body.admin-theme-dark .switch .toggle-track {
+      background: #475569;
+    }
+
+    body.admin-theme-dark #vehicle-pricing-list .pricing-item {
+      background: #0b1220;
+      border-color: #334155;
+      color: #e5e7eb;
+    }
+
+    body.admin-theme-dark #vehicle-pricing-list .pricing-item:hover {
+      background: #1f2937;
+      border-color: #818cf8;
+    }
+
+    body.admin-theme-dark #vehicle-pricing-list .pricing-item.selected {
+      background: #312e81;
+      border-color: #a5b4fc;
+    }
+
+    body.admin-theme-dark #vehicle-pricing-list .selected-price-row {
+      background: #312e81 !important;
+      border-color: #a5b4fc !important;
+      color: #e5e7eb !important;
+    }
+
+    body.admin-theme-dark #vehicle-pricing-list .selected-price-row .font-medium {
+      color: #e5e7eb !important;
+    }
+
+    body.admin-theme-dark #vehicle-pricing-list .manual-pricing-source {
+      color: #cbd5e1 !important;
+    }
+
+    body.admin-theme-dark #vehicle-pricing-list .manual-pricing-airport-charges {
+      background: #1e293b !important;
+      border-color: #334155 !important;
+      color: #e5e7eb !important;
+    }
+
+    body.admin-theme-dark #booking-search-results {
+      background: #0f172a;
+      border-color: #334155;
+      color: #e5e7eb;
+    }
   </style>
 
   <div class="col-span-8">
@@ -591,6 +694,21 @@
   .autocomplete-list { position: absolute; z-index: 50; background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; max-height: 240px; overflow:auto; width:100%; box-shadow: 0 4px 8px rgba(0,0,0,0.06); }
   .autocomplete-item { padding: 8px 10px; font-size: 13px; color: #111827; }
   .autocomplete-item:hover, .autocomplete-item:focus { background:#f3f4f6; cursor:pointer; }
+
+  body.admin-theme-dark .autocomplete-list {
+    background: #0f172a;
+    border-color: #334155;
+    box-shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
+  }
+
+  body.admin-theme-dark .autocomplete-item {
+    color: #e5e7eb;
+  }
+
+  body.admin-theme-dark .autocomplete-item:hover,
+  body.admin-theme-dark .autocomplete-item:focus {
+    background: #1f2937;
+  }
 </style>
 
 <script>
@@ -935,12 +1053,25 @@
     var existing = document.getElementById('vehicle-quote-modal');
     if (existing) existing.remove();
 
+    var isDarkMode = document.body && document.body.classList.contains('admin-theme-dark');
+
     var modal = document.createElement('div'); modal.id = 'vehicle-quote-modal';
     modal.style.position = 'fixed'; modal.style.left = '0'; modal.style.top = '0'; modal.style.right = '0'; modal.style.bottom = '0'; modal.style.background = 'rgba(0,0,0,0.5)'; modal.style.zIndex = 20000; modal.style.display = 'flex'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center';
 
-    var box = document.createElement('div'); box.style.background = '#fff'; box.style.borderRadius = '8px'; box.style.width = '420px'; box.style.maxWidth = '90%'; box.style.padding = '16px'; box.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
+    var box = document.createElement('div');
+    box.style.background = isDarkMode ? '#0f172a' : '#fff';
+    box.style.border = isDarkMode ? '1px solid #334155' : '1px solid #e5e7eb';
+    box.style.borderRadius = '8px';
+    box.style.width = '420px';
+    box.style.maxWidth = '90%';
+    box.style.padding = '16px';
+    box.style.boxShadow = isDarkMode ? '0 20px 36px rgba(2,6,23,0.55)' : '0 10px 30px rgba(0,0,0,0.2)';
 
-    var title = document.createElement('h3'); title.textContent = 'Select vehicle'; title.style.margin = '0 0 8px 0'; box.appendChild(title);
+    var title = document.createElement('h3');
+    title.textContent = 'Select vehicle';
+    title.style.margin = '0 0 8px 0';
+    title.style.color = isDarkMode ? '#e5e7eb' : '#111827';
+    box.appendChild(title);
 
     var list = document.createElement('div'); list.style.maxHeight = '320px'; list.style.overflow = 'auto'; list.style.marginBottom = '12px';
 
@@ -949,13 +1080,21 @@
       var label = k; // display label
       var displayName = k.replace('_price','');
       var human = (displayName === 'saloon') ? 'Saloon' : (displayName === 'business' ? 'Business' : (displayName === 'mpv6' ? 'MPV6' : (displayName === 'mpv8' ? 'MPV8' : displayName))); 
-      var item = document.createElement('label'); item.style.display = 'flex'; item.style.alignItems = 'center'; item.style.justifyContent = 'space-between'; item.style.padding = '8px'; item.style.borderBottom = '1px solid #eee';
+      var item = document.createElement('label');
+      item.style.display = 'flex';
+      item.style.alignItems = 'center';
+      item.style.justifyContent = 'space-between';
+      item.style.padding = '8px';
+      item.style.borderBottom = isDarkMode ? '1px solid #334155' : '1px solid #eee';
+      item.style.color = isDarkMode ? '#e5e7eb' : '#111827';
       var left = document.createElement('div');
       var radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'vehicle_quote_radio'; radio.value = human; radio.dataset.price = (price !== null && price !== undefined) ? price : '';
       radio.style.marginRight = '8px';
       left.appendChild(radio);
       var span = document.createElement('span'); span.textContent = human; left.appendChild(span);
-      var right = document.createElement('div'); right.textContent = (price !== null && price !== undefined) ? Number(price).toFixed(2) + ' ' : 'N/A';
+      var right = document.createElement('div');
+      right.textContent = (price !== null && price !== undefined) ? Number(price).toFixed(2) + ' ' : 'N/A';
+      right.style.color = isDarkMode ? '#cbd5e1' : '#111827';
       item.appendChild(left); item.appendChild(right); list.appendChild(item);
 
       radio.addEventListener('change', function(){
@@ -977,7 +1116,14 @@
 
     box.appendChild(list);
     var footer = document.createElement('div'); footer.style.textAlign = 'right';
-    var cancel = document.createElement('button'); cancel.type='button'; cancel.textContent='Cancel'; cancel.className='px-3 py-1 border rounded mr-2'; cancel.addEventListener('click', function(){ modal.remove(); });
+    var cancel = document.createElement('button');
+    cancel.type='button';
+    cancel.textContent='Cancel';
+    cancel.className='px-3 py-1 border rounded mr-2';
+    cancel.style.background = isDarkMode ? '#111827' : '#fff';
+    cancel.style.borderColor = isDarkMode ? '#334155' : '#d1d5db';
+    cancel.style.color = isDarkMode ? '#e5e7eb' : '#111827';
+    cancel.addEventListener('click', function(){ modal.remove(); });
     footer.appendChild(cancel);
     box.appendChild(footer);
 
@@ -1013,13 +1159,13 @@
       priceList.forEach(function(it){
         var priceRaw = (json.pricing && json.pricing[it.key] !== undefined && json.pricing[it.key] !== null) ? json.pricing[it.key] : null;
         var priceText = priceRaw !== null ? Number(priceRaw).toFixed(2) : 'N/A';
-        var row = document.createElement('div'); row.className = 'p-2 border rounded flex justify-between items-center cursor-pointer hover:bg-gray-50';
+        var row = document.createElement('div'); row.className = 'pricing-item p-2 border rounded flex justify-between items-center cursor-pointer hover:bg-gray-50';
         row.dataset.key = it.key; row.dataset.price = priceRaw !== null ? priceRaw : '';
         row.innerHTML = '<div>' + it.label + '</div><div class="font-medium">' + priceText + '</div>';
         row.addEventListener('click', function(){
           // mark selected
-          var prev = container.querySelectorAll('.selected-price-row'); prev.forEach(function(el){ el.classList.remove('selected-price-row'); el.classList.remove('bg-indigo-50'); el.classList.remove('border-indigo-500'); });
-          row.classList.add('selected-price-row'); row.classList.add('bg-indigo-50'); row.classList.add('border-indigo-500');
+          var prev = container.querySelectorAll('.selected-price-row'); prev.forEach(function(el){ el.classList.remove('selected-price-row'); el.classList.remove('selected'); el.classList.remove('bg-indigo-50'); el.classList.remove('border-indigo-500'); });
+          row.classList.add('selected-price-row'); row.classList.add('selected');
 
           var human = it.label;
           var sel = document.querySelector('select[name="vehicle_type"]'); var matched = false;
@@ -1061,7 +1207,7 @@
 
       container.appendChild(list);
 
-      var src = document.createElement('div'); src.className = 'mt-2 text-xs text-gray-500';
+      var src = document.createElement('div'); src.className = 'mt-2 text-xs text-gray-500 manual-pricing-source';
       var srcText = 'Source: ';
       if (json.pricing_type === 'zone') srcText += 'Zones';
       else if (json.pricing_type === 'postcode') srcText += 'Postcode';
@@ -1081,7 +1227,7 @@
       // Show airport charges if applied
       if (json.pricing && json.pricing.airport_charges && json.pricing.airport_charges > 0) {
         var chargesDiv = document.createElement('div'); 
-        chargesDiv.className = 'mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs';
+        chargesDiv.className = 'mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs manual-pricing-airport-charges';
         var chargesText = '<strong>Airport Charges Applied:</strong> £' + Number(json.pricing.airport_charges).toFixed(2);
         if (json.pricing.applied_charges && json.pricing.applied_charges.length > 0) {
           chargesText += '<br>';

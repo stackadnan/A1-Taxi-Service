@@ -90,6 +90,59 @@
     /* ensure hidden class doesn't permanently hide label when hovering */
     #sidebar .sidebar-label.hidden { display: flex !important; opacity: 0; pointer-events: none; }
     @media (max-width: 1023px) { #sidebar .sidebar-label { display: none !important; } }
+
+    /* Dark mode sidebar palette and contrast */
+    body.admin-theme-dark #sidebar {
+      background: #0b1220;
+      border-color: #334155;
+    }
+
+    body.admin-theme-dark #sidebar a.flex {
+      color: #cbd5e1;
+    }
+
+    body.admin-theme-dark #sidebar a.flex:hover {
+      background: #1f2937 !important;
+    }
+
+    body.admin-theme-dark #sidebar a.flex.bg-gray-100 {
+      background: #334155 !important;
+      color: #f8fafc !important;
+    }
+
+    body.admin-theme-dark #sidebar .sidebar-label {
+      background: #0f172a;
+      color: #e5e7eb;
+      border-color: #334155;
+    }
+
+    body.admin-theme-dark #sidebar.w-64 .sidebar-label {
+      color: #e5e7eb;
+      background: transparent;
+    }
+
+    body.admin-theme-dark #sidebar a.flex:hover .sidebar-label,
+    body.admin-theme-dark #sidebar a.flex:focus .sidebar-label {
+      border-color: #818cf8;
+      box-shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
+    }
+
+    body.admin-theme-dark #sidebar svg.text-gray-500 {
+      color: #cbd5e1 !important;
+    }
+
+    body.admin-theme-dark #sidebar svg.text-indigo-600 {
+      color: #a5b4fc !important;
+    }
+
+    body.admin-theme-dark #sidebar #sidebarEdgeToggle {
+      background: #0f172a;
+      border-color: #334155;
+    }
+
+    body.admin-theme-dark #sidebar #sidebarEdgeIcon {
+      color: #e5e7eb;
+    }
   </style>
 
   <div class="h-full px-4 py-6 overflow-y-auto overflow-x-hidden sidebar-scroll">
@@ -202,6 +255,21 @@
 
     /* When overlay is active, change the sidebar icon color to purple instead of hiding it */
     #sidebar a.overlay-active svg { color: #7c3aed !important; transition: color .18s ease; }
+
+    body.admin-theme-dark .sidebar-hover-brick {
+      background: #0f172a;
+      color: #e5e7eb;
+      border-color: #334155;
+      box-shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
+    }
+
+    body.admin-theme-dark .sidebar-hover-brick .text {
+      color: #e5e7eb;
+    }
+
+    body.admin-theme-dark #sidebar a.overlay-active svg {
+      color: #a78bfa !important;
+    }
   </style>
 
   <script>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AdminSetting;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +22,14 @@ class LogoutIfIdle
             if ($sessionId) {
                 $row = DB::table(config('session.table'))->where('id', $sessionId)->first();
                 if ($row && property_exists($row, 'last_activity')) {
-                    $idleSeconds = (int) config('session.idle_seconds', 180);
+                    try {
+                        $idleMinutes = (int) AdminSetting::get('idle_timeout_minutes', 10);
+                        $idleMinutes = max(10, min(15, $idleMinutes));
+                        $idleSeconds = $idleMinutes * 60;
+                    } catch (\Throwable $e) {
+                        $idleSeconds = (int) config('session.idle_seconds', 600);
+                    }
+
                     $last = (int) $row->last_activity; // stored as unix timestamp
                     $now = time();
 

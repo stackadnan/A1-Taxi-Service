@@ -24,6 +24,9 @@
         </tr>
       </thead>
       <tbody>
+        @php
+          $vehicleRowColors = \App\Models\AdminSetting::vehicleRowColors();
+        @endphp
         @forelse($bookings as $b)
         @php
           $rowBg = '';
@@ -32,16 +35,16 @@
           $carTypeKey = str_replace([' ', '-', '_'], '', $carType);
 
           if (str_contains($carType, 'saloon')) {
-            $rowBg = 'background-color:#d4edda;';
+            $rowBg = 'background-color:' . ($vehicleRowColors['saloon'] ?? '#d4edda') . ';';
           } elseif (str_contains($carType, 'business')) {
-            $rowBg = 'background-color:#fff3cd;';
+            $rowBg = 'background-color:' . ($vehicleRowColors['business'] ?? '#fff3cd') . ';';
           } elseif (str_contains($carTypeKey, 'mpv6')) {
-            $rowBg = 'background-color:#d1ecf1;';
+            $rowBg = 'background-color:' . ($vehicleRowColors['mpv6'] ?? '#d1ecf1') . ';';
           } elseif (str_contains($carTypeKey, 'mpv8')) {
-            $rowBg = 'background-color:#e2d9f3;';
+            $rowBg = 'background-color:' . ($vehicleRowColors['mpv8'] ?? '#e2d9f3') . ';';
           }
         @endphp
-        <tr class="border-t hover:bg-gray-50 transition-colors" data-booking-id="{{ $b->id }}" id="booking-row-{{ $b->id }}" @if($rowBg) style="{{ $rowBg }}" @endif>
+        <tr class="border-t hover:bg-gray-50 transition-colors {{ $rowBg ? 'booking-row--vehicle' : '' }}" data-booking-id="{{ $b->id }}" id="booking-row-{{ $b->id }}" @if($rowBg) style="{{ $rowBg }}" @endif>
           <td class="p-3"><div class="text-sm font-medium text-gray-900">{{ $b->booking_code }}</div><div class="text-xs text-gray-500">{{ $b->created_at->format('Y-m-d') }}</div></td>
           <td class="p-3"><div class="text-sm text-gray-900">{{ $b->pickup_address ?: '-' }}</div><div class="text-xs text-gray-500">{{ optional($b->pickup_date)->format('Y-m-d') }} {{ $b->pickup_time }}</div></td>
           <td class="p-3 text-sm text-gray-900">{{ $b->dropoff_address ?: '-' }}</td>

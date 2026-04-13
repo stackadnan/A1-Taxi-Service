@@ -10,6 +10,38 @@
     color: white !important;
     border-color: rgb(79 70 229) !important;
   } */
+
+  /* Dark mode: bookings tabs and counters */
+  body.admin-theme-dark .bookings-tabs-wrap ul[role="tablist"] a {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e5e7eb;
+  }
+
+  body.admin-theme-dark .bookings-tabs-wrap ul[role="tablist"] a:hover {
+    background: #1f2937 !important;
+    border-color: #6366f1 !important;
+    color: #c7d2fe !important;
+  }
+
+  body.admin-theme-dark .bookings-tabs-wrap ul[role="tablist"] a[aria-selected="true"] {
+    background: #1e293b;
+    border-color: #6366f1 !important;
+    color: #c7d2fe !important;
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35) inset;
+  }
+
+  body.admin-theme-dark .bookings-tabs-wrap [data-count-for] {
+    background: #334155 !important;
+    color: #e5e7eb !important;
+    border: 1px solid #475569;
+  }
+
+  body.admin-theme-dark .bookings-tabs-wrap a[aria-selected="true"] [data-count-for] {
+    background: #312e81 !important;
+    color: #e0e7ff !important;
+    border-color: #6366f1;
+  }
 </style>
 <div class="bg-white p-6 rounded shadow">
   <div class="flex justify-between items-center mb-4">
@@ -24,7 +56,7 @@
     </a>
   </div>
 
-  <div class="mb-4">
+  <div class="mb-4 bookings-tabs-wrap">
     <ul class="flex flex-wrap gap-3" role="tablist">
       @foreach($sections as $key => $label)
         @if($key !== 'new_manual')

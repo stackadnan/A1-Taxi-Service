@@ -36,8 +36,8 @@ return [
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 
-    // idle timeout in seconds for client-side auto-logout (default 180 seconds)
-    'idle_seconds' => (int) env('SESSION_IDLE_SECONDS', 180),
+    // idle timeout in seconds for client-side auto-logout (default 600 seconds / 10 minutes)
+    'idle_seconds' => (int) env('SESSION_IDLE_SECONDS', 600),
 
     /*
     |--------------------------------------------------------------------------

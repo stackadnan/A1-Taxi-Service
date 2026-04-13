@@ -55,7 +55,7 @@
     @if($activeTab == 'documents')
       @include('admin.drivers._documents', ['drivers' => $drivers])
     @elseif($activeTab == 'status')
-      @include('admin.drivers._status', ['drivers' => $drivers])
+      @include('admin.drivers._status', ['drivers' => $drivers, 'timingSettings' => $timingSettings ?? []])
     @else
       @include('admin.drivers._list', ['drivers' => $drivers])
     @endif

@@ -8,14 +8,81 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <script>console.log('Admin Header Inline Test: script block executed'); window.__adminHeaderInline = true;</script>
   @vite(['resources/css/app.css', 'resources/js/app.js'])
+  @php
+    $adminThemeMode = $adminThemeMode ?? 'light';
+    $isAdminDarkMode = $adminThemeMode === 'dark';
+  @endphp
   <style>
     /* Smooth page transition */
     body {
       transition: opacity 0.2s ease-in-out;
     }
+
+    .admin-theme-dark {
+      background-color: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .admin-theme-dark .bg-white {
+      background-color: #111827 !important;
+      color: #e5e7eb;
+    }
+
+    .admin-theme-dark .bg-gray-50 {
+      background-color: #1f2937 !important;
+    }
+
+    .admin-theme-dark .border,
+    .admin-theme-dark .border-b,
+    .admin-theme-dark .border-t,
+    .admin-theme-dark .border-gray-100,
+    .admin-theme-dark .border-gray-200,
+    .admin-theme-dark .border-gray-300 {
+      border-color: #374151 !important;
+    }
+
+    .admin-theme-dark .text-gray-500,
+    .admin-theme-dark .text-gray-600,
+    .admin-theme-dark .text-gray-700,
+    .admin-theme-dark .text-gray-800,
+    .admin-theme-dark .text-gray-900 {
+      color: #d1d5db !important;
+    }
+
+    .admin-theme-dark input,
+    .admin-theme-dark select,
+    .admin-theme-dark textarea {
+      background-color: #0b1220;
+      color: #e5e7eb;
+      border-color: #374151;
+    }
+
+    /* Keep readability for booking rows that use light custom vehicle colors. */
+    .admin-theme-dark tr.booking-row--vehicle,
+    .admin-theme-dark tr.booking-row--vehicle td,
+    .admin-theme-dark tr.booking-row--vehicle .text-gray-900,
+    .admin-theme-dark tr.booking-row--vehicle .text-gray-800,
+    .admin-theme-dark tr.booking-row--vehicle .text-gray-700,
+    .admin-theme-dark tr.booking-row--vehicle .text-gray-600,
+    .admin-theme-dark tr.booking-row--vehicle .text-gray-500 {
+      color: #0f172a !important;
+    }
+
+    .admin-theme-dark tr.booking-row--vehicle a {
+      color: #1d4ed8 !important;
+    }
+
+    .admin-theme-dark tr.booking-row--vehicle a:hover {
+      color: #1e40af !important;
+    }
+
+    .admin-theme-dark tr.booking-row--vehicle .bg-gray-100 {
+      background-color: rgba(255, 255, 255, 0.72) !important;
+      color: #0f172a !important;
+    }
   </style>
 </head>
-<body class="min-h-screen bg-gray-50 overflow-x-hidden">
+<body class="min-h-screen bg-gray-50 overflow-x-hidden {{ $isAdminDarkMode ? 'admin-theme-dark' : '' }}">
   <!-- Sidebar for lg+ -->
     @include('admin.partials.sidebar')
 
@@ -234,7 +301,7 @@
 
     // Auto-logout on idle with pre-logout warning modal
     (function(){
-      var idleSeconds = {{ (int) config('session.idle_seconds') }}; // seconds
+      var idleSeconds = {{ (int) ($idleTimeoutSeconds ?? config('session.idle_seconds')) }}; // seconds
       var idleMs = idleSeconds * 1000;
 
       // Warning time: if idleSeconds >= 20 show warning 10s before; otherwise show at half the time

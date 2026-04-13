@@ -14,6 +14,8 @@ use Illuminate\View\View;
 
 class ManageBookingController extends Controller
 {
+    private ?array $adminSettingsCache = null;
+
     public function submit(Request $request): JsonResponse
     {
         $input = $request->all();
@@ -188,7 +190,7 @@ class ManageBookingController extends Controller
 
         if (($validated['payment_type'] ?? 'cash') === 'card') {
             try {
-                $checkoutUrl = $this->createStripeCheckoutSession(
+                $checkoutSession = $this->createStripeCheckoutSession(
                     $validated,
                     $primaryBookingId,
                     $primaryBookingCode,
@@ -215,7 +217,8 @@ class ManageBookingController extends Controller
                 'created_count' => $returnBookingId ? 2 : 1,
                 'booking_code' => $primaryBookingCode,
                 'return_booking_code' => $returnBookingCode,
-                'redirect_url' => $checkoutUrl,
+                'redirect_url' => (string) ($checkoutSession['url'] ?? ''),
+                'stripe_session_id' => (string) ($checkoutSession['id'] ?? ''),
             ]);
         }
 
@@ -1039,7 +1042,12 @@ class ManageBookingController extends Controller
 
     private function bookingReferencePrefix(): string
     {
-        $raw = strtoupper((string) config('app.booking_reference_prefix', 'CD'));
+        $configuredPrefix = $this->getAdminSetting(
+            'booking_reference_prefix',
+            (string) config('app.booking_reference_prefix', 'CD')
+        );
+
+        $raw = strtoupper((string) $configuredPrefix);
         $lettersOnly = preg_replace('/[^A-Z]/', '', $raw) ?? '';
 
         if (strlen($lettersOnly) < 2) {
@@ -1280,8 +1288,12 @@ class ManageBookingController extends Controller
         string $primaryBookingCode,
         ?int $returnBookingId = null,
         ?string $returnBookingCode = null
-    ): string {
-        $secretKey = (string) config('services.stripe.secret', '');
+    ): array {
+        $settingsSecret = trim((string) $this->getAdminSetting('stripe_secret_key', ''));
+        $secretKey = $settingsSecret !== ''
+            ? $settingsSecret
+            : (string) config('services.stripe.secret', '');
+
         if ($secretKey === '') {
             throw new \RuntimeException('Stripe secret key is not configured.');
         }
@@ -1358,16 +1370,25 @@ class ManageBookingController extends Controller
         }
 
         $sessionUrl = (string) $response->json('url', '');
+        $sessionId = (string) $response->json('id', '');
+
         if ($sessionUrl === '') {
             throw new \RuntimeException('Stripe did not return a checkout URL.');
         }
 
-        return $sessionUrl;
+        return [
+            'url' => $sessionUrl,
+            'id' => $sessionId,
+        ];
     }
 
     private function fetchStripeCheckoutSession(string $sessionId): array
     {
-        $secretKey = (string) config('services.stripe.secret', '');
+        $settingsSecret = trim((string) $this->getAdminSetting('stripe_secret_key', ''));
+        $secretKey = $settingsSecret !== ''
+            ? $settingsSecret
+            : (string) config('services.stripe.secret', '');
+
         if ($secretKey === '') {
             throw new \RuntimeException('Stripe secret key is not configured.');
         }
@@ -1396,5 +1417,59 @@ class ManageBookingController extends Controller
             + ((bool) ($validated['return_meet_and_greet'] ?? false) ? 20.0 : 0.0);
 
         return round($basePrice + $meetAndGreetTotal, 2);
+    }
+
+    private function getAdminSetting(string $key, mixed $default = null): mixed
+    {
+        $all = $this->getAdminSettings();
+
+        return array_key_exists($key, $all) ? $all[$key] : $default;
+    }
+
+    private function getAdminSettings(): array
+    {
+        if ($this->adminSettingsCache !== null) {
+            return $this->adminSettingsCache;
+        }
+
+        $defaults = [
+            'booking_reference_prefix' => (string) config('app.booking_reference_prefix', 'CD'),
+            'stripe_public_key' => (string) config('services.stripe.key', ''),
+            'stripe_secret_key' => (string) config('services.stripe.secret', ''),
+        ];
+
+        $tables = [
+            'executiveairport_database.admin_settings',
+            'admin_settings',
+        ];
+
+        foreach ($tables as $table) {
+            try {
+                $row = DB::table($table)->first();
+                if (!$row) {
+                    continue;
+                }
+
+                $miscRaw = $row->misc ?? null;
+                $misc = [];
+
+                if (is_array($miscRaw)) {
+                    $misc = $miscRaw;
+                } elseif (is_string($miscRaw) && trim($miscRaw) !== '') {
+                    $decoded = json_decode($miscRaw, true);
+                    if (is_array($decoded)) {
+                        $misc = $decoded;
+                    }
+                }
+
+                $this->adminSettingsCache = array_merge($defaults, $misc);
+                return $this->adminSettingsCache;
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        $this->adminSettingsCache = $defaults;
+        return $this->adminSettingsCache;
     }
 }
