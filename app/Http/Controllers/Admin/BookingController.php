@@ -166,12 +166,18 @@ class BookingController extends Controller
         $status = BookingStatus::where('name', 'new')->first();
         $isReturnBooking = (bool) ($data['is_return_booking'] ?? false);
         $userId = $request->user() ? $request->user()->id : null;
+        $vatPercentage = max(0.0, min(100.0, (float) AdminSetting::get('vat_percentage', 0)));
 
         $pickupAddress = $data['pickup_address'] ?? $data['pickup_address_line'] ?? null;
         $dropoffAddress = $data['dropoff_address'] ?? $data['dropoff_address_line'] ?? null;
 
+        $bookingCharges = isset($data['booking_charges']) ? (float) $data['booking_charges'] : null;
+        $totalWithVat = $bookingCharges !== null
+            ? round($bookingCharges + (($bookingCharges * $vatPercentage) / 100), 2)
+            : null;
+
         try {
-            $result = DB::transaction(function () use ($data, $request, $status, $isReturnBooking, $userId, $pickupAddress, $dropoffAddress) {
+            $result = DB::transaction(function () use ($data, $request, $status, $isReturnBooking, $userId, $pickupAddress, $dropoffAddress, $totalWithVat) {
                 $basePayload = [
                     'user_id' => $userId,
                     'passenger_name' => $data['passenger_name'] ?? null,
@@ -182,7 +188,7 @@ class BookingController extends Controller
                     'message_to_admin' => $data['message_to_admin'] ?? null,
                     'created_by_user_id' => $userId,
                     'status_id' => $status ? $status->id : null,
-                    'total_price' => isset($data['booking_charges']) ? $data['booking_charges'] : null,
+                    'total_price' => $totalWithVat,
                     'passengers_count' => $data['passengers'] ?? 1,
                     'luggage_count' => is_numeric($data['luggage'] ?? null) ? $data['luggage'] : 0,
                 ];

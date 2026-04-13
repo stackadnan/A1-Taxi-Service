@@ -51,6 +51,23 @@
         </div>
 
         <div>
+          <label for="vat_percentage" class="block text-sm font-medium text-gray-700 mb-1">VAT Percentage</label>
+          <input
+            id="vat_percentage"
+            name="vat_percentage"
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value="{{ old('vat_percentage', $settings['vat_percentage'] ?? 0) }}"
+            class="w-full border rounded px-3 py-2"
+            required
+          >
+          <p class="text-xs text-gray-500 mt-1">Example: 20 means 20% VAT will be added to booking totals.</p>
+          @error('vat_percentage') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div>
           <label for="driver_warning_two_hour_minutes" class="block text-sm font-medium text-gray-700 mb-1">In Route Reminder Window (minutes before pickup)</label>
           <input
             id="driver_warning_two_hour_minutes"

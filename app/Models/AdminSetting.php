@@ -30,6 +30,7 @@ class AdminSetting extends Model
             'driver_warning_eta_buffer_minutes' => 30,
             'stripe_public_key' => '',
             'stripe_secret_key' => '',
+            'vat_percentage' => 0,
             'idle_timeout_minutes' => 10,
             'admin_theme_mode' => 'light',
             'vehicle_row_color_saloon' => '#d4edda',

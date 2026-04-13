@@ -82,6 +82,7 @@ class ManageBookingController extends Controller
         $perLegBasePrice = ($isReturnBooking && $basePrice !== null)
             ? round($basePrice / 2, 2)
             : $basePrice;
+        $vatPercentage = $this->getVatPercentage();
 
         $basePayload = [
             'user_id' => 1,
@@ -101,7 +102,7 @@ class ManageBookingController extends Controller
         ];
 
         try {
-            $createdBookings = DB::transaction(function () use ($validated, $basePayload, $isReturnBooking, $perLegBasePrice, $now) {
+            $createdBookings = DB::transaction(function () use ($validated, $basePayload, $isReturnBooking, $perLegBasePrice, $vatPercentage, $now) {
                 $outboundCode = $this->generateBookingCode();
                 $outboundPayload = array_merge($basePayload, [
                     'booking_code' => $outboundCode,
@@ -112,7 +113,10 @@ class ManageBookingController extends Controller
                     'flight_number' => $this->blankToNull($validated['flight_number'] ?? null),
                     'flight_arrival_time' => $this->combineDateAndTime($validated['pickup_date'] ?? null, $validated['flight_time'] ?? null),
                     'meet_and_greet' => (int) ($validated['meet_and_greet'] ?? 0),
-                    'total_price' => $this->applyMeetAndGreetCharge($perLegBasePrice, (bool) ($validated['meet_and_greet'] ?? false)),
+                    'total_price' => $this->applyVatToAmount(
+                        $this->applyMeetAndGreetCharge($perLegBasePrice, (bool) ($validated['meet_and_greet'] ?? false)),
+                        $vatPercentage
+                    ),
                     'baby_seat' => (int) ($validated['baby_seat'] ?? 0),
                     'baby_seat_age' => $this->blankToNull($validated['baby_seat_age'] ?? null),
                 ]);
@@ -137,7 +141,10 @@ class ManageBookingController extends Controller
                         'flight_number' => $this->blankToNull($validated['return_flight_number'] ?? null),
                         'flight_arrival_time' => $this->combineDateAndTime($validated['return_pickup_date'] ?? null, $validated['return_flight_time'] ?? null),
                         'meet_and_greet' => (int) ($validated['return_meet_and_greet'] ?? 0),
-                        'total_price' => $this->applyMeetAndGreetCharge($perLegBasePrice, (bool) ($validated['return_meet_and_greet'] ?? false)),
+                        'total_price' => $this->applyVatToAmount(
+                            $this->applyMeetAndGreetCharge($perLegBasePrice, (bool) ($validated['return_meet_and_greet'] ?? false)),
+                            $vatPercentage
+                        ),
                         'baby_seat' => (int) ($validated['return_baby_seat'] ?? 0),
                         'baby_seat_age' => null,
                     ]);
@@ -1151,13 +1158,20 @@ class ManageBookingController extends Controller
         $outboundMeetAndGreet = (bool) ($validated['meet_and_greet'] ?? false);
         $returnMeetAndGreet = $isReturnTrip ? (bool) ($validated['return_meet_and_greet'] ?? false) : false;
         $meetAndGreetTotal = ($outboundMeetAndGreet ? 20.0 : 0.0) + ($returnMeetAndGreet ? 20.0 : 0.0);
+        $vatPercentage = $this->getVatPercentage();
 
-        $totalJourneyPrice = $baseJourneyPrice !== null
+        $subtotalJourneyPrice = $baseJourneyPrice !== null
             ? round($baseJourneyPrice + $meetAndGreetTotal, 2)
             : null;
+        $vatAmount = $subtotalJourneyPrice !== null
+            ? round(($subtotalJourneyPrice * $vatPercentage) / 100, 2)
+            : null;
+        $totalJourneyPrice = $this->applyVatToAmount($subtotalJourneyPrice, $vatPercentage);
 
         $basePriceText = $baseJourneyPrice !== null ? number_format($baseJourneyPrice, 2) : 'N/A';
         $meetAndGreetText = number_format($meetAndGreetTotal, 2);
+        $vatText = $vatAmount !== null ? number_format($vatAmount, 2) : 'N/A';
+        $vatRateText = number_format($vatPercentage, 2);
         $price = $totalJourneyPrice !== null ? number_format($totalJourneyPrice, 2) : 'N/A';
 
         $adminBody = "A new booking has been created from the frontend.\n\n"
@@ -1174,6 +1188,7 @@ class ManageBookingController extends Controller
             . "Vehicle Type: " . ($vehicleType !== '' ? $vehicleType : 'N/A') . "\n"
             . "Base Fare (GBP): {$basePriceText}\n"
             . "Meet & Greet (GBP): {$meetAndGreetText}\n"
+            . "VAT ({$vatRateText}%) (GBP): {$vatText}\n"
             . "Total Price (GBP): {$price}\n";
 
         if ($returnBookingId !== null && $returnBookingCode !== null) {
@@ -1191,6 +1206,7 @@ class ManageBookingController extends Controller
             . "Payment Type: {$paymentType}\n"
             . "Base Fare (GBP): {$basePriceText}\n"
             . "Meet & Greet (GBP): {$meetAndGreetText}\n"
+            . "VAT ({$vatRateText}%) (GBP): {$vatText}\n"
             . "Total Price (GBP): {$price}\n\n"
             . "If you need any changes, please contact support and share your booking reference.\n";
 
@@ -1319,6 +1335,7 @@ class ManageBookingController extends Controller
         $baseTotal = array_key_exists('price', $validated) && $validated['price'] !== null
             ? (float) $validated['price']
             : 0.0;
+        $vatPercentage = $this->getVatPercentage();
         $tripType = (string) ($validated['trip_type'] ?? 'one-way');
         $hasReturn = $tripType === 'return' && is_string($returnBookingCode) && trim($returnBookingCode) !== '';
 
@@ -1326,8 +1343,10 @@ class ManageBookingController extends Controller
             $outboundBase = round($baseTotal / 2, 2);
             $returnBase = round($baseTotal - $outboundBase, 2);
 
-            $outboundTotal = round($outboundBase + ((bool) ($validated['meet_and_greet'] ?? false) ? 20.0 : 0.0), 2);
-            $returnTotal = round($returnBase + ((bool) ($validated['return_meet_and_greet'] ?? false) ? 20.0 : 0.0), 2);
+            $outboundSubtotal = round($outboundBase + ((bool) ($validated['meet_and_greet'] ?? false) ? 20.0 : 0.0), 2);
+            $returnSubtotal = round($returnBase + ((bool) ($validated['return_meet_and_greet'] ?? false) ? 20.0 : 0.0), 2);
+            $outboundTotal = $this->applyVatToAmount($outboundSubtotal, $vatPercentage) ?? 0.0;
+            $returnTotal = $this->applyVatToAmount($returnSubtotal, $vatPercentage) ?? 0.0;
 
             $outboundAmount = (int) round($outboundTotal * 100);
             $returnAmount = (int) round($returnTotal * 100);
@@ -1416,7 +1435,30 @@ class ManageBookingController extends Controller
         $meetAndGreetTotal = ((bool) ($validated['meet_and_greet'] ?? false) ? 20.0 : 0.0)
             + ((bool) ($validated['return_meet_and_greet'] ?? false) ? 20.0 : 0.0);
 
-        return round($basePrice + $meetAndGreetTotal, 2);
+        $subtotal = round($basePrice + $meetAndGreetTotal, 2);
+
+        return $this->applyVatToAmount($subtotal) ?? 0.0;
+    }
+
+    private function getVatPercentage(): float
+    {
+        $raw = $this->getAdminSetting('vat_percentage', 0);
+        if (!is_numeric($raw)) {
+            return 0.0;
+        }
+
+        return max(0.0, min(100.0, round((float) $raw, 2)));
+    }
+
+    private function applyVatToAmount(?float $amount, ?float $vatPercentage = null): ?float
+    {
+        if ($amount === null) {
+            return null;
+        }
+
+        $vat = $vatPercentage ?? $this->getVatPercentage();
+
+        return round($amount + (($amount * $vat) / 100), 2);
     }
 
     private function getAdminSetting(string $key, mixed $default = null): mixed
@@ -1436,6 +1478,7 @@ class ManageBookingController extends Controller
             'booking_reference_prefix' => (string) config('app.booking_reference_prefix', 'CD'),
             'stripe_public_key' => (string) config('services.stripe.key', ''),
             'stripe_secret_key' => (string) config('services.stripe.secret', ''),
+            'vat_percentage' => 0,
         ];
 
         $tables = [
