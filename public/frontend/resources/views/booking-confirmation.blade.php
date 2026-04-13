@@ -43,6 +43,43 @@ $stripePublishableKey = (function () {
   return $defaultKey;
 })();
 
+$configuredVatPercentage = (function () {
+  $tables = [
+    'executiveairport_database.admin_settings',
+    'admin_settings',
+  ];
+
+  foreach ($tables as $table) {
+    try {
+      $row = \Illuminate\Support\Facades\DB::table($table)->first();
+      if (!$row) {
+        continue;
+      }
+
+      $misc = [];
+      $rawMisc = $row->misc ?? null;
+
+      if (is_array($rawMisc)) {
+        $misc = $rawMisc;
+      } elseif (is_string($rawMisc) && trim($rawMisc) !== '') {
+        $decoded = json_decode($rawMisc, true);
+        if (is_array($decoded)) {
+          $misc = $decoded;
+        }
+      }
+
+      $vat = $misc['vat_percentage'] ?? 0;
+      if (is_numeric($vat)) {
+        return max(0, min(100, (float) $vat));
+      }
+    } catch (\Throwable $e) {
+      continue;
+    }
+  }
+
+  return 0.0;
+})();
+
 ?>
 
 @include('partials.layouts.layoutsTop')
@@ -293,6 +330,7 @@ $stripePublishableKey = (function () {
   var selectedPaymentType = 'cash';
   var bookingSubmitUrl = <?php echo json_encode(route('booking.submit')); ?>;
   var stripePublishableKey = <?php echo json_encode($stripePublishableKey); ?>;
+  var bookingVatPercentage = Number(<?php echo json_encode((float) $configuredVatPercentage); ?>);
   var stripeJsLoader = null;
 
   try {
@@ -359,8 +397,8 @@ $stripePublishableKey = (function () {
   });
 
   console.log('=== Page 3 — Passenger Form ===');
-  console.log('Quote Ref:', bdata.quote_ref || '-');
-  console.log('Return Ref:', bdata.return_ref || 'N/A');
+  console.log('Booking ID:', bdata.quote_ref || '-');
+  console.log('Return Booking ID:', bdata.return_ref || 'N/A');
   console.log('Pickup:', bdata.pickup);
   console.log('Dropoff:', bdata.dropoff);
   console.log('Pickup Date:', bdata.pickup_date);
@@ -558,20 +596,38 @@ $stripePublishableKey = (function () {
   function renderSummary() {
     var summary = document.getElementById('booking-summary');
     var rows = [];
+    var originalPrice = toNumericPrice(bdata.price);
+    var vatAmount = originalPrice !== null ? ((originalPrice * bookingVatPercentage) / 100) : null;
+    var totalWithVat = originalPrice !== null ? (originalPrice + (vatAmount || 0)) : null;
 
-    rows.push(summaryInput('Quote Ref', bdata.quote_ref || '-'));
+    rows.push(summaryInput('Booking ID', bdata.quote_ref || '-'));
 
     if (bdata.return_ref) {
-      rows.push(summaryInput('Return Ref', bdata.return_ref));
+      rows.push(summaryInput('Return Booking ID', bdata.return_ref));
     }
 
     rows.push(summaryInput('From', bdata.pickup || '-'));
     rows.push(summaryInput('To', bdata.dropoff || '-'));
     rows.push(summaryInput('Vehicle', bdata.vehicle_type || '-'));
-    rows.push(summaryInput('Price', bdata.price ? ('£' + Number(bdata.price).toFixed(2)) : '-'));
+    rows.push(summaryInput('Original Price', originalPrice !== null ? formatMoney(originalPrice) : '-'));
+    rows.push(summaryInput('VAT (' + bookingVatPercentage.toFixed(2) + '%)', vatAmount !== null ? formatMoney(vatAmount) : '-'));
+    rows.push(summaryInput('Total Price (Incl. VAT)', totalWithVat !== null ? formatMoney(totalWithVat) : '-'));
     rows.push(summaryInput('Trip Type', bdata.trip_type || '-'));
 
     summary.innerHTML = rows.join('');
+  }
+
+  function toNumericPrice(value) {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    var num = Number(value);
+    return Number.isFinite(num) ? num : null;
+  }
+
+  function formatMoney(value) {
+    return '£' + Number(value).toFixed(2);
   }
 
   function summaryInput(label, value) {

@@ -1046,6 +1046,7 @@
   // Zone lookup & quoting helpers
   var zoneLookupUrl = "{{ route('admin.pricing.zones.lookup') }}";
   var zoneQuoteUrl = "{{ route('admin.pricing.zones.quote') }}";
+  var manualVatPercentage = Number(@json((float) \App\Models\AdminSetting::get('vat_percentage', 0)));
 
   // Vehicle quote modal markup (created dynamically)
   function showVehicleQuoteModal(rows){
@@ -1130,6 +1131,52 @@
     modal.appendChild(box); document.body.appendChild(modal);
   }
 
+  function renderPricingExtras(container, json, selectedPriceRaw) {
+    try {
+      var oldExtras = container.querySelector('#manual-pricing-extras');
+      if (oldExtras) oldExtras.remove();
+
+      var pricing = (json && json.pricing) ? json.pricing : null;
+      var airportCharges = pricing && pricing.airport_charges ? Number(pricing.airport_charges) : 0;
+      var showVat = manualVatPercentage > 0;
+      var selectedPrice = (selectedPriceRaw !== undefined && selectedPriceRaw !== null && selectedPriceRaw !== '') ? Number(selectedPriceRaw) : null;
+
+      if (selectedPrice !== null && !isFinite(selectedPrice)) selectedPrice = null;
+      if (airportCharges <= 0 && !showVat) return;
+
+      var extrasDiv = document.createElement('div');
+      extrasDiv.id = 'manual-pricing-extras';
+      extrasDiv.className = 'mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs manual-pricing-airport-charges';
+
+      var lines = [];
+
+      if (airportCharges > 0) {
+        lines.push('<strong>Airport Charges Applied:</strong> £' + airportCharges.toFixed(2));
+        if (pricing && pricing.applied_charges && pricing.applied_charges.length > 0) {
+          pricing.applied_charges.forEach(function(charge) {
+            lines.push('• ' + charge.type.charAt(0).toUpperCase() + charge.type.slice(1) + ' (' + charge.zone + '): £' + Number(charge.amount).toFixed(2));
+          });
+        }
+      }
+
+      if (showVat) {
+        if (selectedPrice !== null) {
+          var vatAmount = (selectedPrice * manualVatPercentage) / 100;
+          var totalWithVat = selectedPrice + vatAmount;
+          lines.push('<strong>VAT (' + manualVatPercentage.toFixed(2) + '%):</strong> £' + vatAmount.toFixed(2));
+          lines.push('<strong>Total Incl. VAT:</strong> £' + totalWithVat.toFixed(2));
+        } else {
+          lines.push('<strong>VAT Rate:</strong> ' + manualVatPercentage.toFixed(2) + '%');
+        }
+      }
+
+      extrasDiv.innerHTML = lines.join('<br>');
+      container.appendChild(extrasDiv);
+    } catch (e) {
+      console.error('renderPricingExtras error', e);
+    }
+  }
+
   // Render vehicle pricing list under the map (replaces modal popup)
   function renderVehiclePricingList(json) {
     try {
@@ -1182,6 +1229,8 @@
           var priceInput = document.querySelector('input[name="booking_charges"]'); 
           if (priceInput) priceInput.value = row.dataset.price ? Number(row.dataset.price).toFixed(2) : '';
 
+          renderPricingExtras(container, json, row.dataset.price);
+
           // auto-fill highlighted address and vehicle type fields
           try {
             // copy address lines to top inputs (if present)
@@ -1224,20 +1273,10 @@
       src.textContent = srcText;
       container.appendChild(src);
 
-      // Show airport charges if applied
-      if (json.pricing && json.pricing.airport_charges && json.pricing.airport_charges > 0) {
-        var chargesDiv = document.createElement('div'); 
-        chargesDiv.className = 'mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs manual-pricing-airport-charges';
-        var chargesText = '<strong>Airport Charges Applied:</strong> £' + Number(json.pricing.airport_charges).toFixed(2);
-        if (json.pricing.applied_charges && json.pricing.applied_charges.length > 0) {
-          chargesText += '<br>';
-          json.pricing.applied_charges.forEach(function(charge) {
-            chargesText += '• ' + charge.type.charAt(0).toUpperCase() + charge.type.slice(1) + ' (' + charge.zone + '): £' + Number(charge.amount).toFixed(2) + '<br>';
-          });
-        }
-        chargesDiv.innerHTML = chargesText;
-        container.appendChild(chargesDiv);
-      }
+      var selectedPriceForExtras = (json.pricing && json.pricing.selected_price !== undefined && json.pricing.selected_price !== null)
+        ? json.pricing.selected_price
+        : null;
+      renderPricingExtras(container, json, selectedPriceForExtras);
 
       // select the server-provided selected_price when present
       if (json.pricing && json.pricing.selected_price !== undefined && json.pricing.selected_price !== null) {
