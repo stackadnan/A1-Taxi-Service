@@ -606,6 +606,16 @@
         function acceptJob(bookingId) {
             console.log('Accepting job:', bookingId);
             console.log('CSRF Token:', window.Laravel.csrfToken);
+
+            // Provide immediate visual feedback while the request is processing.
+            const button = (typeof event !== 'undefined' && event && event.target && event.target.closest)
+                ? event.target.closest('button')
+                : null;
+            const originalButtonHtml = button ? button.innerHTML : null;
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Accepting...';
+            }
             
             const url = window.Laravel.driverAcceptUrl.replace(':id', bookingId);
             console.log('Request URL:', url);
@@ -636,11 +646,19 @@
                     }, 1000);
                 } else {
                     showNotification(data.error || 'Failed to accept job', 'error');
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = originalButtonHtml || '<i class="fas fa-check mr-2"></i>Accept';
+                    }
                 }
             })
             .catch(error => {
                 console.error('Accept job error:', error);
                 showNotification('Error accepting job: ' + error.message, 'error');
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalButtonHtml || '<i class="fas fa-check mr-2"></i>Accept';
+                }
             });
         }
         
