@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class UserNotification extends Model
 {
@@ -30,32 +32,56 @@ class UserNotification extends Model
      */
     public static function createForAdmins(string $title, string $message)
     {
-        // Notify every user who can access the admin area, not just Super Admins.
-        $adminUsers = User::query()
-            ->where('is_admin', true)
-            ->orWhereHas('roles', function ($q) {
-                $q->whereHas('permissions');
-            })
-            ->get();
+        try {
+            // Support both schemas: with or without users.is_admin column.
+            static $hasIsAdminColumn = null;
+            if ($hasIsAdminColumn === null) {
+                $hasIsAdminColumn = Schema::hasColumn((new User())->getTable(), 'is_admin');
+            }
 
-        $now = now();
-        $recentWindow = 30; // seconds
+            $adminUsersQuery = User::query();
 
-        foreach ($adminUsers as $admin) {
-            // Avoid creating duplicate notifications within the recent window
-            $exists = self::where('user_id', $admin->id)
-                ->where('title', $title)
-                ->where('message', $message)
-                ->where('created_at', '>=', $now->copy()->subSeconds($recentWindow))
-                ->exists();
+            if ($hasIsAdminColumn) {
+                $adminUsersQuery
+                    ->where('is_admin', true)
+                    ->orWhereHas('roles', function ($q) {
+                        $q->whereHas('permissions');
+                    });
+            } else {
+                $adminUsersQuery->whereHas('roles', function ($q) {
+                    $q->where('name', 'Super Admin')
+                      ->orWhereHas('permissions');
+                });
+            }
 
-            if ($exists) continue;
+            $adminUsers = $adminUsersQuery->get();
 
-            self::create([
-                'user_id' => $admin->id,
+            $now = now();
+            $recentWindow = 30; // seconds
+
+            foreach ($adminUsers as $admin) {
+                // Avoid creating duplicate notifications within the recent window
+                $exists = self::where('user_id', $admin->id)
+                    ->where('title', $title)
+                    ->where('message', $message)
+                    ->where('created_at', '>=', $now->copy()->subSeconds($recentWindow))
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                self::create([
+                    'user_id' => $admin->id,
+                    'title' => $title,
+                    'message' => $message,
+                    'is_read' => false,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('UserNotification::createForAdmins failed', [
                 'title' => $title,
-                'message' => $message,
-                'is_read' => false
+                'error' => $e->getMessage(),
             ]);
         }
     }

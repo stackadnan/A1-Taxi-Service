@@ -39,8 +39,20 @@ class NotificationStreamController extends Controller
         $response = new StreamedResponse(function () use ($user, $request) {
             // Set timeout to 55 seconds (just under typical proxy timeout)
             set_time_limit(60);
+
+            // Best-effort: prevent PHP output buffering from breaking SSE flushes.
+            while (ob_get_level() > 0) {
+                @ob_end_flush();
+            }
+
+            $flushOutput = static function (): void {
+                if (ob_get_level() > 0) {
+                    @ob_flush();
+                }
+                flush();
+            };
             
-            $lastId = request()->header('Last-Event-ID', 0);
+            $lastId = $request->header('Last-Event-ID', 0);
             \Log::info('AdminNotificationStreamController: streaming loop started', ['user_id' => $user->id, 'lastId' => $lastId]);
             $startTime = time();
             $timeout = 55; // 55 seconds
@@ -65,8 +77,7 @@ class NotificationStreamController extends Controller
                             'message' => $notification->message,
                             'created_at' => $notification->created_at->toIso8601String()
                         ]) . "\n\n";
-                        ob_flush();
-                        flush();
+                        $flushOutput();
                         $lastId = $notification->id;
 
                         // NOTE: Do not mark as read here — marking is done explicitly when admin opens/marks notifications
@@ -77,8 +88,7 @@ class NotificationStreamController extends Controller
 
                 // Send heartbeat to keep connection alive
                 echo ": heartbeat\n\n";
-                ob_flush();
-                flush();
+                $flushOutput();
 
                 // Wait 2 seconds before next check
                 sleep(2);

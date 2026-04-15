@@ -36,6 +36,11 @@ class BookingController extends Controller
             $counts[$key] = $this->countForSection($key);
         }
 
+        // Counts endpoint must return JSON even for AJAX requests.
+        if ($request->boolean('counts') || $request->routeIs('admin.bookings.counts')) {
+            return response()->json(['counts' => $counts]);
+        }
+
         // build query depending on active section
         $query = Booking::with('status');
 
@@ -90,15 +95,6 @@ class BookingController extends Controller
                 return view('admin.bookings._manual', compact('statuses','vehicleTypes'));
             }
             return view('admin.bookings._list', compact('bookings','active'));
-        }
-
-        // If an AJAX request asks for counts only (used by the UI to refresh tab badges)
-        if ($request->get('counts') || $request->ajax() && $request->get('counts')) {
-            $countsArray = [];
-            foreach (array_keys($sections) as $key) {
-                $countsArray[$key] = $this->countForSection($key);
-            }
-            return response()->json(['counts' => $countsArray]);
         }
 
         return view('admin.bookings.index', compact('sections', 'active', 'counts', 'bookings','statuses','vehicleTypes'));
