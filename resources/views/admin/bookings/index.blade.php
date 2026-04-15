@@ -148,14 +148,19 @@
     }
 
     // Load a single booking pane via AJAX partial
-    function loadSection(key){
+    function loadSection(key, force){
       var container = document.getElementById('booking-' + key + '-container');
       if (!container) return Promise.resolve();
-      if (container.dataset.loaded) return Promise.resolve();
+      if (!force && container.dataset.loaded) return Promise.resolve();
       container.innerHTML = '<div class="p-4 text-gray-600">Loading…</div>';
       var url = '{{ route('admin.bookings.index') }}?partial=1&section=' + encodeURIComponent(key);
       return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(res){ if (!res.ok) return res.text().then(function(t){ throw new Error('Failed to load: ' + res.status + '\n' + t.slice(0,200)); }); return res.text(); }).then(function(html){ container.innerHTML = html; container.dataset.loaded = '1'; runInjectedScripts(container); attachPagination(container); attachBookingViewButtons(container); return Promise.resolve(); }).catch(function(err){ console.error('Load section '+key+' error', err); container.innerHTML = '<div class="text-red-600">Failed to load. <button id="retry-'+key+'" class="ml-2 px-2 py-1 border rounded">Retry</button></div>'; var btn = document.getElementById('retry-'+key); if (btn) btn.addEventListener('click', function(){ loadSection(key); }); return Promise.resolve(); });
     }
+
+    // Expose a force refresh helper for move events.
+    window.reloadBookingSection = function(key){
+      return loadSection(key, true);
+    };
 
     // preload all sections on first load, then hide via CSS (so switching is instant)
     var sections = @json(array_keys($sections));
@@ -253,8 +258,54 @@
           .catch(function(err){ console.error('refreshCounts error', err); });
       }
 
-      document.addEventListener('bookingUpdated', function(){ refreshCounts(); });
-      document.addEventListener('bookingMoved', function(){ refreshCounts(); });
+      function refreshActivePane(){
+        try {
+          if (typeof window.refreshBookingsView === 'function') {
+            // Immediate refresh for instant feedback
+            window.refreshBookingsView();
+            // Follow-up refresh to avoid race when backend update + event timing overlap
+            setTimeout(function(){
+              try { window.refreshBookingsView(); } catch(e){ console.warn('refreshActivePane delayed refresh failed', e); }
+            }, 700);
+          }
+        } catch (e) {
+          console.warn('refreshActivePane failed', e);
+        }
+      }
+
+      function normalizeSectionKey(key){
+        if (!key) return null;
+        var raw = String(key).toLowerCase();
+        if (raw === 'canceled') return 'cancelled';
+        return raw;
+      }
+
+      function refreshTargetPane(target){
+        var key = normalizeSectionKey(target);
+        if (!key) return;
+        try {
+          if (typeof window.reloadBookingSection === 'function') {
+            window.reloadBookingSection(key);
+            // Follow-up refresh to avoid timing race with DB commit/relations.
+            setTimeout(function(){
+              try { window.reloadBookingSection(key); } catch(e){ console.warn('refreshTargetPane delayed refresh failed', e); }
+            }, 700);
+          }
+        } catch (e) {
+          console.warn('refreshTargetPane failed', e);
+        }
+      }
+
+      document.addEventListener('bookingUpdated', function(e){
+        refreshCounts();
+        refreshActivePane();
+        refreshTargetPane(e && e.detail ? e.detail.to : null);
+      });
+      document.addEventListener('bookingMoved', function(e){
+        refreshCounts();
+        refreshActivePane();
+        refreshTargetPane(e && e.detail ? e.detail.to : null);
+      });
 
       // Expose for manual use
       window.refreshBookingCounts = refreshCounts;

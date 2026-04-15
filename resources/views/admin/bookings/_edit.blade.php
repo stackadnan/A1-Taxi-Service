@@ -697,11 +697,34 @@
                   else alert(json.warning);
                 }
 
-                // optionally mark moved_to for client-side handling
-                if (json.moved_to) {
-                  // dispatch a custom event so other scripts can refresh tabs if desired
-                  var ev = new CustomEvent('bookingMoved', { detail: { id: json.booking.id, to: json.moved_to } });
-                  document.dispatchEvent(ev);
+                // Broadcast update/move events so booking lists refresh immediately without full reload.
+                var selectedStatusEl = form.querySelector('[name="status"]');
+                var selectedStatus = selectedStatusEl ? selectedStatusEl.value : null;
+                var moveTarget = json.moved_to || selectedStatus || null;
+
+                try {
+                  document.dispatchEvent(new CustomEvent('bookingUpdated', {
+                    detail: {
+                      id: json.booking && json.booking.id ? json.booking.id : null,
+                      booking: json.booking || null,
+                      to: moveTarget
+                    }
+                  }));
+                } catch (evtErr) {
+                  console.warn('Failed to dispatch bookingUpdated event', evtErr);
+                }
+
+                if (moveTarget) {
+                  try {
+                    document.dispatchEvent(new CustomEvent('bookingMoved', {
+                      detail: {
+                        id: json.booking && json.booking.id ? json.booking.id : null,
+                        to: moveTarget
+                      }
+                    }));
+                  } catch (evtErr) {
+                    console.warn('Failed to dispatch bookingMoved event', evtErr);
+                  }
                 }
 
               } else if (json && json.conflict) {

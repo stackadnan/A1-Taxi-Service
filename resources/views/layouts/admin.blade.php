@@ -911,6 +911,9 @@
           .catch(function(err){ clearTimeout(_refreshPlaceholderTimeout); console.error('Refresh booking pane failed', err); });
       }
 
+          // Expose for pages (like bookings index) that need to trigger immediate pane refresh.
+          window.refreshBookingsView = refreshBookingsView;
+
       // Mark notifications as read
       function markNotificationsAsRead() {
         if (!notificationBadge || !notificationList) return; // Guard
