@@ -420,11 +420,28 @@ class BookingController extends Controller
                     // Notify previous driver that the job was removed (if any)
                     try {
                         if ($oldDriverId) {
-                            \App\Models\DriverNotification::create([
-                                'driver_id' => $oldDriverId,
-                                'title' => 'Job Unassigned',
-                                'message' => 'Booking #' . ($booking->booking_code ?? $booking->id) . ' has been unassigned from you.'
-                            ]);
+                            $title = 'Job Unassigned';
+                            $message = 'Booking #' . ($booking->booking_code ?? $booking->id) . ' has been unassigned from you.';
+                            $recentWindow = 30; // seconds
+
+                            $exists = \App\Models\DriverNotification::where('driver_id', $oldDriverId)
+                                ->where('title', $title)
+                                ->where('message', $message)
+                                ->where('created_at', '>=', now()->subSeconds($recentWindow))
+                                ->exists();
+
+                            if (! $exists) {
+                                \App\Models\DriverNotification::create([
+                                    'driver_id' => $oldDriverId,
+                                    'title' => $title,
+                                    'message' => $message,
+                                ]);
+                            } else {
+                                logger()->info('BookingController: skipped duplicate DriverNotification for explicit unassign', [
+                                    'driver_id' => $oldDriverId,
+                                    'booking_id' => $booking->id,
+                                ]);
+                            }
                         }
                     } catch (\Exception $e) {
                         logger()->warning('Failed to notify driver about removal: ' . $e->getMessage());

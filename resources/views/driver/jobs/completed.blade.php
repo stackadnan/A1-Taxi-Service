@@ -26,7 +26,7 @@
                         <!-- Job Header -->
                         <div class="flex items-start justify-between mb-3">
                             <div>
-                                <h3 class="text-lg font-semibold text-gray-900">Booking #{{ $job->id }}</h3>
+                                <h3 class="text-lg font-semibold text-gray-900">Booking #{{ $job->booking_code ?? $job->id }}</h3>
                                 <p class="text-sm text-gray-600">Completed on {{ $job->updated_at->format('M d, Y H:i') }}</p>
                             </div>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">

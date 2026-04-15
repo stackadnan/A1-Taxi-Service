@@ -349,6 +349,9 @@
             unreadCount: 0,
         };
 
+        // Track SSE notifications already reflected in the UI to avoid duplicate badge increments.
+        let processedDriverNotificationIds = new Set();
+
         const driverNotificationButton = document.getElementById('driverNotificationButton');
         const driverNotificationBadge = document.getElementById('driverNotificationBadge');
         const driverNotificationDropdown = document.getElementById('driverNotificationDropdown');
@@ -446,6 +449,15 @@
 
                 driverNotificationState.items = rows.map(normalizeNotification);
                 driverNotificationState.unreadCount = Number(data.unread_count || 0);
+
+                // Seed processed IDs so SSE replay on connect/reconnect does not double count.
+                processedDriverNotificationIds.clear();
+                driverNotificationState.items.forEach(function(note){
+                    if (note && note.id !== undefined && note.id !== null) {
+                        processedDriverNotificationIds.add(String(note.id));
+                    }
+                });
+
                 renderDriverNotificationPanel();
             } catch (error) {
                 console.error('Failed to fetch driver notifications:', error);
@@ -491,14 +503,20 @@
                 return String(item.id) === String(normalized.id);
             });
 
+            let shouldIncrementUnread = true;
+
             if (existingIndex >= 0) {
+                const existing = driverNotificationState.items[existingIndex];
+                shouldIncrementUnread = !!(existing && existing.is_read);
                 driverNotificationState.items.splice(existingIndex, 1);
             }
 
             normalized.is_read = false;
             driverNotificationState.items.unshift(normalized);
             driverNotificationState.items = driverNotificationState.items.slice(0, 50);
-            driverNotificationState.unreadCount += 1;
+            if (shouldIncrementUnread) {
+                driverNotificationState.unreadCount += 1;
+            }
             renderDriverNotificationPanel();
         }
 
@@ -718,7 +736,6 @@
 
         let eventSource = null;
         let reconnectTimeout = null;
-        let processedDriverNotificationIds = new Set(); // Track processed notifications
 
         function connectNotificationStream() {
             if (eventSource) {
@@ -734,13 +751,13 @@
                     const notification = JSON.parse(e.data);
                     
                     // Skip if we've already processed this notification
-                    if (processedDriverNotificationIds.has(notification.id)) {
+                    if (processedDriverNotificationIds.has(String(notification.id))) {
                         console.log('Driver notification', notification.id, 'already processed, skipping');
                         return;
                     }
                     
                     // Mark this notification as processed
-                    processedDriverNotificationIds.add(notification.id);
+                    processedDriverNotificationIds.add(String(notification.id));
                     console.log('Processing NEW driver notification:', notification.id);
 
                     // Add incoming notification to persistent panel
