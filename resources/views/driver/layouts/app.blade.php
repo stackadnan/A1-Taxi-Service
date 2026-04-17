@@ -82,6 +82,30 @@
         .docs-warning  { --bg-color: #D97706; --bg-color-end: #B45309; box-shadow: 0 6px 20px rgba(217,119,6,0.35); }
         .docs-danger   { --bg-color: #DC2626; --bg-color-end: #9F1239; box-shadow: 0 6px 20px rgba(220,38,38,0.4); }
 
+        /* Compact card style used only when all documents are clear. */
+        .stat-card.docs-compact {
+            min-height: 96px;
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
+        }
+
+        .stat-card.docs-compact .stat-icon-wrap {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card.docs-compact .stat-icon-wrap i {
+            font-size: 1rem;
+        }
+
+        .stat-card.docs-compact p {
+            margin-bottom: 0;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+        }
+
         /* ===== DARK MODE ===== */
         html.dark body  { background-color: #0f172a; color: #e2e8f0; }
         html.dark main  { background-color: #0f172a; }

@@ -108,7 +108,7 @@ class PageController extends Controller
         return match (strtolower($groupSlug)) {
             'airport-transfers' => 'airport',
             'city-transfers', 'cruise-port-transfers' => 'airport',
-            default => null,
+            default => 'airport',
         };
     }
 

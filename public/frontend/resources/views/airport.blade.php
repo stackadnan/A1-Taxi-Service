@@ -71,69 +71,24 @@
     <section class="about-section fix section-padding">
         <div class="container">
             <div class="about-wrapper-2">
-
-                <!-- First Full Width -->
-                <div class="row">
-                    <div class="col-12">
-                        <div class="about-content pt-4">
-                            <div class="section-title-content">
-                                <h3 class="wow fadeInUp" data-wow-delay=".4s">
-                                    {{ $airportMainTitle }}
-                                </h3>
+                @if(!empty($airportContentHtml))
+                    {!! $airportContentHtml !!}
+                @else
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="about-content pt-4">
+                                <div class="section-title-content">
+                                    <h3 class="wow fadeInUp" data-wow-delay=".4s">
+                                        Content Not Configured
+                                    </h3>
+                                </div>
+                                <p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">
+                                    Add HTML in one_column, two_column, three_column and set number_of_rows like 1,2,3 or 1,2,1.
+                                </p>
                             </div>
-                            <p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">
-                                {!! $airportMainDescription !!}
-                            </p>
                         </div>
                     </div>
-                </div>
-
-                <!-- Middle Two Columns -->
-                <div class="row g-4">
-
-                    <div class="col-md-6">
-                        <div class="about-content pt-4">
-                            <div class="section-title-content">
-                                <h4 class="wow fadeInUp" data-wow-delay=".4s">
-                                    {{ $airportLeftTitle }}
-                                </h4>
-                            </div>
-                            <p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">
-                                {!! $airportLeftDescription !!}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="about-content pt-4">
-                            <div class="section-title-content">
-                                <h4 class="wow fadeInUp" data-wow-delay=".4s">
-                                    {{ $airportRightTitle }}
-                                </h4>
-                            </div>
-                            <p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">
-                                {!! $airportRightDescription !!}
-                            </p>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Last Full Width -->
-                <div class="row">
-                    <div class="col-12">
-                        <div class="about-content pt-4">
-                            <div class="section-title-content">
-                                <h4 class="wow fadeInUp" data-wow-delay=".4s">
-                                    {{ $airportBottomTitle }}
-                                </h4>
-                            </div>
-                            <p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">
-                                {!! $airportBottomDescription !!}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                @endif
 
             </div>
         </div>

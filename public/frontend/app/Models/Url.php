@@ -25,4 +25,9 @@ class Url extends Model
         'meta' => 'array',
         'is_active' => 'boolean',
     ];
+
+    public function page()
+    {
+        return $this->belongsTo(Page::class, 'page_id');
+    }
 }

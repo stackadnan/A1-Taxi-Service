@@ -80,7 +80,7 @@
 
         <!-- Documents Card -->
         <a href="{{ route('driver.documents.expired') }}" class="block">
-            <div class="stat-card {{ $docTheme }} rounded-2xl p-5 text-center job-card">
+            <div class="stat-card {{ $docTheme }} {{ $allClear ? 'docs-compact' : '' }} rounded-2xl p-5 text-center job-card">
                 <div class="flex flex-col items-center justify-center h-full">
                     <div class="stat-icon-wrap">
                         <i class="fas {{ $docIcon }} text-white text-2xl"></i>

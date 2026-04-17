@@ -373,6 +373,89 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
 
+            $airportLinks = $header->airport_links ?? [
+                ['label' => 'Heathrow Airport Transfers', 'url' => '/airport-transfers/heathrow-airport-transfers'],
+                ['label' => 'Gatwick Airport Transfers', 'url' => '/airport-transfers/gatwick-airport-transfers'],
+                ['label' => 'Stansted Airport Transfers', 'url' => '/airport-transfers/stansted-airport-transfers'],
+                ['label' => 'Luton Airport Transfers', 'url' => '/airport-transfers/luton-airport-transfers'],
+                ['label' => 'Manchester Airport Transfers', 'url' => '/airport-transfers/manchester-airport-transfers'],
+                ['label' => 'Birmingham Airport Transfers', 'url' => '/airport-transfers/birmingham-airport-transfers'],
+                ['label' => 'London City Airport Transfers', 'url' => '/airport-transfers/london-city-airport-transfers'],
+            ];
+
+            $cityLinks = $header->city_links ?? [
+                ['label' => 'Aylesbury', 'url' => '/city-transfers/aylesbury-city-transfers'],
+                ['label' => 'Buckingham', 'url' => '/city-transfers/buckingham-city-transfers'],
+                ['label' => 'Coventry', 'url' => '/city-transfers/coventry-city-transfers'],
+                ['label' => 'Baldock', 'url' => '/city-transfers/baldock-city-transfers'],
+                ['label' => 'Bedford', 'url' => '/city-transfers/bedford-city-transfers'],
+                ['label' => 'Cambridge', 'url' => '/city-transfers/cambridge-city-transfers'],
+                ['label' => 'Corby', 'url' => '/city-transfers/corby-city-transfers'],
+                ['label' => 'Dartford', 'url' => '/city-transfers/dartford-city-transfers'],
+                ['label' => 'Daventry', 'url' => '/city-transfers/daventry-city-transfers'],
+                ['label' => 'Dunstable', 'url' => '/city-transfers/dunstable-city-transfers'],
+                ['label' => 'Harpenden', 'url' => '/city-transfers/harpenden-city-transfers'],
+                ['label' => 'East Grinstead', 'url' => '/city-transfers/east-grinstead-city-transfers'],
+                ['label' => 'East Midlands', 'url' => '/city-transfers/east-midlands-city-transfers'],
+            ];
+
+            $otherLinks = [];
+
+            if (Schema::hasTable('urls')) {
+                try {
+                    $dynamicUrls = Url::query()
+                        ->with('page:id,name')
+                        ->where('is_active', true)
+                        ->orderBy('group_slug')
+                        ->orderBy('id')
+                        ->get(['id', 'page_id', 'group_slug', 'slug']);
+
+                    $dynamicAirportLinks = [];
+                    $dynamicCityLinks = [];
+                    $dynamicOtherLinks = [];
+                    $seen = [];
+
+                    foreach ($dynamicUrls as $url) {
+                        $path = '/'.ltrim($url->group_slug.'/'.$url->slug, '/');
+
+                        if (isset($seen[$path])) {
+                            continue;
+                        }
+
+                        $seen[$path] = true;
+
+                        $label = is_string($url->page?->name) && trim($url->page->name) !== ''
+                            ? trim($url->page->name)
+                            : ucfirst(str_replace('-', ' ', (string) $url->slug));
+
+                        $item = [
+                            'label' => $label,
+                            'url' => $path,
+                        ];
+
+                        if ($url->group_slug === 'airport-transfers') {
+                            $dynamicAirportLinks[] = $item;
+                        } elseif ($url->group_slug === 'city-transfers') {
+                            $dynamicCityLinks[] = $item;
+                        } else {
+                            $dynamicOtherLinks[] = $item;
+                        }
+                    }
+
+                    if ($dynamicAirportLinks !== []) {
+                        $airportLinks = $dynamicAirportLinks;
+                    }
+
+                    if ($dynamicCityLinks !== []) {
+                        $cityLinks = $dynamicCityLinks;
+                    }
+
+                    $otherLinks = $dynamicOtherLinks;
+                } catch (\Throwable $e) {
+                    $otherLinks = [];
+                }
+            }
+
             $view->with([
                 'topEmail' => $header->top_email ?? 'info@example.com',
                 'topAddress' => $header->top_address ?? '88 Broklyn Golden Street. New York',
@@ -393,30 +476,9 @@ class AppServiceProvider extends ServiceProvider
                 'phoneNumber' => $header->phone_number ?? '+92 (8800) - 9850',
                 'buttonText' => $header->button_text ?? 'Manage Bookings',
                 'buttonLink' => $header->button_link ?? 'manage-booking',
-                'airportLinks' => $header->airport_links ?? [
-                    ['label' => 'Heathrow Airport Transfers', 'url' => '/airport-transfers/heathrow-airport-transfers'],
-                    ['label' => 'Gatwick Airport Transfers', 'url' => '/airport-transfers/gatwick-airport-transfers'],
-                    ['label' => 'Stansted Airport Transfers', 'url' => '/airport-transfers/stansted-airport-transfers'],
-                    ['label' => 'Luton Airport Transfers', 'url' => '/airport-transfers/luton-airport-transfers'],
-                    ['label' => 'Manchester Airport Transfers', 'url' => '/airport-transfers/manchester-airport-transfers'],
-                    ['label' => 'Birmingham Airport Transfers', 'url' => '/airport-transfers/birmingham-airport-transfers'],
-                    ['label' => 'London City Airport Transfers', 'url' => '/airport-transfers/london-city-airport-transfers'],
-                ],
-                'cityLinks' => $header->city_links ?? [
-                    ['label' => 'Aylesbury', 'url' => '/city-transfers/aylesbury-city-transfers'],
-                    ['label' => 'Buckingham', 'url' => '/city-transfers/buckingham-city-transfers'],
-                    ['label' => 'Coventry', 'url' => '/city-transfers/coventry-city-transfers'],
-                    ['label' => 'Baldock', 'url' => '/city-transfers/baldock-city-transfers'],
-                    ['label' => 'Bedford', 'url' => '/city-transfers/bedford-city-transfers'],
-                    ['label' => 'Cambridge', 'url' => '/city-transfers/cambridge-city-transfers'],
-                    ['label' => 'Corby', 'url' => '/city-transfers/corby-city-transfers'],
-                    ['label' => 'Dartford', 'url' => '/city-transfers/dartford-city-transfers'],
-                    ['label' => 'Daventry', 'url' => '/city-transfers/daventry-city-transfers'],
-                    ['label' => 'Dunstable', 'url' => '/city-transfers/dunstable-city-transfers'],
-                    ['label' => 'Harpenden', 'url' => '/city-transfers/harpenden-city-transfers'],
-                    ['label' => 'East Grinstead', 'url' => '/city-transfers/east-grinstead-city-transfers'],
-                    ['label' => 'East Midlands', 'url' => '/city-transfers/east-midlands-city-transfers'],
-                ],
+                'airportLinks' => $airportLinks,
+                'cityLinks' => $cityLinks,
+                'otherLinks' => $otherLinks,
             ]);
         });
 
@@ -515,17 +577,95 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
 
+            $rowPatternRaw = is_string($page?->number_of_rows)
+                ? trim($page->number_of_rows)
+                : '';
+
+            if ($rowPatternRaw === '') {
+                $rowPatternRaw = '1';
+            }
+
+            $patternTokens = preg_split('/\s*,\s*|\s+/', $rowPatternRaw) ?: [];
+            $rowPattern = [];
+
+            foreach ($patternTokens as $token) {
+                $normalizedToken = trim((string) $token);
+                if (in_array($normalizedToken, ['1', '2', '3'], true)) {
+                    $rowPattern[] = (int) $normalizedToken;
+                }
+            }
+
+            if ($rowPattern === []) {
+                $rowPattern = [1];
+            }
+
+            $rowPattern = array_slice($rowPattern, 0, 20);
+
+            $rowTemplateMap = [
+                1 => is_string($page?->one_column) ? trim($page->one_column) : '',
+                2 => is_string($page?->two_column) ? trim($page->two_column) : '',
+                3 => is_string($page?->three_column) ? trim($page->three_column) : '',
+            ];
+
+            $rowFallbackTemplateMap = [
+                1 => '<div class="row"><div class="col-12"><div class="about-content pt-4"><div class="section-title-content"><h3 class="wow fadeInUp" data-wow-delay=".4s">Reliable '.$pageName.' Transfers</h3></div><p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">Add your custom one-row HTML in admin under the one_column field.</p></div></div></div>',
+                2 => '<div class="row g-4"><div class="col-md-6"><div class="about-content pt-4"><div class="section-title-content"><h4 class="wow fadeInUp" data-wow-delay=".4s">Left Block</h4></div><p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">Add your custom two-column row HTML in admin under the two_column field.</p></div></div><div class="col-md-6"><div class="about-content pt-4"><div class="section-title-content"><h4 class="wow fadeInUp" data-wow-delay=".4s">Right Block</h4></div><p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">Your second block content will appear here.</p></div></div></div>',
+                3 => '<div class="row g-4"><div class="col-lg-4"><div class="about-content pt-4"><div class="section-title-content"><h4 class="wow fadeInUp" data-wow-delay=".4s">First Block</h4></div><p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">Add your custom three-column row HTML in admin under the three_column field.</p></div></div><div class="col-lg-4"><div class="about-content pt-4"><div class="section-title-content"><h4 class="wow fadeInUp" data-wow-delay=".4s">Second Block</h4></div><p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">Middle content placeholder.</p></div></div><div class="col-lg-4"><div class="about-content pt-4"><div class="section-title-content"><h4 class="wow fadeInUp" data-wow-delay=".4s">Third Block</h4></div><p class="mt-1 mt-md-0 wow fadeInUp" data-wow-delay=".6s">Right content placeholder.</p></div></div></div>',
+            ];
+
+            $airportContentRows = [];
+            $resolvedRowPattern = [];
+
+            $rowBlocks = is_array($page?->row_blocks) ? $page->row_blocks : [];
+            foreach ($rowBlocks as $rowBlock) {
+                if (!is_array($rowBlock)) {
+                    continue;
+                }
+
+                $layout = isset($rowBlock['layout']) ? (int) $rowBlock['layout'] : 0;
+                if (!in_array($layout, [1, 2, 3], true)) {
+                    continue;
+                }
+
+                $template = isset($rowBlock['html']) && is_string($rowBlock['html'])
+                    ? trim($rowBlock['html'])
+                    : '';
+
+                if ($template === '') {
+                    $template = $rowTemplateMap[$layout] ?? '';
+                }
+
+                if ($template === '') {
+                    $template = $rowFallbackTemplateMap[$layout] ?? '';
+                }
+
+                if ($template !== '') {
+                    $airportContentRows[] = $template;
+                    $resolvedRowPattern[] = $layout;
+                }
+            }
+
+            if ($airportContentRows === []) {
+                foreach ($rowPattern as $rowSize) {
+                    $template = $rowTemplateMap[$rowSize] ?? '';
+                    if ($template === '') {
+                        $template = $rowFallbackTemplateMap[$rowSize] ?? '';
+                    }
+
+                    if ($template !== '') {
+                        $airportContentRows[] = $template;
+                        $resolvedRowPattern[] = $rowSize;
+                    }
+                }
+            }
+
+            $airportContentHtml = implode("\n", $airportContentRows);
+
             $view->with([
                 'enabledPartials' => $enabledPartials,
                 'airportHeadTitle' => $page?->head_title ?? 'A1 Airport Cars ',
-                'airportMainTitle' => $page?->main_title ?? "Reliable {$pageName} Transfers",
-                'airportMainDescription' => $page?->main_description ?? '<strong>A1 Airport Cars</strong> provides professional and reliable airport transfer services. Whether you are arriving or departing, our service ensures a smooth and comfortable journey.',
-                'airportLeftTitle' => $page?->left_title ?? "Professional {$pageName} Drivers",
-                'airportLeftDescription' => $page?->left_description ?? 'Our experienced drivers are fully licensed and highly familiar with terminal pickup points and surrounding routes.',
-                'airportRightTitle' => $page?->right_title ?? "Comfortable Vehicles for {$pageName} Transfers",
-                'airportRightDescription' => $page?->right_description ?? 'We offer saloon cars, executive vehicles, and MPVs for individuals, families, and groups.',
-                'airportBottomTitle' => $page?->bottom_title ?? "Simple Booking for {$pageName} Transfers",
-                'airportBottomDescription' => $page?->bottom_description ?? 'Book your transfer online in minutes and travel with fully licensed drivers for a safe and reliable journey.',
+                'airportNumberOfRows' => implode(',', $resolvedRowPattern === [] ? $rowPattern : $resolvedRowPattern),
+                'airportContentHtml' => $airportContentHtml,
             ]);
         });
 

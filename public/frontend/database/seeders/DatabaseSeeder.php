@@ -142,6 +142,38 @@ class DatabaseSeeder extends Seeder
             ['name' => 'East Midlands', 'slug' => 'east-midlands-city-transfers'],
         ];
 
+        $buildContent = static function (string $headingTag, string $title, string $description): string {
+            $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+
+            return '<div class="about-content pt-4">'
+                .'<div class="section-title-content">'
+                ."<{$headingTag} class=\"wow fadeInUp\" data-wow-delay=\".4s\">{$safeTitle}</{$headingTag}>"
+                .'</div>'
+                ."<div class=\"mt-1 mt-md-0 wow fadeInUp\" data-wow-delay=\".6s\">{$description}</div>"
+                .'</div>';
+        };
+
+        $buildOneColumn = static function (string $title, string $description) use ($buildContent): string {
+            return '<div class="row"><div class="col-12">'
+                .$buildContent('h3', $title, $description)
+                .'</div></div>';
+        };
+
+        $buildTwoColumn = static function (string $leftTitle, string $leftDescription, string $rightTitle, string $rightDescription) use ($buildContent): string {
+            return '<div class="row g-4">'
+                .'<div class="col-md-6">'.$buildContent('h4', $leftTitle, $leftDescription).'</div>'
+                .'<div class="col-md-6">'.$buildContent('h4', $rightTitle, $rightDescription).'</div>'
+                .'</div>';
+        };
+
+        $buildThreeColumn = static function (string $firstTitle, string $firstDescription, string $secondTitle, string $secondDescription, string $thirdTitle, string $thirdDescription) use ($buildContent): string {
+            return '<div class="row g-4">'
+                .'<div class="col-lg-4 col-md-6">'.$buildContent('h4', $firstTitle, $firstDescription).'</div>'
+                .'<div class="col-lg-4 col-md-6">'.$buildContent('h4', $secondTitle, $secondDescription).'</div>'
+                .'<div class="col-lg-4 col-md-12">'.$buildContent('h4', $thirdTitle, $thirdDescription).'</div>'
+                .'</div>';
+        };
+
         $createdPageIds = [];
         $urlRows = [];
         foreach ($airportPages as $airportPage) {
@@ -150,6 +182,15 @@ class DatabaseSeeder extends Seeder
             if ($quoteBaseName === '') {
                 $quoteBaseName = $name;
             }
+
+            $mainTitle = "Reliable {$name} Transfers";
+            $mainDescription = "<strong>A1 Airport Cars</strong> provides professional and reliable {$name} transfer services. Whether you are arriving in the city or heading to catch a flight, our service ensures a smooth and comfortable journey.";
+            $leftTitle = "Professional {$name} Drivers";
+            $leftDescription = "Our experienced drivers are fully licensed and highly familiar with {$name} terminals, pickup points, and surrounding routes. They monitor traffic and journeys to ensure timely pickups.";
+            $rightTitle = "Comfortable Vehicles for {$name} Transfers";
+            $rightDescription = 'From affordable saloon cars for individuals to executive vehicles and spacious MPVs for families and groups, our fleet is maintained to high standards with ample luggage space.';
+            $bottomTitle = "Simple Booking for {$name} Transfers";
+            $bottomDescription = "Booking your {$name} transfer with A1 Airport Cars is quick and easy. Reserve your transfer online in minutes or contact our support team for assistance.";
 
             $page = \App\Models\Page::create([
                 'name' => $name,
@@ -160,14 +201,15 @@ class DatabaseSeeder extends Seeder
                 'why_us_title' => 'Why Choose Us',
                 'why_us_heading' => "Why Book {$name} Taxi with Us?",
                 'why_use_heading' => 'Why You Should Use A1 Airport Cars',
-                'main_title' => "Reliable {$name} Transfers",
-                'main_description' => "<strong>A1 Airport Cars</strong> provides professional and reliable {$name} transfer services. Whether you are arriving in the city or heading to catch a flight, our service ensures a smooth and comfortable journey.",
-                'left_title' => "Professional {$name} Drivers",
-                'left_description' => "Our experienced drivers are fully licensed and highly familiar with {$name} terminals, pickup points, and surrounding routes. They monitor traffic and journeys to ensure timely pickups.",
-                'right_title' => "Comfortable Vehicles for {$name} Transfers",
-                'right_description' => 'From affordable saloon cars for individuals to executive vehicles and spacious MPVs for families and groups, our fleet is maintained to high standards with ample luggage space.',
-                'bottom_title' => "Simple Booking for {$name} Transfers",
-                'bottom_description' => "Booking your {$name} transfer with A1 Airport Cars is quick and easy. Reserve your transfer online in minutes or contact our support team for assistance.",
+                'number_of_rows' => '1,2,1',
+                'one_column' => $buildOneColumn($mainTitle, $mainDescription),
+                'two_column' => $buildTwoColumn($leftTitle, $leftDescription, $rightTitle, $rightDescription),
+                'three_column' => $buildThreeColumn($leftTitle, $leftDescription, $rightTitle, $rightDescription, $bottomTitle, $bottomDescription),
+                'row_blocks' => [
+                    ['layout' => 1, 'html' => $buildOneColumn($mainTitle, $mainDescription)],
+                    ['layout' => 2, 'html' => $buildTwoColumn($leftTitle, $leftDescription, $rightTitle, $rightDescription)],
+                    ['layout' => 1, 'html' => $buildOneColumn($bottomTitle, $bottomDescription)],
+                ],
             ]);
 
             $createdPageIds[] = $page->id;
@@ -187,6 +229,15 @@ class DatabaseSeeder extends Seeder
         foreach ($cityPages as $cityPage) {
             $name = $cityPage['name'];
 
+            $mainTitle = "Reliable {$name} City Transfers";
+            $mainDescription = "<strong>A1 Airport Cars</strong> provides reliable city transfer services in {$name}. Whether you are travelling for business or leisure, our service ensures a smooth and comfortable journey.";
+            $leftTitle = "Professional {$name} Transfer Drivers";
+            $leftDescription = "Our experienced drivers are fully licensed and familiar with {$name} routes and surrounding areas, helping you travel safely and on time.";
+            $rightTitle = "Comfortable Vehicles for {$name} City Transfers";
+            $rightDescription = 'From affordable saloon cars for individuals to executive vehicles and spacious MPVs for families and groups, our fleet is maintained to high standards with ample luggage space.';
+            $bottomTitle = "Simple Booking for {$name} City Transfers";
+            $bottomDescription = "Booking your {$name} city transfer with A1 Airport Cars is quick and easy. Reserve online in minutes or contact our support team for assistance.";
+
             $page = \App\Models\Page::create([
                 'name' => $name,
                 'head_title' => 'A1 Airport Cars ',
@@ -196,14 +247,15 @@ class DatabaseSeeder extends Seeder
                 'why_us_title' => 'Why Choose Us',
                 'why_us_heading' => "Why Book {$name} Taxi with Us?",
                 'why_use_heading' => 'Why You Should Use A1 Airport Cars',
-                'main_title' => "Reliable {$name} City Transfers",
-                'main_description' => "<strong>A1 Airport Cars</strong> provides reliable city transfer services in {$name}. Whether you are travelling for business or leisure, our service ensures a smooth and comfortable journey.",
-                'left_title' => "Professional {$name} Transfer Drivers",
-                'left_description' => "Our experienced drivers are fully licensed and familiar with {$name} routes and surrounding areas, helping you travel safely and on time.",
-                'right_title' => "Comfortable Vehicles for {$name} City Transfers",
-                'right_description' => 'From affordable saloon cars for individuals to executive vehicles and spacious MPVs for families and groups, our fleet is maintained to high standards with ample luggage space.',
-                'bottom_title' => "Simple Booking for {$name} City Transfers",
-                'bottom_description' => "Booking your {$name} city transfer with A1 Airport Cars is quick and easy. Reserve online in minutes or contact our support team for assistance.",
+                'number_of_rows' => '1,2,1',
+                'one_column' => $buildOneColumn($mainTitle, $mainDescription),
+                'two_column' => $buildTwoColumn($leftTitle, $leftDescription, $rightTitle, $rightDescription),
+                'three_column' => $buildThreeColumn($leftTitle, $leftDescription, $rightTitle, $rightDescription, $bottomTitle, $bottomDescription),
+                'row_blocks' => [
+                    ['layout' => 1, 'html' => $buildOneColumn($mainTitle, $mainDescription)],
+                    ['layout' => 2, 'html' => $buildTwoColumn($leftTitle, $leftDescription, $rightTitle, $rightDescription)],
+                    ['layout' => 1, 'html' => $buildOneColumn($bottomTitle, $bottomDescription)],
+                ],
             ]);
 
             $createdPageIds[] = $page->id;

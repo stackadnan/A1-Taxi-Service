@@ -4,7 +4,23 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\GalleryImageController;
 use App\Http\Controllers\ManageBookingController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\PageAdminController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('login', [AdminAuthController::class, 'showLogin'])->name('login');
+    Route::post('login', [AdminAuthController::class, 'login'])->name('login.attempt');
+
+    Route::middleware('admin.auth')->group(function () {
+        Route::get('/', function () {
+            return redirect()->route('admin.pages.index');
+        })->name('dashboard');
+
+        Route::post('logout', [AdminAuthController::class, 'logout'])->name('logout');
+        Route::resource('pages', PageAdminController::class)->except(['show']);
+    });
+});
 
 Route::get('/', [PageController::class, 'home'])->name('home');
 

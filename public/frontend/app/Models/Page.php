@@ -20,15 +20,21 @@ class Page extends Model
         'why_us_title',
         'why_us_heading',
         'why_use_heading',
-        'main_title',
-        'main_description',
-        'left_title',
-        'left_description',
-        'right_title',
-        'right_description',
-        'bottom_title',
-        'bottom_description',
+        'number_of_rows',
+        'one_column',
+        'two_column',
+        'three_column',
+        'row_blocks',
     ];
+
+    protected $casts = [
+        'row_blocks' => 'array',
+    ];
+
+    public function urls()
+    {
+        return $this->hasMany(Url::class, 'page_id');
+    }
 
     public function seo()
     {
