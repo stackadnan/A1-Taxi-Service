@@ -83,6 +83,8 @@ Route::name('admin.')->group(function () {
         Route::get('drivers/{driver}/location/{bookingId}', [\App\Http\Controllers\Admin\DriverController::class, 'getLocation'])->name('drivers.location')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         // Booking timing data for the status-tab 15-min poller
         Route::get('drivers/booking-timing', [\App\Http\Controllers\Admin\DriverController::class, 'getBookingTiming'])->name('drivers.booking_timing')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        // View all jobs for a selected driver
+        Route::get('drivers/{driver}/jobs', [\App\Http\Controllers\Admin\DriverController::class, 'jobs'])->name('drivers.jobs')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         // Send late-warning push notification to driver (+ admin for urgent)
         Route::post('drivers/{driver}/send-late-warning', [\App\Http\Controllers\Admin\DriverController::class, 'sendLateWarning'])->name('drivers.send_late_warning')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         // AJAX helper to check availability and documents

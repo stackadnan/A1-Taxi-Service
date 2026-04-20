@@ -24,7 +24,7 @@
           <td class="p-2">
             <a href="{{ route('admin.drivers.show', $d) }}" class="driver-view-button text-indigo-600 mr-2 text-sm" data-title="View Driver">View</a>
             <a href="{{ route('admin.drivers.edit', $d) }}" class="driver-edit-button text-gray-600 text-sm" data-title="Edit Driver">Edit</a>
-            <form action="{{ route('admin.drivers.destroy', $d) }}" method="post" class="inline">@csrf @method('delete') <button type="submit" data-confirm="Delete this driver?" class="text-red-600 text-sm ml-2">Delete</button></form>
+            <a href="{{ route('admin.drivers.jobs', $d) }}" class="text-blue-600 text-sm ml-2">View Jobs</a>
           </td>
         </tr>
         @empty

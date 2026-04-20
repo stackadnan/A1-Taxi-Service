@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Driver;
+use App\Models\Booking;
 use App\Models\AdminSetting;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -228,6 +229,21 @@ class DriverController extends Controller
         }
 
         return view('admin.drivers.show', compact('driver'));
+    }
+
+    /**
+     * Show all jobs assigned to a specific driver.
+     */
+    public function jobs(Request $request, Driver $driver)
+    {
+        $jobs = Booking::with('status')
+            ->where('driver_id', $driver->id)
+            ->orderByRaw("GREATEST(UNIX_TIMESTAMP(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(COALESCE(meta,'{}'), '$.status_changed_at')), updated_at)), UNIX_TIMESTAMP(updated_at)) DESC")
+            ->orderBy('id', 'desc')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.drivers.jobs', compact('driver', 'jobs'));
     }
 
     /**

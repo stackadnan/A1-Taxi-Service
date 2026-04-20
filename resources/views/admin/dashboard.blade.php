@@ -189,7 +189,7 @@ Please cooperate, stay alert, and ensure all duties continue smoothly during thi
         var sub = panel.querySelector('.chart-subtitle');
         if (!sub) return;
         if (isDummy) {
-          sub.textContent = 'Showing sample data until enough live bookings are available';
+          // sub.textContent = 'Showing sample data until enough live bookings are available';
           sub.classList.remove('text-gray-500');
           sub.classList.add('text-amber-600');
         } else {

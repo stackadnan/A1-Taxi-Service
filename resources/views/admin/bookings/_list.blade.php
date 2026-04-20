@@ -50,7 +50,13 @@
           <td class="p-3 text-sm text-gray-900">{{ $b->dropoff_address ?: '-' }}</td>
           <td class="p-3 text-sm text-gray-900">{{ $b->passenger_name }}</td>
           <td class="p-3 text-sm text-gray-900">{{ $b->phone }}</td>
-          <td class="p-3"><span class="text-sm px-2 py-1 rounded bg-gray-100 text-gray-700">{{ optional($b->status)->name }}</span></td>
+          @php
+            $statusDisplay = optional($b->status)->name ?? '-';
+            if (isset($active) && $active === 'confirmed') {
+              $statusDisplay = 'confirmed';
+            }
+          @endphp
+          <td class="p-3"><span class="text-sm px-2 py-1 rounded bg-gray-100 text-gray-700">{{ $statusDisplay }}</span></td>
           @if(!(isset($active) && $active === 'new'))
             <td class="p-3 text-sm text-gray-900" data-col="driver_name">{{ $b->driver_name ?? '-' }}</td>
           @endif
