@@ -191,6 +191,7 @@ class AppServiceProvider extends ServiceProvider
             $quote = QuoteSection::where('section_key', 'quote')->first();
             $page = null;
             $pageId = request()->attributes->get('url_page_id');
+            $phoneNumber = $quote->phone ?? '(+44) 1582 801 611';
 
             if (is_numeric($pageId)) {
                 $page = Page::find((int) $pageId);
@@ -199,10 +200,12 @@ class AppServiceProvider extends ServiceProvider
             $heroTitle = null;
             $heroSubtitle = null;
             $heroDescription = null;
+            $heroDescriptionHtml = null;
             if ($page) {
                 $heroTitle = is_string($page->quote_title) ? trim($page->quote_title) : null;
                 $heroSubtitle = is_string($page->quote_subtitle) ? trim($page->quote_subtitle) : null;
                 $heroDescription = is_string($page->quote_description) ? trim($page->quote_description) : null;
+                $heroDescriptionHtml = $heroDescription;
 
                 if (!$heroTitle) {
                     $pageName = is_string($page->name) ? trim($page->name) : 'London';
@@ -227,13 +230,37 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
 
+            if (!is_string($heroDescriptionHtml) || trim($heroDescriptionHtml) === '') {
+                $heroDescriptionHtml =
+                    '<p class="text-white mb-3" data-animation="fadeInUp">'
+                    .($heroDescription ?? 'Book professional London airport taxi transfers to and from all major UK airports. Whether you are travelling alone, with family, or in a group, we provide comfortable, punctual and affordable transport with fixed prices and no hidden charges.')
+                    .'</p>'
+                    .'<p class="text-white mb-4" data-animation="fadeInUp">'
+                    .'Reserve your taxi in advance through our quick online booking system and enjoy a smooth, stress-free journey to or from the airport.'
+                    .'</p>'
+                    .'<p class="text-white mb-4" data-animation="fadeInUp">'
+                    .'Need assistance? Our customer support team is available '
+                    .'<strong>24 hours a day, 7 days a week</strong> on '
+                    .'<strong>'.e($phoneNumber).'</strong>.'
+                    .'</p>'
+                    .'<!-- Service Highlights -->'
+                    .'<ul class="text-white list-unstyled hero-features" data-animation="fadeInUp">'
+                    .'<li>✔ Free cancellation up to 12 hours before pickup</li>'
+                    .'<li>✔ Real-time flight tracking for timely pickups</li>'
+                    .'<li>✔ Fully licensed and professional drivers</li>'
+                    .'<li>✔ Comfortable vehicles for individuals and groups</li>'
+                    .'<li>✔ 24/7 customer support and assistance</li>'
+                    .'</ul>';
+            }
+
             $view->with([
                 'heroTitle' => $heroTitle ?? $quote->hero_title ?? 'Reliable London Airport Taxi Service',
                 'heroSubtitle' => $heroSubtitle ?? $quote->hero_subtitle ?? 'Airport Transfers Across the UK',
                 'heroDescription' => $heroDescription ?? $quote->description ?? 'Book professional London airport taxi transfers to and from all major UK airports. Whether you are travelling alone, with family, or in a group, we provide comfortable, punctual and affordable transport with fixed prices and no hidden charges.',
+                'heroDescriptionHtml' => $heroDescriptionHtml,
                 'heroAdditional' => 'Reserve your taxi in advance through our quick online booking system and enjoy a smooth, stress-free journey to or from the airport.',
                 'contactSentence' => 'Need assistance? Our customer support team is available 24 hours a day, 7 days a week on',
-                'phoneNumber' => $quote->phone ?? '(+44) 1582 801 611',
+                'phoneNumber' => $phoneNumber,
                 'highlights' => $quote->highlights ?? [
                     'Free cancellation up to 12 hours before pickup',
                     'Real-time flight tracking for timely pickups',
@@ -373,6 +400,26 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
 
+            $groupLabelResolver = static function (string $groupSlug): string {
+                if ($groupSlug === 'airport-transfers') {
+                    return 'Airport Taxi Transfers';
+                }
+
+                if ($groupSlug === 'city-transfers') {
+                    return 'City Transfers';
+                }
+
+                return ucwords(str_replace('-', ' ', $groupSlug));
+            };
+
+            $groupIconResolver = static function (string $groupSlug): string {
+                return match ($groupSlug) {
+                    'airport-transfers' => 'fas fa-plane',
+                    'city-transfers' => 'fas fa-building',
+                    default => 'fas fa-folder-open',
+                };
+            };
+
             $airportLinks = $header->airport_links ?? [
                 ['label' => 'Heathrow Airport Transfers', 'url' => '/airport-transfers/heathrow-airport-transfers'],
                 ['label' => 'Gatwick Airport Transfers', 'url' => '/airport-transfers/gatwick-airport-transfers'],
@@ -399,7 +446,22 @@ class AppServiceProvider extends ServiceProvider
                 ['label' => 'East Midlands', 'url' => '/city-transfers/east-midlands-city-transfers'],
             ];
 
-            $otherLinks = [];
+            $navGroups = [
+                [
+                    'slug' => 'airport-transfers',
+                    'label' => $groupLabelResolver('airport-transfers'),
+                    'icon' => $groupIconResolver('airport-transfers'),
+                    'url' => '/airport-transfers',
+                    'items' => $airportLinks,
+                ],
+                [
+                    'slug' => 'city-transfers',
+                    'label' => $groupLabelResolver('city-transfers'),
+                    'icon' => $groupIconResolver('city-transfers'),
+                    'url' => '/city-transfers',
+                    'items' => $cityLinks,
+                ],
+            ];
 
             if (Schema::hasTable('urls')) {
                 try {
@@ -410,12 +472,15 @@ class AppServiceProvider extends ServiceProvider
                         ->orderBy('id')
                         ->get(['id', 'page_id', 'group_slug', 'slug']);
 
-                    $dynamicAirportLinks = [];
-                    $dynamicCityLinks = [];
-                    $dynamicOtherLinks = [];
+                    $dynamicGroups = [];
                     $seen = [];
 
                     foreach ($dynamicUrls as $url) {
+                        $groupSlug = trim((string) $url->group_slug);
+                        if ($groupSlug === '') {
+                            continue;
+                        }
+
                         $path = '/'.ltrim($url->group_slug.'/'.$url->slug, '/');
 
                         if (isset($seen[$path])) {
@@ -433,26 +498,40 @@ class AppServiceProvider extends ServiceProvider
                             'url' => $path,
                         ];
 
-                        if ($url->group_slug === 'airport-transfers') {
-                            $dynamicAirportLinks[] = $item;
-                        } elseif ($url->group_slug === 'city-transfers') {
-                            $dynamicCityLinks[] = $item;
-                        } else {
-                            $dynamicOtherLinks[] = $item;
+                        if (!isset($dynamicGroups[$groupSlug])) {
+                            $dynamicGroups[$groupSlug] = [
+                                'slug' => $groupSlug,
+                                'label' => $groupLabelResolver($groupSlug),
+                                'icon' => $groupIconResolver($groupSlug),
+                                'url' => '/'.ltrim($groupSlug, '/'),
+                                'items' => [],
+                            ];
                         }
+
+                        $dynamicGroups[$groupSlug]['items'][] = $item;
                     }
 
-                    if ($dynamicAirportLinks !== []) {
-                        $airportLinks = $dynamicAirportLinks;
-                    }
+                    if ($dynamicGroups !== []) {
+                        $navGroups = array_values($dynamicGroups);
 
-                    if ($dynamicCityLinks !== []) {
-                        $cityLinks = $dynamicCityLinks;
-                    }
+                        usort($navGroups, static function (array $a, array $b): int {
+                            $priorityMap = [
+                                'airport-transfers' => 0,
+                                'city-transfers' => 1,
+                            ];
 
-                    $otherLinks = $dynamicOtherLinks;
+                            $priorityA = $priorityMap[$a['slug']] ?? 10;
+                            $priorityB = $priorityMap[$b['slug']] ?? 10;
+
+                            if ($priorityA !== $priorityB) {
+                                return $priorityA <=> $priorityB;
+                            }
+
+                            return strcmp((string) $a['label'], (string) $b['label']);
+                        });
+                    }
                 } catch (\Throwable $e) {
-                    $otherLinks = [];
+                    // Keep fallback nav groups from header defaults.
                 }
             }
 
@@ -476,9 +555,7 @@ class AppServiceProvider extends ServiceProvider
                 'phoneNumber' => $header->phone_number ?? '+92 (8800) - 9850',
                 'buttonText' => $header->button_text ?? 'Manage Bookings',
                 'buttonLink' => $header->button_link ?? 'manage-booking',
-                'airportLinks' => $airportLinks,
-                'cityLinks' => $cityLinks,
-                'otherLinks' => $otherLinks,
+                'navGroups' => $navGroups,
             ]);
         });
 

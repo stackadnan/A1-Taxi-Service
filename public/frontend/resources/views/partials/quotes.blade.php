@@ -90,26 +90,31 @@
                                                     {{ $heroSubtitle ?? 'Airport Transfers Across the UK' }}
                                                 </h1>
 
-                                                <p class="text-white mb-3" data-animation="fadeInUp">
-                                                    {{ $heroDescription ?? 'Book professional London airport taxi transfers to and from all major UK airports. Whether you are travelling alone, with family, or in a group, we provide comfortable, punctual and affordable transport with fixed prices and no hidden charges.' }}
-                                                </p>
+                                                @if(!empty($heroDescriptionHtml))
+                                                    {!! $heroDescriptionHtml !!}
+                                                @else
+                                                    <p class="text-white mb-3" data-animation="fadeInUp">
+                                                        {{ $heroDescription ?? 'Book professional London airport taxi transfers to and from all major UK airports. Whether you are travelling alone, with family, or in a group, we provide comfortable, punctual and affordable transport with fixed prices and no hidden charges.' }}
+                                                    </p>
 
-                                                <p class="text-white mb-4" data-animation="fadeInUp">
-                                                    {{ $heroAdditional ?? 'Reserve your taxi in advance through our quick online booking system and enjoy a smooth, stress-free journey to or from the airport.' }}
-                                                </p>
+                                                    <p class="text-white mb-4" data-animation="fadeInUp">
+                                                        {{ $heroAdditional ?? 'Reserve your taxi in advance through our quick online booking system and enjoy a smooth, stress-free journey to or from the airport.' }}
+                                                    </p>
 
-                                                <p class="text-white mb-4" data-animation="fadeInUp">
-                                                    {{ $contactSentence ?? 'Need assistance? Our customer support team is available' }} 
-                                                    <strong>24 hours a day, 7 days a week</strong> on 
-                                                    <strong>{{ $phoneNumber ?? '(+44) 1582 801 611' }}</strong>.
-                                                </p>
+                                                    <p class="text-white mb-4" data-animation="fadeInUp">
+                                                        {{ $contactSentence ?? 'Need assistance? Our customer support team is available' }} 
+                                                        <strong>24 hours a day, 7 days a week</strong> on 
+                                                        <strong>{{ $phoneNumber ?? '(+44) 1582 801 611' }}</strong>.
+                                                    </p>
 
-                                                <!-- Service Highlights -->
-                                                <ul class="text-white list-unstyled hero-features" data-animation="fadeInUp">
-                                                    @foreach($highlights as $highlight)
-                                                        <li>✔ {{ $highlight }}</li>
-                                                    @endforeach
-                                                </ul>
+                                                    <ul class="text-white list-unstyled hero-features" data-animation="fadeInUp">
+                                                        <li>✔ Free cancellation up to 12 hours before pickup</li>
+                                                        <li>✔ Real-time flight tracking for timely pickups</li>
+                                                        <li>✔ Fully licensed and professional drivers</li>
+                                                        <li>✔ Comfortable vehicles for individuals and groups</li>
+                                                        <li>✔ 24/7 customer support and assistance</li>
+                                                    </ul>
+                                                @endif
 
                                         </div>
                                     </div>

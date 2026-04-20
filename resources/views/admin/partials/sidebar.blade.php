@@ -151,54 +151,67 @@
     </div>
 
     <nav class="space-y-1">
+      @php($navUser = auth()->user())
       <a href="{{ route('admin.dashboard') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
         <span class="ml-3 sidebar-label">Dashboard</span>
       </a>
 
+      @if($navUser && $navUser->hasPermission('booking.view'))
       <a href="{{ route('admin.bookings.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/bookings*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/bookings*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
         <span class="ml-3 sidebar-label">Booking</span>
       </a>
+      @endif
 
 
+      @if($navUser && $navUser->hasPermission('driver.view'))
       <a href="{{ route('admin.drivers.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/drivers*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/drivers*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
         <span class="ml-3 sidebar-label">Driver Record</span>
       </a>
+      @endif
 
 
+      @if($navUser && $navUser->hasPermission('pricing.view'))
       <a href="{{ route('admin.pricing.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/pricing*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/pricing*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         <span class="ml-3 sidebar-label">Pricing Management</span>
       </a>
+      @endif
 
-      @if(auth()->user() && auth()->user()->hasPermission('user.view'))
+      @if($navUser && $navUser->hasPermission('user.view'))
       <a href="{{ route('admin.users.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/users*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/users*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span class="ml-3 sidebar-label">Users Management</span>
       </a>
       @endif
 
+      @if($navUser && $navUser->hasPermission('account.view'))
       <a href="{{ route('admin.accounts.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/accounts*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/accounts*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         <span class="ml-3 sidebar-label">Accounts</span>
       </a>
+      @endif
 
       <a href="{{ route('admin.quotes.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/quotes*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/quotes*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
         <span class="ml-3 sidebar-label">Quotes</span>
       </a>
 
+      @if($navUser && $navUser->hasPermission('review.view'))
       <a href="{{ route('admin.reviews.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/reviews*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/reviews*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span class="ml-3 sidebar-label">Review Approval</span>
       </a>
+      @endif
 
+      @if($navUser && $navUser->hasPermission('notifications.view'))
       <a href="{{ route('admin.driver-broadcasts.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/driver-broadcasts*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/driver-broadcasts*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6-9 6-9-6z"/><path d="M5 14l7 5 7-5"/></svg>
         <span class="ml-3 sidebar-label">Driver Broadcast Message</span>
       </a>
+      @endif
 
       <a href="{{ route('admin.complaints.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/complaints-lost-found*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/complaints-lost-found*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M5 7h12"/><path d="M7 7v11a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3V7"/></svg>
@@ -208,12 +221,14 @@
     </nav>
 
     <!-- Admin Setting at bottom -->
+    @if($navUser && $navUser->hasPermission('admin_settings.view'))
     <div class="absolute bottom-6 left-0 right-0 px-4">
       <a href="{{ route('admin.settings.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/settings*') ? 'bg-gray-100 font-semibold' : '' }}">
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/settings*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
         <span class="ml-3 sidebar-label">Admin</span>
       </a>
     </div>
+    @endif
 
 
   </div>

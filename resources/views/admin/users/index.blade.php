@@ -15,6 +15,9 @@
         <form method="GET" class="mb-0">
           <input type="search" name="q" value="{{ request('q') }}" placeholder="Search by name or email" class="border p-2 rounded w-64">
         </form>
+        @if(auth()->user() && auth()->user()->hasPermission('admin_settings.view'))
+        <a href="{{ route('admin.users.access-control') }}" class="px-4 py-2 border border-indigo-600 text-indigo-700 rounded bg-white">Access Control</a>
+        @endif
         <a href="{{ route('admin.users.create') }}" class="px-4 py-2 bg-indigo-600 text-white rounded">Add User</a>
       </div>
     </div>

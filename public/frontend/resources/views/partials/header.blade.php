@@ -48,36 +48,23 @@
                             <div class="main-menu">
                                 <nav id="mobile-menu">
                                     <ul>
-                                        <li>
-                                            <a href="{{ $baseUrl.'/airport-transfers' }}"><i class="fas fa-plane"></i> Airport Taxi Transfers <i class="fas fa-angle-down"></i></a>
-                                            <ul class="submenu">
-                                                @forelse ($airportLinks as $item)
-                                                    <li><a href="{{ $baseUrl.'/'.ltrim($item['url'], '/') }}">{{ $item['label'] }}</a></li>
-                                                @empty
-                                                    <li><a href="{{ $baseUrl.'/airport-transfers' }}">No airport pages yet</a></li>
-                                                @endforelse
-                                            </ul>
-                                        </li>
-                                        <li>
-                                            <a href="{{ $baseUrl.'/city-transfers' }}"><i class="fas fa-building"></i> City Transfers <i class="fas fa-angle-down"></i></a>
-                                            <ul class="submenu submenu-2">
-                                                @forelse ($cityLinks as $item)
-                                                    <li><a href="{{ $baseUrl.'/'.ltrim($item['url'], '/') }}">{{ $item['label'] }}</a></li>
-                                                @empty
-                                                    <li><a href="{{ $baseUrl.'/city-transfers' }}">No city pages yet</a></li>
-                                                @endforelse
-                                            </ul>
-                                        </li>
-                                        @if(!empty($otherLinks))
+                                        @foreach (($navGroups ?? []) as $group)
+                                            @php($groupUrl = $baseUrl.'/'.ltrim($group['url'] ?? '/', '/'))
                                             <li>
-                                                <a href="javascript:void(0)"><i class="fas fa-file-alt"></i> Other Pages <i class="fas fa-angle-down"></i></a>
-                                                <ul class="submenu">
-                                                    @foreach ($otherLinks as $item)
+                                                <a href="{{ $groupUrl }}">
+                                                    <i class="{{ $group['icon'] ?? 'fas fa-folder-open' }}"></i>
+                                                    {{ $group['label'] ?? 'Group' }}
+                                                    <i class="fas fa-angle-down"></i>
+                                                </a>
+                                                <ul class="submenu {{ $loop->index === 1 ? 'submenu-2' : '' }}">
+                                                    @forelse (($group['items'] ?? []) as $item)
                                                         <li><a href="{{ $baseUrl.'/'.ltrim($item['url'], '/') }}">{{ $item['label'] }}</a></li>
-                                                    @endforeach
+                                                    @empty
+                                                        <li><a href="{{ $groupUrl }}">No pages yet</a></li>
+                                                    @endforelse
                                                 </ul>
                                             </li>
-                                        @endif
+                                        @endforeach
                                         <li><a href="{{ $baseUrl.'/fleet' }}"><i class="fas fa-car"></i> Fleet</a></li>
                                         <li><a href="{{ $baseUrl.'/faq' }}"><i class="fas fa-message"></i> FAQ's</a></li>
                                         <li><a href="{{ $baseUrl.'/complainet/lost-found' }}"><i class="fas fa-box-open"></i> Complainet / Lost Found</a></li>

@@ -1,4 +1,7 @@
 <div>
+  @php($canCreatePricing = auth()->check() && auth()->user()->hasPermission('pricing.create'))
+  @php($canEditPricing = auth()->check() && auth()->user()->hasPermission('pricing.edit'))
+
   <div class="flex items-center justify-between mb-4">
     <form id="zones-search-form" method="GET" action="{{ route('admin.pricing.zones.index') }}" class="flex items-center gap-2">
       <input type="search" name="q" value="{{ $q ?? '' }}" placeholder="Search zones" class="border rounded p-2" />
@@ -6,7 +9,9 @@
     </form>
 
     <div class="flex items-center gap-2">
+      @if($canCreatePricing)
       <a id="zones-create-button" href="{{ route('admin.pricing.zones.create') }}" data-title="Add Zone Price" class="px-4 py-2 bg-indigo-600 text-white rounded">Add Zone</a>
+      @endif
     </div>
   </div>
 
@@ -22,7 +27,7 @@
           <th class="p-2">MPV6</th>
           <th class="p-2">MPV8</th>
           <th class="p-2">Status</th>
-          <th class="p-2">Actions</th>
+          <th class="p-2">{{ $canEditPricing ? 'Actions' : 'Mode' }}</th>
         </tr>
       </thead>
       <tbody>
@@ -37,9 +42,11 @@
           <td class="p-2">{{ $item->mpv8_price ?? '-' }}</td>
           <td class="p-2">{{ ucfirst($item->status) }}</td>
           <td class="p-2">
-            @if(auth()->check() && auth()->user()->hasPermission('pricing.edit'))
+            @if($canEditPricing)
             <a href="{{ route('admin.pricing.zones.edit', $item) }}" class="text-indigo-600 mr-2 zones-edit-button">Edit</a>
             <form method="POST" action="{{ route('admin.pricing.zones.destroy', $item) }}" style="display:inline">@csrf @method('DELETE')<button type="submit" class="text-red-600" data-confirm="Delete?">Delete</button></form>
+            @else
+            <span class="text-gray-500 text-sm">Read-only</span>
             @endif
           </td>
         </tr>

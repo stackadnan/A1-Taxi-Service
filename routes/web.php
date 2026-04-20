@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Driver\DriverAuthController;
 use App\Http\Controllers\Driver\DriverDashboardController;
 
@@ -160,6 +161,7 @@ Route::name('admin.')->group(function () {
 
         // Users management
         Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':user.view');
+        Route::get('users/access-control', [\App\Http\Controllers\Admin\UserController::class, 'accessControl'])->name('users.access-control')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.view');
 
         // Show a single booking (view)
         Route::get('bookings/{booking}', [\App\Http\Controllers\Admin\BookingController::class, 'show'])->name('bookings.show')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.view');
@@ -195,8 +197,8 @@ Route::name('admin.')->group(function () {
         Route::delete('users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy')->middleware(\App\Http\Middleware\EnsurePermission::class.':user.delete');
 
         // Permissions management
-        Route::get('permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'index'])->name('permissions.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.view');
-        Route::post('permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'update'])->name('permissions.update')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.edit');
+        Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.view');
+        Route::post('permissions', [PermissionController::class, 'update'])->name('permissions.update')->middleware(\App\Http\Middleware\EnsurePermission::class.':admin_settings.edit');
     });
 });
 

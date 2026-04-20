@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,5 +27,21 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($e->getStatusCode() !== 403) {
+                return null;
+            }
+
+            if ($request->expectsJson() || $request->ajax() || ! $request->user()) {
+                return null;
+            }
+
+            $message = trim((string) $e->getMessage()) !== ''
+                ? trim((string) $e->getMessage())
+                : 'You do not have permission to view or edit this section.';
+
+            return response()->view('errors.permission-denied', [
+                'permissionMessage' => $message,
+            ], 403);
+        });
     })->create();

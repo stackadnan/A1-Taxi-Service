@@ -22,6 +22,18 @@ class EnsurePermission
             return $next($request);
         }
 
-        abort(403);
+        $isEditPermission = is_string($permission) && str_ends_with($permission, '.edit');
+        $message = $isEditPermission
+            ? 'You do not have permission to edit this section.'
+            : 'You do not have permission to view this section.';
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], 403);
+        }
+
+        abort(403, $message);
     }
 }

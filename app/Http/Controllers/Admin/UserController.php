@@ -8,6 +8,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\Permission;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -66,6 +67,15 @@ class UserController extends Controller
         $roles = Role::orderBy('name')->get();
         $user->load('roles');
         return view('admin.users.edit', compact('user','roles'));
+    }
+
+    public function accessControl()
+    {
+        $allowed = ['Super Admin', 'Manager', 'Controller', 'Operator', 'Monitoring'];
+        $roles = Role::with('permissions')->whereIn('name', $allowed)->orderBy('name')->get();
+        $permissions = Permission::orderBy('module')->orderBy('action')->get();
+
+        return view('admin.users.access-control', compact('roles', 'permissions'));
     }
 
     public function update(UpdateUserRequest $request, User $user)

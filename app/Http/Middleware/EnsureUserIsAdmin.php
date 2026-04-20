@@ -36,6 +36,15 @@ class EnsureUserIsAdmin
             return $next($request);
         }
 
-        abort(403, 'Unauthorized.');
+        $message = 'You do not have permission to access the admin panel.';
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], 403);
+        }
+
+        abort(403, $message);
     }
 }

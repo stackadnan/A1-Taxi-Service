@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Page;
 use App\Models\PagePartial;
+use App\Models\Seo;
 use App\Models\Url;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,6 +54,8 @@ class PageAdminController extends Controller
             'page' => $page,
             'rowBlocks' => $this->buildInitialRowBlocks($page),
             'partialToggles' => $this->defaultPartials(),
+            'seoData' => $this->defaultSeoData(),
+            'groupSlugOptions' => $this->getGroupSlugOptions(),
             'primaryUrl' => null,
             'formAction' => route('admin.pages.store'),
             'formMethod' => 'POST',
@@ -84,6 +87,7 @@ class PageAdminController extends Controller
             ]);
 
             $this->syncPartials($page, $validated);
+            $this->syncSeo($page, $validated);
 
             $this->syncPrimaryUrl($page, $validated);
 
@@ -103,6 +107,8 @@ class PageAdminController extends Controller
             'page' => $page,
             'rowBlocks' => $this->buildInitialRowBlocks($page),
             'partialToggles' => $this->resolvePagePartials($page),
+            'seoData' => $this->resolvePageSeo($page),
+            'groupSlugOptions' => $this->getGroupSlugOptions(),
             'primaryUrl' => $page->urls->first(),
             'formAction' => route('admin.pages.update', $page),
             'formMethod' => 'PUT',
@@ -134,6 +140,7 @@ class PageAdminController extends Controller
             ]);
 
             $this->syncPartials($page, $validated);
+            $this->syncSeo($page, $validated);
 
             $this->syncPrimaryUrl($page, $validated);
 
@@ -174,13 +181,27 @@ class PageAdminController extends Controller
             'partials' => ['nullable', 'array'],
             'partials.*' => ['nullable', 'boolean'],
             'url_id' => ['nullable', 'integer', 'exists:urls,id'],
-            'group_slug' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9-]+$/'],
+            'group_slug' => ['nullable', 'string', 'max:100'],
+            'group_slug_custom' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9-]+$/'],
             'slug' => ['nullable', 'string', 'max:150', 'regex:/^[a-z0-9-]+$/'],
             'url_is_active' => ['nullable', 'boolean'],
+            'seo_meta_title' => ['nullable', 'string', 'max:255'],
+            'seo_canonical' => ['nullable', 'url', 'max:2000'],
+            'seo_meta_description' => ['nullable', 'string'],
+            'seo_meta_keywords' => ['nullable', 'string'],
+            'seo_schema_script' => ['nullable', 'string'],
         ]);
 
-        $groupSlug = isset($validated['group_slug']) ? trim((string) $validated['group_slug']) : '';
+        $selectedGroupSlug = isset($validated['group_slug']) ? trim((string) $validated['group_slug']) : '';
+        $customGroupSlug = isset($validated['group_slug_custom']) ? trim((string) $validated['group_slug_custom']) : '';
+        $groupSlug = $customGroupSlug !== '' ? $customGroupSlug : $selectedGroupSlug;
         $slug = isset($validated['slug']) ? trim((string) $validated['slug']) : '';
+
+        if ($groupSlug !== '' && !preg_match('/^[a-z0-9-]+$/', $groupSlug)) {
+            throw ValidationException::withMessages([
+                'group_slug' => 'Group slug must contain only lowercase letters, numbers, and hyphens.',
+            ]);
+        }
 
         if (($groupSlug === '') xor ($slug === '')) {
             throw ValidationException::withMessages([
@@ -209,6 +230,61 @@ class PageAdminController extends Controller
         $validated['slug'] = $slug;
 
         return $validated;
+    }
+
+    private function defaultSeoData(): array
+    {
+        return [
+            'meta_title' => '',
+            'canonical' => '',
+            'meta_description' => '',
+            'meta_keywords' => '',
+            'schema_script' => '',
+        ];
+    }
+
+    private function resolvePageSeo(Page $page): array
+    {
+        $defaults = $this->defaultSeoData();
+
+        $seo = Seo::query()
+            ->where('page_id', $page->id)
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$seo) {
+            return $defaults;
+        }
+
+        return [
+            'meta_title' => (string) ($seo->meta_title ?? ''),
+            'canonical' => (string) ($seo->canonical ?? ''),
+            'meta_description' => (string) ($seo->meta_description ?? ''),
+            'meta_keywords' => (string) ($seo->meta_keywords ?? ''),
+            'schema_script' => (string) ($seo->schema_script ?? ''),
+        ];
+    }
+
+    private function syncSeo(Page $page, array $validated): void
+    {
+        $payload = [
+            'meta_title' => $validated['seo_meta_title'] ?? null,
+            'canonical' => $validated['seo_canonical'] ?? null,
+            'meta_description' => $validated['seo_meta_description'] ?? null,
+            'meta_keywords' => $validated['seo_meta_keywords'] ?? null,
+            'schema_script' => $validated['seo_schema_script'] ?? null,
+            'date' => now()->toDateString(),
+            'is_active' => true,
+        ];
+
+        Seo::updateOrCreate(
+            [
+                'page_id' => $page->id,
+                'route_path' => null,
+            ],
+            $payload
+        );
     }
 
     private function defaultPartials(): array
@@ -440,5 +516,17 @@ class PageAdminController extends Controller
         }
 
         Url::create($payload);
+    }
+
+    private function getGroupSlugOptions(): array
+    {
+        return Url::query()
+            ->whereNotNull('group_slug')
+            ->where('group_slug', '!=', '')
+            ->distinct()
+            ->orderBy('group_slug')
+            ->pluck('group_slug')
+            ->values()
+            ->all();
     }
 }

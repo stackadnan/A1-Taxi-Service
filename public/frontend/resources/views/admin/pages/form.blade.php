@@ -30,6 +30,10 @@
             border-color: #0d6efd;
             color: #fff;
         }
+
+        .quote-description-editor {
+            min-height: 220px;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -69,6 +73,40 @@
         @endif
 
         <div class="card-body">
+            @php
+                $seoTabFields = [
+                    'seo_meta_title',
+                    'seo_canonical',
+                    'seo_meta_description',
+                    'seo_meta_keywords',
+                    'seo_schema_script',
+                ];
+                $hasSeoTabErrors = false;
+                foreach ($seoTabFields as $seoTabField) {
+                    if ($errors->has($seoTabField)) {
+                        $hasSeoTabErrors = true;
+                        break;
+                    }
+                }
+
+                $activeAdminTab = old('admin_tab', $hasSeoTabErrors ? 'seo' : 'page');
+                if (!in_array($activeAdminTab, ['page', 'seo'], true)) {
+                    $activeAdminTab = 'page';
+                }
+            @endphp
+
+            <input type="hidden" name="admin_tab" id="admin_tab" value="{{ $activeAdminTab }}">
+
+            <ul class="nav nav-tabs mb-4" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link admin-tab-btn {{ $activeAdminTab === 'page' ? 'active' : '' }}" data-tab-target="page" role="tab">Page</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link admin-tab-btn {{ $activeAdminTab === 'seo' ? 'active' : '' }}" data-tab-target="seo" role="tab">SEO</button>
+                </li>
+            </ul>
+
+            <div id="admin-tab-page" class="admin-tab-pane {{ $activeAdminTab === 'page' ? '' : 'd-none' }}">
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Page Name</label>
@@ -112,8 +150,69 @@
                 </div>
 
                 <div class="col-12">
+                    @php
+                        $defaultServiceHighlightsTemplate = '<!-- Service Highlights -->'
+                            ."\n"
+                            .'<ul class="text-white list-unstyled hero-features" data-animation="fadeInUp">'
+                            ."\n"
+                            .'    <li>✔ Free cancellation up to 12 hours before pickup</li>'
+                            ."\n"
+                            .'    <li>✔ Real-time flight tracking for timely pickups</li>'
+                            ."\n"
+                            .'    <li>✔ Fully licensed and professional drivers</li>'
+                            ."\n"
+                            .'    <li>✔ Comfortable vehicles for individuals and groups</li>'
+                            ."\n"
+                            .'    <li>✔ 24/7 customer support and assistance</li>'
+                            ."\n"
+                            .'</ul>';
+
+                        $defaultQuoteDescriptionTemplate = '<p class="text-white mb-3" data-animation="fadeInUp">Book professional London airport taxi transfers to and from all major UK airports. Whether you are travelling alone, with family, or in a group, we provide comfortable, punctual and affordable transport with fixed prices and no hidden charges.</p>'
+                            ."\n\n"
+                            .'<p class="text-white mb-4" data-animation="fadeInUp">Reserve your taxi in advance through our quick online booking system and enjoy a smooth, stress-free journey to or from the airport.</p>'
+                            ."\n\n"
+                            .'<p class="text-white mb-4" data-animation="fadeInUp">Need assistance? Our customer support team is available <strong>24 hours a day, 7 days a week</strong> on <strong>(+44) 1582 801 611</strong>.</p>'
+                            ."\n\n"
+                            .$defaultServiceHighlightsTemplate;
+
+                        $quoteDescriptionValue = old('quote_description', $page->quote_description);
+                        if (!is_string($quoteDescriptionValue) || trim($quoteDescriptionValue) === '') {
+                            $quoteDescriptionValue = $defaultQuoteDescriptionTemplate;
+                        } elseif (!str_contains($quoteDescriptionValue, 'hero-features')) {
+                            $quoteDescriptionValue = rtrim($quoteDescriptionValue)."\n\n".$defaultServiceHighlightsTemplate;
+                        }
+
+                        $quoteDescriptionMode = old('quote_description_mode', 'design');
+                        if (!in_array($quoteDescriptionMode, ['design', 'code'], true)) {
+                            $quoteDescriptionMode = 'design';
+                        }
+                    @endphp
+
                     <label class="form-label">Quote Description</label>
-                    <textarea name="quote_description" rows="4" class="form-control">{{ old('quote_description', $page->quote_description) }}</textarea>
+                    <input type="hidden" name="quote_description_mode" id="quote_description_mode" value="{{ $quoteDescriptionMode }}">
+
+                    <div class="d-flex gap-2 mb-2">
+                        <button type="button" class="btn btn-sm row-tab-btn quote-desc-tab-btn {{ $quoteDescriptionMode === 'code' ? 'btn-primary active' : 'btn-outline-primary' }}" data-mode="code">Code Editor</button>
+                        <button type="button" class="btn btn-sm row-tab-btn quote-desc-tab-btn {{ $quoteDescriptionMode === 'design' ? 'btn-primary active' : 'btn-outline-primary' }}" data-mode="design">Design Editor</button>
+                    </div>
+
+                    <div id="quote_description_code_pane" class="{{ $quoteDescriptionMode === 'code' ? '' : 'd-none' }}">
+                        <textarea name="quote_description" id="quote_description" rows="10" class="form-control row-code-editor">{{ $quoteDescriptionValue }}</textarea>
+                    </div>
+
+                    <div id="quote_description_design_pane" class="{{ $quoteDescriptionMode === 'design' ? '' : 'd-none' }}">
+                        <div class="d-flex gap-2 mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary quote-desc-cmd" data-cmd="bold"><b>B</b></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quote-desc-cmd" data-cmd="italic"><i>I</i></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quote-desc-cmd" data-cmd="underline"><u>U</u></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary quote-desc-cmd" data-cmd="insertUnorderedList">List</button>
+                            <input type="color" id="quote_desc_color" class="form-control form-control-color" value="#ffffff" title="Choose text color">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="quote_desc_apply_color">Apply Text Color</button>
+                        </div>
+                        <div id="quote_description_design_editor" class="design-editor quote-description-editor" contenteditable="true"></div>
+                    </div>
+
+                    <div class="form-text mt-2">Edit the complete quote description and service highlights in one box, either as HTML code or visual design.</div>
                 </div>
 
                 <div class="col-12">
@@ -192,11 +291,36 @@
             <h2 class="h6 mb-3">Primary URL Mapping (Auto appears in header)</h2>
             <input type="hidden" name="url_id" value="{{ old('url_id', $primaryUrl?->id) }}">
 
+            @php
+                $selectedGroupSlug = old('group_slug', $primaryUrl?->group_slug ?? '');
+                $groupSlugList = $groupSlugOptions ?? [];
+                $selectedGroupExists = in_array($selectedGroupSlug, $groupSlugList, true);
+            @endphp
+
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label">Group Slug</label>
-                    <input type="text" name="group_slug" class="form-control" value="{{ old('group_slug', $primaryUrl?->group_slug) }}" placeholder="airport-transfers">
-                    <div class="form-text">Examples: airport-transfers, city-transfers, other-pages</div>
+                    <label class="form-label">Existing Group Slugs</label>
+                    <select name="group_slug" class="form-select">
+                        <option value="">Select group slug</option>
+                        @foreach (($groupSlugOptions ?? []) as $existingGroupSlug)
+                            <option value="{{ $existingGroupSlug }}" {{ $selectedGroupSlug === $existingGroupSlug ? 'selected' : '' }}>
+                                {{ $existingGroupSlug }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">Pick from existing group slugs below.</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Or Add New Group Slug</label>
+                    <input
+                        type="text"
+                        name="group_slug_custom"
+                        class="form-control"
+                        value="{{ old('group_slug_custom', $selectedGroupExists ? '' : $selectedGroupSlug) }}"
+                        placeholder="testing"
+                    >
+                    <div class="form-text">Optional. If provided, this value is used instead of the dropdown.</div>
                 </div>
 
                 <div class="col-md-4">
@@ -218,6 +342,54 @@
                     </div>
                 </div>
             </div>
+            </div>
+
+            <div id="admin-tab-seo" class="admin-tab-pane {{ $activeAdminTab === 'seo' ? '' : 'd-none' }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Meta Title</label>
+                        <input
+                            type="text"
+                            name="seo_meta_title"
+                            class="form-control"
+                            value="{{ old('seo_meta_title', $seoData['meta_title'] ?? '') }}"
+                            placeholder="Enter meta title"
+                        >
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Canonical Url</label>
+                        <input
+                            type="url"
+                            name="seo_canonical"
+                            class="form-control"
+                            value="{{ old('seo_canonical', $seoData['canonical'] ?? '') }}"
+                            placeholder="https://example.com/your-page"
+                        >
+                    </div>
+
+                    <div class="col-md-8">
+                        <label class="form-label">Meta Description</label>
+                        <textarea name="seo_meta_description" rows="4" class="form-control" placeholder="Enter meta description">{{ old('seo_meta_description', $seoData['meta_description'] ?? '') }}</textarea>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Meta Keywords</label>
+                        <input
+                            type="text"
+                            name="seo_meta_keywords"
+                            class="form-control"
+                            value="{{ old('seo_meta_keywords', $seoData['meta_keywords'] ?? '') }}"
+                            placeholder="keyword1, keyword2"
+                        >
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">SEO Schema</label>
+                        <textarea name="seo_schema_script" rows="14" class="form-control" placeholder="Paste JSON-LD schema script here">{{ old('seo_schema_script', $seoData['schema_script'] ?? '') }}</textarea>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="card-footer d-flex gap-2 justify-content-end">
@@ -229,12 +401,263 @@
 
 <script>
     (function () {
+        const adminTabInput = document.getElementById('admin_tab');
+        const adminTabButtons = document.querySelectorAll('.admin-tab-btn');
+        const adminPageTabPane = document.getElementById('admin-tab-page');
+        const adminSeoTabPane = document.getElementById('admin-tab-seo');
+
         const container = document.getElementById('rowBlocksContainer');
         const toggleBtn = document.getElementById('toggleRowOptions');
         const panel = document.getElementById('rowOptionPanel');
         const numberOfRowsInput = document.getElementById('number_of_rows');
         const rowBlocksInput = document.getElementById('row_blocks_json');
         const rowsPatternPreview = document.getElementById('rows_pattern_preview');
+
+        const quoteDescriptionInput = document.getElementById('quote_description');
+        const quoteDescriptionModeInput = document.getElementById('quote_description_mode');
+        const quoteDescriptionCodePane = document.getElementById('quote_description_code_pane');
+        const quoteDescriptionDesignPane = document.getElementById('quote_description_design_pane');
+        const quoteDescriptionDesignEditor = document.getElementById('quote_description_design_editor');
+        const quoteDescriptionTabButtons = document.querySelectorAll('.quote-desc-tab-btn');
+        const quoteDescriptionCmdButtons = document.querySelectorAll('.quote-desc-cmd');
+        const quoteDescriptionColorPicker = document.getElementById('quote_desc_color');
+        const quoteDescriptionApplyColorBtn = document.getElementById('quote_desc_apply_color');
+        let selectedQuoteColor = '#ffffff';
+
+        function setActiveAdminTab(tabName) {
+            const safeTab = tabName === 'seo' ? 'seo' : 'page';
+
+            adminTabButtons.forEach((btn) => {
+                const isActive = btn.dataset.tabTarget === safeTab;
+                btn.classList.toggle('active', isActive);
+            });
+
+            if (adminPageTabPane) {
+                adminPageTabPane.classList.toggle('d-none', safeTab !== 'page');
+            }
+
+            if (adminSeoTabPane) {
+                adminSeoTabPane.classList.toggle('d-none', safeTab !== 'seo');
+            }
+
+            if (adminTabInput) {
+                adminTabInput.value = safeTab;
+            }
+        }
+
+        adminTabButtons.forEach((btn) => {
+            btn.addEventListener('click', function () {
+                setActiveAdminTab(this.dataset.tabTarget);
+            });
+        });
+
+        setActiveAdminTab(adminTabInput ? adminTabInput.value : 'page');
+
+        function setQuoteDescriptionMode(mode) {
+            const safeMode = mode === 'code' ? 'code' : 'design';
+
+            quoteDescriptionTabButtons.forEach((btn) => {
+                const isActive = btn.dataset.mode === safeMode;
+                btn.classList.toggle('active', isActive);
+                btn.classList.toggle('btn-primary', isActive);
+                btn.classList.toggle('btn-outline-primary', !isActive);
+            });
+
+            if (quoteDescriptionCodePane) {
+                quoteDescriptionCodePane.classList.toggle('d-none', safeMode !== 'code');
+            }
+
+            if (quoteDescriptionDesignPane) {
+                quoteDescriptionDesignPane.classList.toggle('d-none', safeMode !== 'design');
+            }
+
+            if (quoteDescriptionModeInput) {
+                quoteDescriptionModeInput.value = safeMode;
+            }
+        }
+
+        function normalizeColorToHex(colorValue) {
+            if (typeof colorValue !== 'string') {
+                return null;
+            }
+
+            const value = colorValue.trim();
+            if (value === '') {
+                return null;
+            }
+
+            const shortHexMatch = value.match(/^#([0-9a-fA-F]{3})$/);
+            if (shortHexMatch) {
+                return '#'+shortHexMatch[1].split('').map((ch) => ch + ch).join('').toLowerCase();
+            }
+
+            const longHexMatch = value.match(/^#([0-9a-fA-F]{6})$/);
+            if (longHexMatch) {
+                return '#'+longHexMatch[1].toLowerCase();
+            }
+
+            const rgbMatch = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+            if (rgbMatch) {
+                const [r, g, b] = [rgbMatch[1], rgbMatch[2], rgbMatch[3]].map((part) => {
+                    const numeric = Number(part);
+                    return Math.max(0, Math.min(255, numeric));
+                });
+
+                return '#'+[r, g, b]
+                    .map((part) => part.toString(16).padStart(2, '0'))
+                    .join('');
+            }
+
+            const probe = document.createElement('span');
+            probe.style.color = value;
+            document.body.appendChild(probe);
+            const computed = window.getComputedStyle(probe).color;
+            probe.remove();
+
+            const computedMatch = computed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+            if (!computedMatch) {
+                return null;
+            }
+
+            const [r, g, b] = [computedMatch[1], computedMatch[2], computedMatch[3]].map((part) => Number(part));
+            return '#'+[r, g, b]
+                .map((part) => part.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        function extractQuoteColorFromHtml(html) {
+            if (typeof html !== 'string' || html.trim() === '') {
+                return '#ffffff';
+            }
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const styledElements = Array.from(doc.body.querySelectorAll('[style]'));
+
+            for (const el of styledElements) {
+                const inlineColor = el.style ? el.style.color : '';
+                const normalized = normalizeColorToHex(inlineColor);
+                if (normalized) {
+                    return normalized;
+                }
+            }
+
+            return '#ffffff';
+        }
+
+        function stripQuoteColorFromHtml(html) {
+            if (typeof html !== 'string' || html.trim() === '') {
+                return '';
+            }
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const targets = Array.from(doc.body.querySelectorAll('*'));
+
+            targets.forEach((el) => {
+                el.classList.remove('text-white', 'text-light', 'text-muted');
+                el.style.removeProperty('color');
+                el.style.removeProperty('opacity');
+
+                const styleAttr = el.getAttribute('style');
+                if (styleAttr !== null && styleAttr.trim() === '') {
+                    el.removeAttribute('style');
+                }
+            });
+
+            return doc.body.innerHTML;
+        }
+
+        function applyQuoteColorToHtml(html, color) {
+            if (typeof html !== 'string' || html.trim() === '') {
+                return '';
+            }
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            let targets = Array.from(doc.body.querySelectorAll('*'));
+
+            if (targets.length === 0) {
+                const raw = (doc.body.innerHTML || '').trim();
+                const wrapper = doc.createElement('p');
+                wrapper.className = 'mb-3';
+                wrapper.setAttribute('data-animation', 'fadeInUp');
+                wrapper.innerHTML = raw;
+                doc.body.innerHTML = '';
+                doc.body.appendChild(wrapper);
+                targets = Array.from(doc.body.querySelectorAll('*'));
+            }
+
+            targets.forEach((el) => {
+                el.classList.remove('text-white', 'text-light', 'text-muted');
+                el.style.setProperty('color', color, 'important');
+                el.style.setProperty('opacity', '1', 'important');
+            });
+
+            return doc.body.innerHTML;
+        }
+
+        if (quoteDescriptionInput && quoteDescriptionDesignEditor) {
+            const initialHtml = quoteDescriptionInput.value || '';
+            selectedQuoteColor = extractQuoteColorFromHtml(initialHtml);
+
+            if (quoteDescriptionColorPicker) {
+                quoteDescriptionColorPicker.value = selectedQuoteColor;
+            }
+
+            const sanitizedInitialHtml = stripQuoteColorFromHtml(initialHtml);
+            quoteDescriptionInput.value = sanitizedInitialHtml;
+            quoteDescriptionDesignEditor.innerHTML = sanitizedInitialHtml;
+
+            quoteDescriptionInput.addEventListener('input', function () {
+                const sanitized = stripQuoteColorFromHtml(this.value || '');
+                this.value = sanitized;
+                quoteDescriptionDesignEditor.innerHTML = sanitized;
+            });
+
+            quoteDescriptionDesignEditor.addEventListener('input', function () {
+                quoteDescriptionInput.value = stripQuoteColorFromHtml(this.innerHTML || '');
+            });
+        }
+
+        quoteDescriptionTabButtons.forEach((btn) => {
+            btn.addEventListener('click', function () {
+                setQuoteDescriptionMode(this.dataset.mode);
+            });
+        });
+
+        quoteDescriptionCmdButtons.forEach((btn) => {
+            btn.addEventListener('click', function () {
+                if (!quoteDescriptionDesignEditor) {
+                    return;
+                }
+
+                quoteDescriptionDesignEditor.focus();
+                document.execCommand(this.dataset.cmd, false, null);
+
+                if (quoteDescriptionInput) {
+                    quoteDescriptionInput.value = quoteDescriptionDesignEditor.innerHTML;
+                }
+            });
+        });
+
+        if (quoteDescriptionApplyColorBtn) {
+            quoteDescriptionApplyColorBtn.addEventListener('click', function () {
+                if (!quoteDescriptionColorPicker) {
+                    return;
+                }
+
+                selectedQuoteColor = quoteDescriptionColorPicker.value || '#ffffff';
+            });
+        }
+
+        if (quoteDescriptionColorPicker) {
+            quoteDescriptionColorPicker.addEventListener('input', function () {
+                selectedQuoteColor = quoteDescriptionColorPicker.value || '#ffffff';
+            });
+        }
+
+        setQuoteDescriptionMode(quoteDescriptionModeInput ? quoteDescriptionModeInput.value : 'design');
 
         const layoutLabelMap = {
             1: 'One Column',
@@ -354,7 +777,7 @@
             const design = buildDefaultDesign(safeLayout);
             return {
                 layout: safeLayout,
-                mode: 'code',
+                mode: 'design',
                 design,
                 html: buildHtmlFromDesign(safeLayout, design),
             };
@@ -391,9 +814,10 @@
             const layout = normalizeLayout(row.layout);
             const html = typeof row.html === 'string' ? row.html : '';
             const design = parseDesignFromHtml(layout, html);
+            const mode = row.mode === 'code' ? 'code' : 'design';
             return {
                 layout,
-                mode: 'code',
+                mode,
                 design,
                 html: html.trim() === '' ? buildHtmlFromDesign(layout, design) : html,
             };
@@ -435,8 +859,11 @@
                 for (let i = 0; i < layout; i++) {
                     const title = (design[i] && typeof design[i].title === 'string') ? design[i].title : '';
                     const description = (design[i] && typeof design[i].description === 'string') ? design[i].description : '';
+                    const blockColumnClass = slotClassMap[layout] && slotClassMap[layout][i]
+                        ? `col-12 ${slotClassMap[layout][i]}`
+                        : 'col-12';
                     designFieldsHtml.push(`
-                        <div class="col-12 border rounded p-3 bg-light-subtle">
+                        <div class="${blockColumnClass} border rounded p-3 bg-light-subtle">
                             <div class="fw-semibold mb-2">Block ${i + 1}</div>
                             <label class="form-label">Title</label>
                             <input type="text" class="form-control mb-2 design-title" data-index="${index}" data-block="${i}" value="${escapeHtml(title)}">
@@ -509,8 +936,42 @@
                 btn.addEventListener('click', function () {
                     const index = Number(this.dataset.index);
                     const mode = this.dataset.mode === 'design' ? 'design' : 'code';
+
+                    if (!rows[index]) {
+                        return;
+                    }
+
                     rows[index].mode = mode;
-                    renderRows();
+
+                    // Keep the builder visible when switching row editor mode.
+                    setActiveAdminTab('page');
+
+                    const rowCard = this.closest('.card');
+                    if (!rowCard) {
+                        renderRows();
+                        return;
+                    }
+
+                    rowCard.querySelectorAll('.row-tab').forEach((tabBtn) => {
+                        const tabMode = tabBtn.dataset.mode === 'design' ? 'design' : 'code';
+                        const isActive = tabMode === mode;
+                        tabBtn.classList.toggle('active', isActive);
+                        tabBtn.classList.toggle('btn-primary', isActive);
+                        tabBtn.classList.toggle('btn-outline-primary', !isActive);
+                    });
+
+                    const codePane = rowCard.querySelector(`.row-pane-code[data-index="${index}"]`);
+                    const designPane = rowCard.querySelector(`.row-pane-design[data-index="${index}"]`);
+
+                    if (codePane) {
+                        codePane.classList.toggle('d-none', mode !== 'code');
+                    }
+
+                    if (designPane) {
+                        designPane.classList.toggle('d-none', mode !== 'design');
+                    }
+
+                    updateHiddenInputs();
                 });
             });
 
@@ -615,9 +1076,11 @@
             });
         }
 
-        toggleBtn.addEventListener('click', function () {
-            panel.classList.toggle('d-none');
-        });
+        if (toggleBtn && panel) {
+            toggleBtn.addEventListener('click', function () {
+                panel.classList.toggle('d-none');
+            });
+        }
 
         document.querySelectorAll('.add-row-type').forEach((btn) => {
             btn.addEventListener('click', function () {
@@ -627,9 +1090,18 @@
             });
         });
 
-        const form = document.querySelector('form');
+        const form = document.querySelector('form.card');
         if (form) {
             form.addEventListener('submit', function () {
+                if (quoteDescriptionInput && quoteDescriptionDesignEditor) {
+                    if (quoteDescriptionModeInput && quoteDescriptionModeInput.value === 'design') {
+                        quoteDescriptionInput.value = quoteDescriptionDesignEditor.innerHTML;
+                    }
+
+                    const cleanHtml = stripQuoteColorFromHtml(quoteDescriptionInput.value || '');
+                    quoteDescriptionInput.value = applyQuoteColorToHtml(cleanHtml, selectedQuoteColor || '#ffffff');
+                }
+
                 updateHiddenInputs();
             });
         }
