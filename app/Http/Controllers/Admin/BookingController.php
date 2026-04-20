@@ -57,7 +57,8 @@ class BookingController extends Controller
                 $query->whereHas('status', function($q){ $q->whereIn('name', ['pending','in_progress']); });
                 break;
             case 'confirmed':
-                $query->whereHas('status', function($q){ $q->where('name', 'confirmed'); });
+                // Keep POB jobs in confirmed flow so they only move out when completed.
+                $query->whereHas('status', function($q){ $q->whereIn('name', ['confirmed', 'pob']); });
                 break;
             case 'completed':
                 $query->whereHas('status', function($q){ $q->where('name', 'completed'); });
@@ -111,7 +112,8 @@ class BookingController extends Controller
                 // Count both 'pending' and 'in_progress' so tab badge is accurate
                 return Booking::whereHas('status', function($q){ $q->whereIn('name', ['pending','in_progress']); })->count();
             case 'confirmed':
-                return Booking::whereHas('status', function($q){ $q->where('name', 'confirmed'); })->count();
+                // Count POB in confirmed badge for the same reason as the confirmed query.
+                return Booking::whereHas('status', function($q){ $q->whereIn('name', ['confirmed', 'pob']); })->count();
             case 'completed':
                 return Booking::whereHas('status', function($q){ $q->where('name', 'completed'); })->count();
             case 'cancelled':

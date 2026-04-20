@@ -61,11 +61,28 @@
             @else
               <td class="p-3" data-col="driver_response">
                 @php
-                  $driverResponse = $b->meta['driver_response'] ?? null;
+                  $driverResponse = strtolower((string) ($b->meta['driver_response'] ?? ''));
+                  $statusName = strtolower((string) (optional($b->status)->name ?? ''));
+                  $inRoute = filter_var($b->meta['in_route'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                  $arrivedAtPickup = filter_var($b->meta['arrived_at_pickup'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                  $pobMarked = !empty($b->meta['pob_marked_at']);
+                  $completedAt = !empty($b->meta['completed_at']);
                   $statusClass = '';
                   $statusText = '';
-                  
-                  if ($driverResponse === 'accepted') {
+
+                  if ($statusName === 'completed' || $completedAt) {
+                      $statusClass = 'bg-emerald-100 text-emerald-800';
+                      $statusText = 'Completed';
+                  } elseif ($statusName === 'pob' || $pobMarked) {
+                      $statusClass = 'bg-indigo-100 text-indigo-800';
+                      $statusText = 'POB';
+                  } elseif ($arrivedAtPickup) {
+                      $statusClass = 'bg-sky-100 text-sky-800';
+                      $statusText = 'Arrived';
+                  } elseif ($inRoute) {
+                      $statusClass = 'bg-purple-100 text-purple-800';
+                      $statusText = 'In Route';
+                  } elseif ($driverResponse === 'accepted') {
                       $statusClass = 'bg-green-100 text-green-800';
                       $statusText = 'Accepted';
                   } elseif ($driverResponse === 'declined') {
@@ -99,8 +116,8 @@
             $colspan += 2;
           }
           if (isset($active) && in_array($active, ['confirmed','completed'])) {
-            // include Driver Response
-            $colspan += 1;
+            // include Car Type + Driver Response
+            $colspan += 2;
           }
         @endphp
         <tr>

@@ -837,12 +837,39 @@
           if (!booking.driver_id) {
             responseCell.innerHTML = '<span class="text-sm text-gray-500">-</span>';
           } else {
-            var dr = booking.meta && booking.meta.driver_response ? booking.meta.driver_response : null;
+            var meta = booking.meta && typeof booking.meta === 'object' ? booking.meta : {};
+            var dr = meta.driver_response ? String(meta.driver_response).toLowerCase() : '';
+            var statusName = (booking.status && booking.status.name) ? String(booking.status.name).toLowerCase() : '';
+            var inRoute = (meta.in_route === true || meta.in_route === 1 || meta.in_route === '1' || meta.in_route === 'true');
+            var arrivedAtPickup = (meta.arrived_at_pickup === true || meta.arrived_at_pickup === 1 || meta.arrived_at_pickup === '1' || meta.arrived_at_pickup === 'true');
+            var pobMarked = !!meta.pob_marked_at;
+            var completedAt = !!meta.completed_at;
             var statusClass = '';
             var statusText = '';
-            if (dr === 'accepted') { statusClass = 'bg-green-100 text-green-800'; statusText='Accepted'; }
-            else if (dr === 'declined') { statusClass = 'bg-red-100 text-red-800'; statusText='Rejected'; }
-            else { statusClass = 'bg-yellow-100 text-yellow-800'; statusText='Pending'; }
+
+            if (statusName === 'completed' || completedAt) {
+              statusClass = 'bg-emerald-100 text-emerald-800';
+              statusText = 'Completed';
+            } else if (statusName === 'pob' || pobMarked) {
+              statusClass = 'bg-indigo-100 text-indigo-800';
+              statusText = 'POB';
+            } else if (arrivedAtPickup) {
+              statusClass = 'bg-sky-100 text-sky-800';
+              statusText = 'Arrived';
+            } else if (inRoute) {
+              statusClass = 'bg-purple-100 text-purple-800';
+              statusText = 'In Route';
+            } else if (dr === 'accepted') {
+              statusClass = 'bg-green-100 text-green-800';
+              statusText = 'Accepted';
+            } else if (dr === 'declined') {
+              statusClass = 'bg-red-100 text-red-800';
+              statusText = 'Rejected';
+            } else {
+              statusClass = 'bg-yellow-100 text-yellow-800';
+              statusText = 'Pending';
+            }
+
             responseCell.innerHTML = '<span class="text-xs px-2 py-1 rounded-full font-medium '+statusClass+'">'+statusText+'</span>';
           }
         }
