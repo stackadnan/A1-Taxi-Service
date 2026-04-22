@@ -32,7 +32,7 @@ return [
     */
 
     // session lifetime in minutes. Keep at least 1 minute to ensure server-side expiry.
-    'lifetime' => (int) env('SESSION_LIFETIME', 1),
+    'lifetime' => (int) env('SESSION_LIFETIME', 525600),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

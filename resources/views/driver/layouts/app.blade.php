@@ -181,6 +181,103 @@
         /* Theme toggle transition */
         #theme-toggle { transition: background 0.2s, color 0.2s; }
 
+        /* Driver navbar actions */
+        .driver-nav-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .driver-nav-right {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .driver-nav-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            border-radius: 9999px;
+            border: 1px solid #c7d2fe;
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+            color: #3730a3;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            padding: 0.4rem 0.75rem;
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.16);
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .driver-nav-pill:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(79, 70, 229, 0.24);
+            color: #312e81;
+            background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+        }
+
+        .driver-nav-pill i {
+            width: 1.2rem;
+            height: 1.2rem;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(79, 70, 229, 0.15);
+            color: #4338ca;
+            font-size: 0.7rem;
+        }
+
+        .driver-logout-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            border-radius: 9999px;
+            border: 1px solid #d1d5db;
+            color: #4b5563;
+            background-color: #f9fafb;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 0.4rem 0.7rem;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .driver-logout-btn:hover {
+            background-color: #f3f4f6;
+            color: #111827;
+            border-color: #9ca3af;
+        }
+
+        @media (max-width: 640px) {
+            .driver-nav-actions {
+                justify-content: space-between;
+                width: 100%;
+            }
+
+            .driver-nav-right {
+                margin-left: auto;
+                justify-content: flex-end;
+            }
+
+            .driver-nav-pill {
+                font-size: 0.72rem;
+                padding: 0.38rem 0.65rem;
+            }
+
+            .driver-logout-btn {
+                font-size: 0.78rem;
+                padding: 0.35rem 0.6rem;
+            }
+        }
+
         /* Shared back button style across driver pages */
         .driver-back-btn {
             display: inline-flex;
@@ -278,58 +375,94 @@
         html.dark #driverNotificationList .driver-note-time {
             color: #94a3b8;
         }
+
+        html.dark .driver-nav-pill {
+            border-color: #4f46e5;
+            background: linear-gradient(135deg, #312e81, #4338ca);
+            color: #e0e7ff;
+            box-shadow: 0 8px 18px rgba(67, 56, 202, 0.35);
+        }
+
+        html.dark .driver-nav-pill:hover {
+            background: linear-gradient(135deg, #4338ca, #4f46e5);
+            color: #eef2ff;
+        }
+
+        html.dark .driver-nav-pill i {
+            background: rgba(255, 255, 255, 0.16);
+            color: #e0e7ff;
+        }
+
+        html.dark .driver-logout-btn {
+            border-color: #475569;
+            background-color: #1f2937;
+            color: #cbd5e1;
+        }
+
+        html.dark .driver-logout-btn:hover {
+            border-color: #64748b;
+            background-color: #334155;
+            color: #f1f5f9;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <!-- Navigation Header -->
     <nav class="bg-white shadow-sm border-b border-gray-200 pt-4 sm:pt-0 sticky top-0 z-50" style="padding-top: env(safe-area-inset-top, 0px);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+            <div class="flex flex-col gap-3 py-3 sm:py-0 sm:flex-row sm:justify-between sm:items-center min-h-16">
                 <!-- Logo/Title -->
-                <div class="flex items-center">
-                    <h1 class="text-xl font-semibold text-gray-800">
+                <div class="flex items-center justify-between sm:justify-start gap-3 min-w-0">
+                    <h1 class="text-lg sm:text-xl font-semibold text-gray-800 leading-tight truncate">
                         @yield('title', 'Driver Portal')
                     </h1>
                 </div>
                 
                 <!-- User Menu -->
-                <div class="flex items-center space-x-3">
+                <div class="driver-nav-actions">
                     <span class="text-sm text-gray-600 hidden sm:inline">{{ auth('driver')->user()->name }}</span>
 
-                    <div class="relative">
-                        <button id="driverNotificationButton" class="relative w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none" title="Notifications">
-                            <i class="fas fa-bell text-sm"></i>
-                            <span id="driverNotificationBadge" class="hidden absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[11px] leading-5 text-center font-semibold">0</span>
-                        </button>
+                    <a href="{{ route('driver.invoices.index') }}" class="driver-nav-pill" title="My invoices">
+                        <i class="fas fa-file-invoice"></i>
+                        <span>My Invoices</span>
+                    </a>
 
-                        <div id="driverNotificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                            <div class="driver-note-header p-3 border-b border-gray-200 bg-gray-50">
-                                <div class="flex items-center justify-between">
-                                    <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
-                                    <div class="flex items-center gap-3">
-                                        <button id="driverMarkAllRead" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark all read</button>
-                                        <button id="driverClearAll" class="text-xs text-red-600 hover:text-red-700 font-medium">Clear all</button>
+                    <div class="driver-nav-right">
+                        <div class="relative">
+                            <button id="driverNotificationButton" class="relative w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none" title="Notifications">
+                                <i class="fas fa-bell text-sm"></i>
+                                <span id="driverNotificationBadge" class="hidden absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[11px] leading-5 text-center font-semibold">0</span>
+                            </button>
+
+                            <div id="driverNotificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                                <div class="driver-note-header p-3 border-b border-gray-200 bg-gray-50">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
+                                        <div class="flex items-center gap-3">
+                                            <button id="driverMarkAllRead" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark all read</button>
+                                            <button id="driverClearAll" class="text-xs text-red-600 hover:text-red-700 font-medium">Clear all</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div id="driverNotificationList" class="max-h-80 overflow-y-auto">
-                                <div class="p-4 text-sm text-gray-500 text-center">No notifications yet</div>
+                                <div id="driverNotificationList" class="max-h-80 overflow-y-auto">
+                                    <div class="p-4 text-sm text-gray-500 text-center">No notifications yet</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Dark / Light Toggle -->
-                    <button id="theme-toggle" title="Toggle dark/light mode"
-                        class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none">
-                        <i id="theme-icon" class="fas fa-moon text-sm"></i>
-                    </button>
-
-                    <form action="{{ route('driver.logout') }}" method="POST" class="inline">
-                        @csrf
-                        <button type="submit" class="text-gray-600 hover:text-gray-800 text-sm px-3 py-2 rounded">
-                            <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                        <!-- Dark / Light Toggle -->
+                        <button id="theme-toggle" title="Toggle dark/light mode"
+                            class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none">
+                            <i id="theme-icon" class="fas fa-moon text-sm"></i>
                         </button>
-                    </form>
+
+                        <form action="{{ route('driver.logout') }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="driver-logout-btn">
+                                <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

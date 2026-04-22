@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Booking;
+use App\Models\DriverInvoice;
 use App\Models\DriverNotification;
 use App\Models\UserNotification;
 use App\Events\DriverResponseUpdated;
@@ -58,6 +59,13 @@ class DriverDashboardController extends Controller
         // Show combined count on the dashboard (expired + expiring)
         $expiredDocsCount = count($documentIssues);
         $expiringDocsCount = count($expiringDocs);
+        $availableInvoicesCount = DriverInvoice::query()
+            ->where('driver_id', $driver->id)
+            ->where(function ($q) {
+                $q->whereNotNull('meta->sent_to_app_at')
+                  ->orWhere('meta->visible_in_driver_app', true);
+            })
+            ->count();
 
         return view('driver.dashboard', compact(
             'driver',
@@ -65,8 +73,65 @@ class DriverDashboardController extends Controller
             'acceptedJobsCount',
             'completedJobsCount',
             'declinedJobsCount',
-            'expiredDocsCount'
+            'expiredDocsCount',
+            'availableInvoicesCount'
         ));
+    }
+
+    /**
+     * Show invoices that were published to the driver app.
+     */
+    public function invoices()
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) {
+            abort(403);
+        }
+
+        $invoices = DriverInvoice::query()
+            ->where('driver_id', $driver->id)
+            ->where(function ($q) {
+                $q->whereNotNull('meta->sent_to_app_at')
+                  ->orWhere('meta->visible_in_driver_app', true);
+            })
+            ->orderByDesc('invoice_date')
+            ->orderByDesc('id')
+            ->paginate(12);
+
+        return view('driver.invoices.index', compact('driver', 'invoices'));
+    }
+
+    /**
+     * Download a published invoice PDF from the driver app.
+     */
+    public function downloadInvoice(DriverInvoice $invoice)
+    {
+        $driver = Auth::guard('driver')->user();
+        if (! $driver) {
+            abort(403);
+        }
+
+        if ((int) $invoice->driver_id !== (int) $driver->id) {
+            abort(403);
+        }
+
+        $meta = is_array($invoice->meta) ? $invoice->meta : [];
+        if (empty($meta['sent_to_app_at']) && empty($meta['visible_in_driver_app'])) {
+            abort(403, 'Invoice is not published to the app yet.');
+        }
+
+        if (empty($invoice->pdf_path)) {
+            return redirect()->route('driver.invoices.index')->with('error', 'Invoice file is not available yet.');
+        }
+
+        $fullPath = storage_path('app/' . ltrim(str_replace('\\', '/', $invoice->pdf_path), '/'));
+        if (!is_file($fullPath)) {
+            return redirect()->route('driver.invoices.index')->with('error', 'Invoice file is missing. Please contact admin.');
+        }
+
+        return response()->download($fullPath, $invoice->invoice_number . '.pdf', [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 
     /**

@@ -79,10 +79,17 @@
                         id="remember"
                         name="remember"
                         class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        checked
                     >
                     <label for="remember" class="ml-2 block text-sm text-gray-700">
-                        Remember me
+                        Keep me signed in
                     </label>
+                </div>
+
+                <div class="text-right -mt-2">
+                    <a href="{{ route('driver.password.request') }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                        Forgot password?
+                    </a>
                 </div>
 
                 <!-- Submit Button -->

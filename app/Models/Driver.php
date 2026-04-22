@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\DriverResetPasswordNotification;
 
 class Driver extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     protected $table = 'drivers';
 
@@ -31,7 +33,8 @@ class Driver extends Authenticatable
      * Hide sensitive attributes
      */
     protected $hidden = [
-        'password'
+        'password',
+        'remember_token'
     ];
 
     protected $casts = [
@@ -52,6 +55,11 @@ class Driver extends Authenticatable
     public function bookings()
     {
         return $this->hasMany(Booking::class, 'driver_id');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(DriverInvoice::class, 'driver_id');
     }
 
     public function locations()
@@ -83,6 +91,11 @@ class Driver extends Authenticatable
         }
 
         $this->attributes['password'] = Hash::make($value);
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new DriverResetPasswordNotification($token));
     }
 
     /**

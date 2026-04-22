@@ -24,7 +24,7 @@
         $docIcon      = $allClear ? 'fa-shield-alt' : ($docCount > 0 ? 'fa-exclamation-triangle' : 'fa-file-alt');
         $docLabel     = $allClear ? 'All Documents Clear' : 'Expiring Documents';
     @endphp
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
 
         <!-- New Jobs Card -->
         <a href="{{ route('driver.jobs.new') }}" class="block">
@@ -92,6 +92,19 @@
                             <p class="mt-1 text-xs text-white/70">+{{ $expiringCount }} expiring soon</p>
                         @endif
                     @endif
+                </div>
+            </div>
+        </a>
+
+        <!-- Invoices Card -->
+        <a href="{{ route('driver.invoices.index') }}" class="block">
+            <div class="stat-card rounded-2xl p-5 text-center job-card" style="--bg-color:#0284c7; --bg-color-end:#0369a1; box-shadow:0 6px 20px rgba(2,132,199,0.35);">
+                <div class="flex flex-col items-center justify-center h-full">
+                    <div class="stat-icon-wrap">
+                        <i class="fas fa-file-invoice text-white text-2xl"></i>
+                    </div>
+                    <p class="text-white/80 text-xs font-semibold uppercase tracking-widest mb-1">Invoices</p>
+                    <p class="text-4xl font-extrabold text-white leading-none">{{ (int) ($availableInvoicesCount ?? 0) }}</p>
                 </div>
             </div>
         </a>

@@ -43,6 +43,8 @@ return new class extends Migration
             $table->unsignedInteger('total_completed')->default(0);
             $table->unsignedInteger('total_cancelled')->default(0);
 
+            $table->rememberToken();
+
             $table->timestamps();
 
             // useful indexes

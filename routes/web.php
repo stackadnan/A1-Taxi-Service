@@ -85,6 +85,11 @@ Route::name('admin.')->group(function () {
         Route::get('drivers/booking-timing', [\App\Http\Controllers\Admin\DriverController::class, 'getBookingTiming'])->name('drivers.booking_timing')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         // View all jobs for a selected driver
         Route::get('drivers/{driver}/jobs', [\App\Http\Controllers\Admin\DriverController::class, 'jobs'])->name('drivers.jobs')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        Route::get('drivers/{driver}/invoices/{invoice}', [\App\Http\Controllers\Admin\DriverController::class, 'showInvoice'])->name('drivers.invoices.show')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        Route::post('drivers/{driver}/jobs/invoice', [\App\Http\Controllers\Admin\DriverController::class, 'sendInvoice'])->name('drivers.jobs.invoice')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        Route::post('drivers/{driver}/invoices/{invoice}/update-draft', [\App\Http\Controllers\Admin\DriverController::class, 'updateInvoiceDraft'])->name('drivers.invoices.update_draft')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        Route::post('drivers/{driver}/invoices/{invoice}/send', [\App\Http\Controllers\Admin\DriverController::class, 'sendSavedInvoice'])->name('drivers.invoices.send')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        Route::post('drivers/{driver}/invoices/{invoice}/send-app', [\App\Http\Controllers\Admin\DriverController::class, 'sendSavedInvoiceToApp'])->name('drivers.invoices.send_app')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         // Send late-warning push notification to driver (+ admin for urgent)
         Route::post('drivers/{driver}/send-late-warning', [\App\Http\Controllers\Admin\DriverController::class, 'sendLateWarning'])->name('drivers.send_late_warning')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         // AJAX helper to check availability and documents
@@ -209,6 +214,10 @@ Route::prefix('driver')->name('driver.')->group(function () {
     Route::middleware('driver.guest')->group(function () {
         Route::get('login', [DriverAuthController::class, 'showLoginForm'])->name('login');
         Route::post('login', [DriverAuthController::class, 'login'])->name('login.post');
+        Route::get('forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('password.request');
+        Route::post('forgot-password', [DriverAuthController::class, 'sendResetLinkEmail'])->name('password.email');
+        Route::get('reset-password/{token}', [DriverAuthController::class, 'showResetPasswordForm'])->name('password.reset');
+        Route::post('reset-password', [DriverAuthController::class, 'resetPassword'])->name('password.update');
     });
 
     // Driver self-service pages
@@ -249,6 +258,8 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::get('jobs/accepted', [DriverDashboardController::class, 'acceptedJobs'])->name('jobs.accepted');
         Route::get('jobs/completed', [DriverDashboardController::class, 'completedJobs'])->name('jobs.completed');
         Route::get('jobs/declined', [DriverDashboardController::class, 'declinedJobs'])->name('jobs.declined');
+        Route::get('invoices', [DriverDashboardController::class, 'invoices'])->name('invoices.index');
+        Route::get('invoices/{invoice}/download', [DriverDashboardController::class, 'downloadInvoice'])->name('invoices.download');
         // Show a single job details to the assigned driver (accepted or completed jobs only)
         Route::get('jobs/{booking}', [DriverDashboardController::class, 'show'])->name('jobs.show');
         

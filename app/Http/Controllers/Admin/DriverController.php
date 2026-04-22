@@ -7,8 +7,13 @@ use Illuminate\Http\Request;
 use App\Models\Driver;
 use App\Models\Booking;
 use App\Models\AdminSetting;
+use App\Models\DriverInvoice;
+use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class DriverController extends Controller
 {
@@ -236,14 +241,523 @@ class DriverController extends Controller
      */
     public function jobs(Request $request, Driver $driver)
     {
-        $jobs = Booking::with('status')
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        if (! $startDate || ! $endDate) {
+            $startDate = Carbon::today()->startOfMonth()->toDateString();
+            $endDate = Carbon::today()->toDateString();
+        }
+
+        $jobsQuery = Booking::with('status')
             ->where('driver_id', $driver->id)
-            ->orderByRaw("GREATEST(UNIX_TIMESTAMP(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(COALESCE(meta,'{}'), '$.status_changed_at')), updated_at)), UNIX_TIMESTAMP(updated_at)) DESC")
+            ->orderByRaw("GREATEST(UNIX_TIMESTAMP(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(COALESCE(meta,'{}'), '$.status_changed_at')), updated_at)), UNIX_TIMESTAMP(updated_at)) DESC");
+
+        $this->applyDateRangeFilter($jobsQuery, $startDate, $endDate);
+
+        $jobs = $jobsQuery
             ->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.drivers.jobs', compact('driver', 'jobs'));
+        $invoiceJobsQuery = Booking::with('status')
+            ->where('driver_id', $driver->id)
+            ->whereHas('status', function ($q) {
+                $q->where('name', 'completed');
+            });
+
+        $this->applyDateRangeFilter($invoiceJobsQuery, $startDate, $endDate);
+
+        $invoiceJobs = $invoiceJobsQuery
+            ->orderBy('pickup_date')
+            ->orderBy('pickup_time')
+            ->get();
+
+        $invoiceTotal = (float) $invoiceJobs->sum(function (Booking $booking) {
+            return (float) ($booking->driver_price ?? 0);
+        });
+
+        $invoiceAmountTotal = (float) $invoiceJobs->sum(function (Booking $booking) {
+            return (float) ($booking->total_price ?? 0);
+        });
+
+        $invoiceDate = now()->toDateString();
+        $invoiceNumber = sprintf('INV-DRV-%d-%s', $driver->id, now()->format('YmdHis'));
+
+        return view('admin.drivers.jobs', compact(
+            'driver',
+            'jobs',
+            'startDate',
+            'endDate',
+            'invoiceJobs',
+            'invoiceTotal',
+            'invoiceAmountTotal',
+            'invoiceDate',
+            'invoiceNumber'
+        ));
+    }
+
+    /**
+     * Generate and save an invoice draft, then show admin preview.
+     */
+    public function sendInvoice(Request $request, Driver $driver)
+    {
+        $data = $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $invoiceJobsQuery = Booking::with('status')
+            ->where('driver_id', $driver->id)
+            ->whereHas('status', function ($q) {
+                $q->where('name', 'completed');
+            })
+            ->orderBy('pickup_date')
+            ->orderBy('pickup_time');
+
+        $this->applyDateRangeFilter($invoiceJobsQuery, $data['start_date'], $data['end_date']);
+
+        $invoiceJobs = $invoiceJobsQuery->get();
+
+        if ($invoiceJobs->isEmpty()) {
+            return redirect()
+                ->back()
+                ->with('error', 'No completed jobs found in the selected date range.');
+        }
+
+        $lineItems = $invoiceJobs->map(function (Booking $job) {
+            return [
+                'booking_id' => $job->id,
+                'booking_code' => $job->booking_code ?? ('#' . $job->id),
+                'pickup_date' => optional($job->pickup_date)->format('Y-m-d'),
+                'pickup_time' => $job->pickup_time,
+                'passenger_name' => $job->passenger_name,
+                'pickup_address' => $job->pickup_address,
+                'dropoff_address' => $job->dropoff_address,
+                'total_price' => (float) ($job->total_price ?? 0),
+                'driver_price' => (float) ($job->driver_price ?? 0),
+                'partial_received_by_driver' => 0,
+                'driver_fare' => (float) ($job->driver_price ?? 0),
+                'booking_type' => $job->payment_type,
+                'vehicle_type' => $job->vehicle_type,
+                'status' => optional($job->status)->name,
+                'phone' => $job->phone,
+            ];
+        })->values()->all();
+
+        [$lineItems, $invoiceAmountTotal, $invoiceTotal] = $this->normalizeInvoiceLineItems($lineItems);
+
+        $invoice = DriverInvoice::create([
+            'driver_id' => $driver->id,
+            'created_by_user_id' => auth()->id(),
+            'invoice_number' => sprintf('INV-DRV-%d-%s', $driver->id, now()->format('YmdHis')),
+            'invoice_date' => now()->toDateString(),
+            'start_date' => $data['start_date'],
+            'end_date' => $data['end_date'],
+            'status' => 'draft',
+            'jobs_count' => count($lineItems),
+            'total_amount' => $invoiceAmountTotal,
+            'total_driver_fare' => $invoiceTotal,
+            'line_items' => $lineItems,
+            'meta' => [
+                'generated_at' => now()->toDateTimeString(),
+            ],
+        ]);
+
+        $pdfContent = $this->renderInvoicePdf($driver, $invoice, collect($lineItems));
+        $pdfPath = 'driver_invoices/' . $driver->id . '/' . $invoice->invoice_number . '.pdf';
+        try {
+            $this->writeInvoicePdf($pdfPath, $pdfContent);
+            $invoice->update(['pdf_path' => $pdfPath]);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to persist driver invoice PDF', [
+                'driver_id' => $driver->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.drivers.invoices.show', [
+                'driver' => $driver->id,
+                'invoice' => $invoice->id,
+            ])
+            ->with('success', 'Invoice draft generated and saved. Please review and click Send to Driver when ready.');
+    }
+
+    /**
+     * Show saved invoice preview to admin.
+     */
+    public function showInvoice(Driver $driver, DriverInvoice $invoice)
+    {
+        if ((int) $invoice->driver_id !== (int) $driver->id) {
+            abort(404);
+        }
+
+        [$normalizedLineItems, $invoiceAmountTotal, $invoiceTotal] = $this->normalizeInvoiceLineItems($invoice->line_items ?? []);
+        $lineItems = collect($normalizedLineItems);
+
+        return view('admin.drivers.invoice_show', compact('driver', 'invoice', 'lineItems', 'invoiceAmountTotal', 'invoiceTotal'));
+    }
+
+    /**
+     * Save edits on a draft invoice (partial received values, totals, regenerated PDF).
+     */
+    public function updateInvoiceDraft(Request $request, Driver $driver, DriverInvoice $invoice)
+    {
+        if ((int) $invoice->driver_id !== (int) $driver->id) {
+            abort(404);
+        }
+
+        $editedItems = $this->extractInvoiceLineItemsFromRequest($request, true);
+
+        try {
+            $this->applyInvoiceLineItemEdits($driver, $invoice, $editedItems);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to update driver invoice draft', [
+                'driver_id' => $driver->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'Unable to save draft changes. ' . (config('app.debug') ? $e->getMessage() : 'Please try again.'));
+        }
+
+        return redirect()
+            ->route('admin.drivers.invoices.show', ['driver' => $driver->id, 'invoice' => $invoice->id])
+            ->with('success', 'Invoice draft updated successfully.');
+    }
+
+    /**
+     * Send a previously saved invoice to the driver email.
+     */
+    public function sendSavedInvoice(Request $request, Driver $driver, DriverInvoice $invoice)
+    {
+        if ((int) $invoice->driver_id !== (int) $driver->id) {
+            abort(404);
+        }
+
+        $editedItems = $this->extractInvoiceLineItemsFromRequest($request, false);
+        if (!empty($editedItems)) {
+            try {
+                $invoice = $this->applyInvoiceLineItemEdits($driver, $invoice, $editedItems);
+            } catch (\Throwable $e) {
+                logger()->error('Failed to apply invoice edits before email send', [
+                    'driver_id' => $driver->id,
+                    'invoice_id' => $invoice->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return redirect()
+                    ->back()
+                    ->with('error', 'Unable to apply draft edits before sending email.');
+            }
+        }
+
+        if (empty($driver->email)) {
+            return redirect()
+                ->back()
+                ->with('error', 'Driver email is missing. Please add an email before sending this invoice.');
+        }
+
+        [$normalizedLineItems, $invoiceAmountTotal, $invoiceTotal] = $this->normalizeInvoiceLineItems($invoice->line_items ?? []);
+        $lineItems = collect($normalizedLineItems);
+
+        if ($lineItems->isEmpty()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Invoice has no line items and cannot be sent.');
+        }
+
+        if (! $this->invoicePdfExists($invoice->pdf_path)) {
+            $pdfContent = $this->renderInvoicePdf($driver, $invoice, $lineItems);
+            $pdfPath = 'driver_invoices/' . $driver->id . '/' . $invoice->invoice_number . '.pdf';
+            $this->writeInvoicePdf($pdfPath, $pdfContent);
+            $invoice->update(['pdf_path' => $pdfPath]);
+        }
+
+        $pdfContent = $this->readInvoicePdf($invoice->pdf_path);
+
+        try {
+            Mail::send('emails.driver_invoice', [
+                'driver' => $driver,
+                'startDate' => optional($invoice->start_date)->toDateString(),
+                'endDate' => optional($invoice->end_date)->toDateString(),
+                'invoiceNumber' => $invoice->invoice_number,
+                'invoiceDate' => optional($invoice->invoice_date)->toDateString(),
+                'invoiceJobs' => $lineItems,
+                'invoiceTotal' => (float) $invoiceTotal,
+                'invoiceAmountTotal' => (float) $invoiceAmountTotal,
+            ], function ($message) use ($driver, $invoice, $pdfContent) {
+                $message->to($driver->email)
+                    ->subject('Driver Invoice ' . $invoice->invoice_number)
+                    ->attachData($pdfContent, $invoice->invoice_number . '.pdf', [
+                        'mime' => 'application/pdf',
+                    ]);
+            });
+        } catch (\Throwable $e) {
+            logger()->error('Failed to send saved driver invoice email', [
+                'driver_id' => $driver->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'Invoice email failed. ' . (config('app.debug') ? $e->getMessage() : 'Please try again.'));
+        }
+
+        $meta = is_array($invoice->meta) ? $invoice->meta : [];
+        $meta['sent_to_email_at'] = now()->toDateTimeString();
+
+        $invoice->update([
+            'status' => 'sent',
+            'sent_at' => now(),
+            'sent_to_email' => $driver->email,
+            'meta' => $meta,
+        ]);
+
+        return redirect()
+            ->route('admin.drivers.invoices.show', ['driver' => $driver->id, 'invoice' => $invoice->id])
+            ->with('success', 'Invoice sent to driver successfully.');
+    }
+
+    /**
+     * Send a previously saved invoice summary to the driver app (push notification).
+     */
+    public function sendSavedInvoiceToApp(Request $request, Driver $driver, DriverInvoice $invoice)
+    {
+        if ((int) $invoice->driver_id !== (int) $driver->id) {
+            abort(404);
+        }
+
+        $editedItems = $this->extractInvoiceLineItemsFromRequest($request, false);
+        if (!empty($editedItems)) {
+            try {
+                $invoice = $this->applyInvoiceLineItemEdits($driver, $invoice, $editedItems);
+            } catch (\Throwable $e) {
+                logger()->error('Failed to apply invoice edits before app send', [
+                    'driver_id' => $driver->id,
+                    'invoice_id' => $invoice->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return redirect()
+                    ->back()
+                    ->with('error', 'Unable to apply draft edits before sending to app.');
+            }
+        }
+
+        [$normalizedLineItems, $invoiceAmountTotal, $invoiceTotal] = $this->normalizeInvoiceLineItems($invoice->line_items ?? []);
+        if (empty($normalizedLineItems)) {
+            return redirect()
+                ->back()
+                ->with('error', 'Invoice has no line items and cannot be sent.');
+        }
+
+        if (! $this->invoicePdfExists($invoice->pdf_path)) {
+            $pdfContent = $this->renderInvoicePdf($driver, $invoice, collect($normalizedLineItems));
+            $pdfPath = $invoice->pdf_path ?: ('driver_invoices/' . $driver->id . '/' . $invoice->invoice_number . '.pdf');
+            $this->writeInvoicePdf($pdfPath, $pdfContent);
+            $invoice->update(['pdf_path' => $pdfPath]);
+        }
+
+        \App\Models\DriverNotification::create([
+            'driver_id' => $driver->id,
+            'title' => 'New Invoice Available',
+            'message' => sprintf(
+                'Invoice %s (%s to %s) is ready. Total amount: £%.2f. Driver fare: £%.2f. Open Invoices in the app to view and download.',
+                $invoice->invoice_number,
+                optional($invoice->start_date)->toDateString(),
+                optional($invoice->end_date)->toDateString(),
+                (float) $invoiceAmountTotal,
+                (float) $invoiceTotal
+            ),
+        ]);
+
+        $meta = is_array($invoice->meta) ? $invoice->meta : [];
+        $meta['sent_to_app_at'] = now()->toDateTimeString();
+        $meta['visible_in_driver_app'] = true;
+        $meta['app_send_count'] = (int) ($meta['app_send_count'] ?? 0) + 1;
+
+        $invoice->update([
+            'status' => 'sent',
+            'sent_at' => $invoice->sent_at ?: now(),
+            'meta' => $meta,
+        ]);
+
+        return redirect()
+            ->route('admin.drivers.invoices.show', ['driver' => $driver->id, 'invoice' => $invoice->id])
+            ->with('success', 'Invoice sent to driver app successfully.');
+    }
+
+    private function extractInvoiceLineItemsFromRequest(Request $request, bool $required): array
+    {
+        $validated = $request->validate([
+            'line_items' => ($required ? 'required' : 'sometimes') . '|array|min:1',
+            'line_items.*.booking_id' => 'required_with:line_items|integer',
+            'line_items.*.partial_received_by_driver' => 'nullable|numeric|min:0',
+        ]);
+
+        return $validated['line_items'] ?? [];
+    }
+
+    private function applyInvoiceLineItemEdits(Driver $driver, DriverInvoice $invoice, array $editedItems): DriverInvoice
+    {
+        $editedPartialsByBookingId = [];
+        foreach ($editedItems as $row) {
+            $bookingId = (int) ($row['booking_id'] ?? 0);
+            if ($bookingId <= 0) {
+                continue;
+            }
+            $editedPartialsByBookingId[$bookingId] = max(0, (float) ($row['partial_received_by_driver'] ?? 0));
+        }
+
+        $updatedLineItems = collect($invoice->line_items ?? [])->map(function ($item) use ($editedPartialsByBookingId) {
+            $line = is_array($item) ? $item : (array) $item;
+            $bookingId = (int) ($line['booking_id'] ?? 0);
+            if ($bookingId > 0 && array_key_exists($bookingId, $editedPartialsByBookingId)) {
+                $line['partial_received_by_driver'] = $editedPartialsByBookingId[$bookingId];
+            }
+
+            return $line;
+        })->all();
+
+        [$normalizedLineItems, $invoiceAmountTotal, $invoiceTotal] = $this->normalizeInvoiceLineItems($updatedLineItems);
+
+        $invoice->update([
+            'line_items' => $normalizedLineItems,
+            'jobs_count' => count($normalizedLineItems),
+            'total_amount' => $invoiceAmountTotal,
+            'total_driver_fare' => $invoiceTotal,
+        ]);
+
+        $pdfContent = $this->renderInvoicePdf($driver, $invoice, collect($normalizedLineItems));
+        $pdfPath = $invoice->pdf_path ?: ('driver_invoices/' . $driver->id . '/' . $invoice->invoice_number . '.pdf');
+        $this->writeInvoicePdf($pdfPath, $pdfContent);
+        $invoice->update(['pdf_path' => $pdfPath]);
+
+        return $invoice->fresh();
+    }
+
+    private function normalizeInvoiceLineItems($lineItems): array
+    {
+        $normalized = collect($lineItems)->map(function ($row) {
+            $item = is_array($row) ? $row : (array) $row;
+
+            $totalPrice = round((float) ($item['total_price'] ?? 0), 2);
+            $driverPrice = round((float) ($item['driver_price'] ?? ($item['driver_fare'] ?? 0)), 2);
+            $partialReceived = round(max(0, (float) ($item['partial_received_by_driver'] ?? 0)), 2);
+            $driverFare = round($driverPrice - $partialReceived, 2);
+
+            return [
+                'booking_id' => $item['booking_id'] ?? null,
+                'booking_code' => $item['booking_code'] ?? (!empty($item['booking_id']) ? ('#' . $item['booking_id']) : '-'),
+                'pickup_date' => $item['pickup_date'] ?? null,
+                'pickup_time' => $item['pickup_time'] ?? null,
+                'passenger_name' => $item['passenger_name'] ?? null,
+                'pickup_address' => $item['pickup_address'] ?? null,
+                'dropoff_address' => $item['dropoff_address'] ?? null,
+                'total_price' => $totalPrice,
+                'driver_price' => $driverPrice,
+                'partial_received_by_driver' => $partialReceived,
+                'driver_fare' => $driverFare,
+                'booking_type' => $item['booking_type'] ?? ($item['payment_type'] ?? null),
+                'vehicle_type' => $item['vehicle_type'] ?? null,
+                'status' => $item['status'] ?? null,
+                'phone' => $item['phone'] ?? null,
+            ];
+        })->values();
+
+        $invoiceAmountTotal = round((float) $normalized->sum(function ($item) {
+            return (float) ($item['total_price'] ?? 0);
+        }), 2);
+
+        $invoiceTotal = round((float) $normalized->sum(function ($item) {
+            return (float) ($item['driver_fare'] ?? 0);
+        }), 2);
+
+        return [$normalized->all(), $invoiceAmountTotal, $invoiceTotal];
+    }
+
+    /**
+     * Render invoice PDF content from saved invoice payload.
+     */
+    private function renderInvoicePdf(Driver $driver, DriverInvoice $invoice, $lineItems): string
+    {
+        $invoiceRows = collect($lineItems)->map(function ($row) {
+            return is_array($row) ? (object) $row : $row;
+        });
+
+        $pdfHtml = view('admin.drivers.invoice_pdf', [
+            'driver' => $driver,
+            'startDate' => optional($invoice->start_date)->toDateString(),
+            'endDate' => optional($invoice->end_date)->toDateString(),
+            'invoiceJobs' => $invoiceRows,
+            'invoiceTotal' => (float) $invoice->total_driver_fare,
+            'invoiceAmountTotal' => (float) $invoice->total_amount,
+            'invoiceDate' => optional($invoice->invoice_date)->toDateString(),
+            'invoiceNumber' => $invoice->invoice_number,
+        ])->render();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($pdfHtml);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return $dompdf->output();
+    }
+
+    /**
+     * Store invoice PDF directly in storage/app without Flysystem finfo dependency.
+     */
+    private function writeInvoicePdf(string $relativePath, string $content): void
+    {
+        $fullPath = storage_path('app/' . ltrim(str_replace('\\', '/', $relativePath), '/'));
+        $directory = dirname($fullPath);
+
+        if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
+            throw new \RuntimeException('Unable to create invoice directory: ' . $directory);
+        }
+
+        if (file_put_contents($fullPath, $content) === false) {
+            throw new \RuntimeException('Unable to write invoice PDF file: ' . $fullPath);
+        }
+    }
+
+    private function invoicePdfExists(?string $relativePath): bool
+    {
+        if (!$relativePath) {
+            return false;
+        }
+
+        $fullPath = storage_path('app/' . ltrim(str_replace('\\', '/', $relativePath), '/'));
+        return is_file($fullPath);
+    }
+
+    private function readInvoicePdf(string $relativePath): string
+    {
+        $fullPath = storage_path('app/' . ltrim(str_replace('\\', '/', $relativePath), '/'));
+        $content = @file_get_contents($fullPath);
+
+        if ($content === false) {
+            throw new \RuntimeException('Unable to read invoice PDF file: ' . $fullPath);
+        }
+
+        return $content;
+    }
+
+    /**
+     * Apply selected date range to bookings query.
+     */
+    private function applyDateRangeFilter($query, string $startDate, string $endDate): void
+    {
+        $query->whereRaw('DATE(COALESCE(pickup_date, scheduled_at, created_at)) BETWEEN ? AND ?', [$startDate, $endDate]);
     }
 
     /**
