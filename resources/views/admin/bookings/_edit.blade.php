@@ -22,10 +22,10 @@
           <label class="block text-sm font-medium text-gray-700">Payment Type</label>
           @php
             $currentPaymentType = old('payment_type', $booking->payment_type ?? ($booking->meta['payment_type'] ?? ''));
-            $paymentTypeOptions = ['cash' => 'Cash', 'card' => 'Card', 'bank' => 'Bank', 'online' => 'Online'];
+            $paymentTypeOptions = ['cash' => 'Cash', 'card' => 'Card'];
           @endphp
           <select name="payment_type" class="mt-1 block w-full border rounded p-2">
-            <option value="">(Auto)</option>
+            <!-- <option value="">(Auto)</option> -->
             @foreach($paymentTypeOptions as $paymentValue => $paymentLabel)
               <option value="{{ $paymentValue }}" {{ (string)$currentPaymentType === (string)$paymentValue ? 'selected' : '' }}>{{ $paymentLabel }}</option>
             @endforeach
@@ -181,55 +181,69 @@
             <option value="junk" {{ (old('status') == 'junk') ? 'selected' : '' }}>Junk</option>
           </select>
         </div>
-
-        @if(!$isReadOnly && $isConfirmedTab)
+        
+        @if($isConfirmedTab)
           <div>
             <button type="button" id="send-confirmation-btn" class="w-full px-3 py-2 border rounded text-sm text-white" style="background-color: #059669;">Send Confirmatiion (Email+Sms)</button>
           </div>
         @endif
 
-        @if(!$isReadOnly && $isConfirmedTab)
+        @if($isConfirmedTab)
           <div>
             <button type="button" id="contact-whatsapp-btn" class="w-full px-3 py-2 border rounded text-sm text-white" style="background-color: #25D366;">Contact On whatsapp</button>
           </div>
         @endif
 
-        @if(!$isReadOnly && $isConfirmedTab)
+        @if($isConfirmedTab)
           <div>
             <button type="button" id="send-driver-info-btn" class="w-full px-3 py-2 border rounded text-sm text-white" style="background-color: #0EA5E9;">Send Driver info</button>
           </div>
         @endif
 
-        @if(!$isReadOnly && $isConfirmedTab)
+        @if($isConfirmedTab)
           <div>
             <button type="button" id="copy-job-details-btn" class="w-full px-3 py-2 border rounded text-sm text-white" style="background-color: #64748B;">Copy Job details</button>
           </div>
         @endif
+        <div>
+          <a type="button" href="https://www.google.com/search?q={{ $booking->flight_number }}" target="_blank"  class="w-full px-3 py-2 border rounded text-sm text-center text-white" style="background-color: #a812b3;">Track Flight</a>
+        </div>
 
-        @if(($isConfirmedTab || $isCompletedTab) && ($booking->driver_id || $booking->driver_name))
-          @php
-            $assignedDriver = $booking->driver;
-            $assignedDriverName = $booking->driver_name ?: ($assignedDriver->name ?? '-');
-            $assignedDriverPhone = $assignedDriver->phone ?? '-';
-            $assignedDriverCarType = $assignedDriver->car_type ?? ($booking->vehicle_type ?? '-');
-            $assignedDriverPlate = $assignedDriver->vehicle_plate ?? '-';
-          @endphp
-          <div class="rounded border border-gray-200 bg-gray-50 p-3 text-sm">
-            <div class="font-semibold text-gray-800 mb-2">Assigned Driver Info</div>
-            <div class="text-gray-700"><span class="font-medium">Name:</span> {{ $assignedDriverName ?: '-' }}</div>
-            <div class="text-gray-700"><span class="font-medium">Phone:</span> {{ $assignedDriverPhone ?: '-' }}</div>
-            <div class="text-gray-700"><span class="font-medium">Car Type:</span> {{ $assignedDriverCarType ?: '-' }}</div>
-            <div class="text-gray-700"><span class="font-medium">Number Plate:</span> {{ $assignedDriverPlate ?: '-' }}</div>
-          </div>
-        @endif
+@if($isConfirmedTab || $isCompletedTab)
 
-        @if(!$isReadOnly && $isCancelledTab)
+  @php
+    $assignedDriver = $booking->driver;
+    $assignedDriverName = $booking->driver_name ?: ($assignedDriver->name ?? null);
+    $assignedDriverPhone = $assignedDriver->phone ?? null;
+    $assignedDriverCarType = $assignedDriver->car_type ?? ($booking->vehicle_type ?? null);
+    $assignedDriverPlate = $assignedDriver->vehicle_plate ?? null;
+
+    $isAssigned = $assignedDriverName || $booking->driver_id;
+  @endphp
+
+  <div class="rounded border border-gray-200 bg-gray-50 p-3 text-sm">
+    <div class="font-semibold text-gray-800 mb-2">Assigned Driver Info</div>
+
+    @if($isAssigned)
+      <div class="text-gray-700"><span class="font-medium">Name:</span> {{ $assignedDriverName }}</div>
+      <div class="text-gray-700"><span class="font-medium">Phone:</span> {{ $assignedDriverPhone ?? '-' }}</div>
+      <div class="text-gray-700"><span class="font-medium">Car Type:</span> {{ $assignedDriverCarType ?? '-' }}</div>
+      <div class="text-gray-700"><span class="font-medium">Number Plate:</span> {{ $assignedDriverPlate ?? '-' }}</div>
+    @else
+      <div class="text-gray-500 italic">Not assigned yet</div>
+    @endif
+
+  </div>
+
+@endif
+
+        @if($isCancelledTab)
           <div>
             <button type="button" id="send-cancellation-btn" class="w-full px-3 py-2 border rounded text-sm text-white" style="background-color: #DC2626;">Send Cancellation</button>
           </div>
         @endif
 
-        @if(!$isReadOnly && $isCompletedTab)
+        @if($isCompletedTab)
           <div>
             <button type="button" id="send-receipt-btn" class="w-full px-3 py-2 border rounded text-sm text-white" style="background-color: #2563EB;">Send Receipt</button>
           </div>
@@ -591,7 +605,7 @@
         });
       }
 
-      ['source-update-btn','send-confirmation-btn','contact-whatsapp-btn','send-driver-info-btn','copy-job-details-btn','send-cancellation-btn','send-receipt-btn','send-review-approval-btn']
+      ['source-update-btn']
         .forEach(function(id){
           var btn = document.getElementById(id);
           if (!btn) return;

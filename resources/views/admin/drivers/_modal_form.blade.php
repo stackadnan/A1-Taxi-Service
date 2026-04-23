@@ -204,12 +204,12 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Vehicle Make</label>
+          <label class="block text-sm font-medium text-gray-700">Vehicle Make & Model</label>
           <input type="text" name="vehicle_make" value="{{ old('vehicle_make', $driver->vehicle_make ?? '') }}" class="mt-1 block w-full border rounded p-2" placeholder="e.g., Toyota">
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700">Vehicle Model</label>
+          <label class="block text-sm font-medium text-gray-700">Vehicle Year</label>
           <input type="text" name="vehicle_model" value="{{ old('vehicle_model', $driver->vehicle_model ?? '') }}" class="mt-1 block w-full border rounded p-2" placeholder="e.g., Prius">
         </div>
 

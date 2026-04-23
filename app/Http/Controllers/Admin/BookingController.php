@@ -140,6 +140,7 @@ class BookingController extends Controller
             'pickup_date' => 'required|date|after_or_equal:today',
             'pickup_time' => 'required',
             'vehicle_type' => 'nullable|string|max:100',
+            'payment_type' => 'nullable|string|max:50',
             'flight_number' => 'nullable|string|max:100',
             'flight_time' => 'nullable',
             'meet_and_greet' => 'nullable|boolean',
@@ -173,15 +174,17 @@ class BookingController extends Controller
         $totalWithVat = $bookingCharges !== null
             ? round($bookingCharges + (($bookingCharges * $vatPercentage) / 100), 2)
             : null;
+        $paymentType = $this->normalizePaymentType($data['payment_type'] ?? null);
 
         try {
-            $result = DB::transaction(function () use ($data, $request, $status, $isReturnBooking, $userId, $pickupAddress, $dropoffAddress, $totalWithVat) {
+            $result = DB::transaction(function () use ($data, $request, $status, $isReturnBooking, $userId, $pickupAddress, $dropoffAddress, $totalWithVat, $paymentType) {
                 $basePayload = [
                     'user_id' => $userId,
                     'passenger_name' => $data['passenger_name'] ?? null,
                     'phone' => $data['phone'] ?? null,
                     'email' => $data['email'] ?? null,
-                    'vehicle_type' => $data['vehicle_type'] ?? ($request->input('vehicle_type_text') ?? null),
+                    'vehicle_type' => $this->normalizeVehicleType($data['vehicle_type'] ?? ($request->input('vehicle_type_text') ?? null)),
+                    'payment_type' => $paymentType,
                     'message_to_driver' => $data['message_to_driver'] ?? null,
                     'message_to_admin' => $data['message_to_admin'] ?? null,
                     'created_by_user_id' => $userId,
@@ -264,6 +267,32 @@ class BookingController extends Controller
 
         $message = $isReturnBooking ? 'Return bookings created successfully' : 'Booking created';
         return redirect()->route('admin.bookings.index', ['section' => 'new_manual'])->with('success', $message);
+    }
+
+    private function normalizeVehicleType(?string $vehicleType): ?string
+    {
+        $value = trim((string) $vehicleType);
+
+        if ($value === '') {
+            return null;
+        }
+
+        $normalized = preg_replace('/\s+/', '', strtolower($value));
+
+        return match ($normalized) {
+            'saloon' => 'Saloon',
+            'business', 'businessclass', 'executive' => 'Business',
+            'mpv6', '6seater', '6seatermpv', 'mpv' => 'MPV6',
+            'mpv8', '8seater', '8seatermpv', 'minivan' => 'MPV8',
+            default => ucfirst($value),
+        };
+    }
+
+    private function normalizePaymentType(?string $paymentType): string
+    {
+        $value = strtolower(trim((string) $paymentType));
+
+        return in_array($value, ['cash', 'card'], true) ? $value : 'cash';
     }
 
     public function directions(Request $request)

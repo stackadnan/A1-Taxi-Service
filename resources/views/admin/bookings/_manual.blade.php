@@ -1081,6 +1081,7 @@
       var label = k; // display label
       var displayName = k.replace('_price','');
       var human = (displayName === 'saloon') ? 'Saloon' : (displayName === 'business' ? 'Business' : (displayName === 'mpv6' ? 'MPV6' : (displayName === 'mpv8' ? 'MPV8' : displayName))); 
+      var value = (displayName === 'business') ? 'Business' : human;
       var item = document.createElement('label');
       item.style.display = 'flex';
       item.style.alignItems = 'center';
@@ -1089,7 +1090,7 @@
       item.style.borderBottom = isDarkMode ? '1px solid #334155' : '1px solid #eee';
       item.style.color = isDarkMode ? '#e5e7eb' : '#111827';
       var left = document.createElement('div');
-      var radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'vehicle_quote_radio'; radio.value = human; radio.dataset.price = (price !== null && price !== undefined) ? price : '';
+      var radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'vehicle_quote_radio'; radio.value = value; radio.dataset.price = (price !== null && price !== undefined) ? price : '';
       radio.style.marginRight = '8px';
       left.appendChild(radio);
       var span = document.createElement('span'); span.textContent = human; left.appendChild(span);
@@ -1198,7 +1199,7 @@
 
       var priceList = [
         { key: 'saloon_price', label: 'Saloon' },
-        { key: 'business_price', label: 'Business Class' },
+        { key: 'business_price', label: 'Business Class', value: 'Business' },
         { key: 'mpv6_price', label: 'MPV6' },
         { key: 'mpv8_price', label: 'MPV8' }
       ];
@@ -1214,12 +1215,16 @@
           var prev = container.querySelectorAll('.selected-price-row'); prev.forEach(function(el){ el.classList.remove('selected-price-row'); el.classList.remove('selected'); el.classList.remove('bg-indigo-50'); el.classList.remove('border-indigo-500'); });
           row.classList.add('selected-price-row'); row.classList.add('selected');
 
+          var vehicleValue = it.value || it.label;
           var human = it.label;
           var sel = document.querySelector('select[name="vehicle_type"]'); var matched = false;
           if (sel) {
-            for (var i=0;i<sel.options.length;i++){ var opt = sel.options[i]; if (opt.text === human || opt.value.toLowerCase().indexOf(human.replace(/\s+/g,'').toLowerCase()) !== -1) { sel.value = opt.value; matched = true; break; } }
+            for (var i=0;i<sel.options.length;i++){ var opt = sel.options[i]; if (opt.value === vehicleValue || opt.text === human) { sel.value = opt.value; matched = true; break; } }
+            if (!matched) {
+              sel.value = vehicleValue;
+            }
           }
-          var vt = document.querySelector('input[name="vehicle_type_text"]'); if (!matched && vt) vt.value = human; else if (matched && vt) vt.value = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : human;
+          var vt = document.querySelector('input[name="vehicle_type_text"]'); if (vt) vt.value = vehicleValue;
 
           // fill booking charge and zone price
           var bookingInput = document.getElementById('booking-charges-input'); if (bookingInput) bookingInput.value = row.dataset.price ? Number(row.dataset.price).toFixed(2) : '';
