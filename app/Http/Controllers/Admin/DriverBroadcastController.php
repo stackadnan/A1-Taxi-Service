@@ -20,8 +20,9 @@ class DriverBroadcastController extends Controller
             ->paginate(15);
 
         $driverCount = Driver::count();
+        $councils = DB::table('councils')->where('status', 'active')->orderBy('council_name')->get();
 
-        return view('admin.driver-broadcasts.index', compact('broadcasts', 'driverCount'));
+        return view('admin.driver-broadcasts.index', compact('broadcasts', 'driverCount', 'councils'));
     }
 
     public function store(Request $request)
@@ -30,6 +31,7 @@ class DriverBroadcastController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:4000'],
             'broadcast_type' => ['nullable', 'string', 'max:50'],
+            'council_id' => ['nullable', 'integer'],
         ]);
 
         $broadcast = DriverBroadcast::create([
@@ -41,14 +43,25 @@ class DriverBroadcastController extends Controller
             'created_by' => auth()->id(),
         ]);
 
+        if (!empty($data['council_id'])) {
+            DB::table('driver_broadcast_councils')->insert([
+                'broadcast_id' => $broadcast->id,
+                'council_id' => $data['council_id'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
         $canWriteLogs = Schema::hasTable('driver_broadcast_logs');
         $sentCount = 0;
 
-        Driver::query()
-            ->select('id', 'council_id')
-            ->orderBy('id')
-            ->chunkById(200, function ($drivers) use ($broadcast, $canWriteLogs, &$sentCount) {
-                $logRows = [];
+        $query = Driver::query()->select('id', 'council_id')->orderBy('id');
+        if (!empty($data['council_id'])) {
+            $query->where('council_id', $data['council_id']);
+        }
+
+        $query->chunkById(200, function ($drivers) use ($broadcast, $canWriteLogs, &$sentCount) {
+            $logRows = [];
                 $now = now();
 
                 foreach ($drivers as $driver) {

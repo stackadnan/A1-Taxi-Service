@@ -77,7 +77,25 @@ class AppServiceProvider extends ServiceProvider
 
         // Share driver broadcasts
         view()->composer('driver.layouts.app', function ($view) {
+            $driver = auth('driver')->user();
+            $driverCouncilId = $driver ? $driver->council_id : null;
+
             $driverBroadcasts = \App\Models\DriverBroadcast::query()
+                ->where(function ($query) use ($driverCouncilId) {
+                    $query->whereNotExists(function ($subQuery) {
+                        $subQuery->select(\Illuminate\Support\Facades\DB::raw(1))
+                                 ->from('driver_broadcast_councils')
+                                 ->whereColumn('driver_broadcast_councils.broadcast_id', 'driver_broadcasts.id');
+                    });
+                    if ($driverCouncilId) {
+                        $query->orWhereExists(function ($subQuery) use ($driverCouncilId) {
+                            $subQuery->select(\Illuminate\Support\Facades\DB::raw(1))
+                                     ->from('driver_broadcast_councils')
+                                     ->whereColumn('driver_broadcast_councils.broadcast_id', 'driver_broadcasts.id')
+                                     ->where('driver_broadcast_councils.council_id', $driverCouncilId);
+                        });
+                    }
+                })
                 ->orderBy('created_at', 'desc')
                 ->limit(1)
                 ->get();

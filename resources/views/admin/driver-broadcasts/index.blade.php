@@ -70,8 +70,21 @@
       >{{ old('message') }}</textarea>
     </div>
 
-    <div class="flex justify-end">
-      <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
+    <div class="flex flex-wrap items-center justify-between gap-4 mt-2">
+      <div class="flex items-center gap-2">
+        <select name="council_id" id="council_id" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="">Select Council</option>
+          @if(isset($councils) && $councils->count() > 0)
+            @foreach($councils as $council)
+              <option value="{{ $council->id }}">{{ $council->council_name }}</option>
+            @endforeach
+          @endif
+        </select>
+        <button type="submit" onclick="if(!document.getElementById('council_id').value){alert('Please select a council first.');return false;}" class="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition">
+          Send to council driver
+        </button>
+      </div>
+      <button type="submit" onclick="document.getElementById('council_id').value='';" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-white transition">
         Send To All Drivers
       </button>
     </div>
