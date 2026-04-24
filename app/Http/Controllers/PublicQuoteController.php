@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Admin\Pricing\ZoneController;
 use App\Models\PublicQuoteRequest;
+use App\Models\AdminSetting;
 
 /**
  * Public-facing quote API controller.
@@ -211,17 +212,21 @@ class PublicQuoteController extends Controller
     }
 
     /**
-     * Generate a unique quote reference like QR123456.
+     * Generate a unique quote reference using the same prefix as bookings.
      */
     protected function generateQuoteRef(): string
     {
+        $rawPrefix = strtoupper((string) AdminSetting::get('booking_reference_prefix', 'AA'));
+        $lettersOnly = preg_replace('/[^A-Z]/', '', $rawPrefix) ?? '';
+        $prefix = strlen($lettersOnly) >= 2 ? substr($lettersOnly, 0, 2) : 'AA';
+
         for ($i = 0; $i < 10; $i++) {
-            $ref = 'QR' . random_int(100000, 999999);
+            $ref = $prefix . random_int(100000, 999999);
             if (! PublicQuoteRequest::where('quote_ref', $ref)->exists()) {
                 return $ref;
             }
         }
         // last resort — append microseconds
-        return 'QR' . substr(str_replace('.', '', microtime(true)), -8);
+        return $prefix . substr(str_replace('.', '', microtime(true)), -8);
     }
 }
