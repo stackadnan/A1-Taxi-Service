@@ -51,17 +51,19 @@ class QuotesController extends Controller
 
         if (!empty($pageQuoteRefs)) {
             $convertedRefs = Booking::query()
-                ->where(function ($q) use ($pageQuoteRefs) {
+                ->whereIn('booking_code', $pageQuoteRefs)
+                ->orWhere(function ($q) use ($pageQuoteRefs) {
                     foreach ($pageQuoteRefs as $ref) {
                         $q->orWhere('meta->quote_ref', $ref)
-                          ->orWhere('meta->return_ref', $ref);
+                            ->orWhere('meta->return_ref', $ref);
                     }
                 })
-                ->get(['meta'])
+                ->get(['meta', 'booking_code'])
                 ->flatMap(function ($booking) {
                     $meta = is_array($booking->meta) ? $booking->meta : [];
 
                     return [
+                        $booking->booking_code,
                         data_get($meta, 'quote_ref'),
                         data_get($meta, 'return_ref'),
                     ];

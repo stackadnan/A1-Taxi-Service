@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Admin\Pricing\ZoneController;
 use App\Models\PublicQuoteRequest;
 use App\Models\AdminSetting;
+use App\Models\Booking;
 
 /**
  * Public-facing quote API controller.
@@ -222,7 +223,7 @@ class PublicQuoteController extends Controller
 
         for ($i = 0; $i < 10; $i++) {
             $ref = $prefix . random_int(100000, 999999);
-            if (! PublicQuoteRequest::where('quote_ref', $ref)->exists()) {
+            if (! PublicQuoteRequest::where('quote_ref', $ref)->exists() && ! Booking::where('booking_code', $ref)->exists()) {
                 return $ref;
             }
         }

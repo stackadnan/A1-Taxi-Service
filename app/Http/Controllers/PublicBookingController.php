@@ -47,6 +47,11 @@ class PublicBookingController extends Controller
 
         try {
             $result = DB::transaction(function () use ($request, $data, $status, $isReturn) {
+                $outboundBookingCode = $this->resolveBookingCodeFromQuoteRef($data['quote_ref'] ?? null);
+                $returnBookingCode = $isReturn
+                    ? $this->resolveBookingCodeFromQuoteRef($data['return_ref'] ?? null)
+                    : null;
+
                 $basePayload = [
                     'passenger_name' => $data['passenger_name'],
                     'phone' => $data['phone'],
@@ -69,7 +74,7 @@ class PublicBookingController extends Controller
                 ];
 
                 $outbound = Booking::create(array_merge($basePayload, [
-                    'booking_code' => $this->generateBookingCode(),
+                    'booking_code' => $outboundBookingCode,
                     'pickup_address' => $data['pickup'],
                     'dropoff_address' => $data['dropoff'],
                     'pickup_date' => $data['pickup_date'],
@@ -87,7 +92,7 @@ class PublicBookingController extends Controller
 
                 if ($isReturn) {
                     $returnBooking = Booking::create(array_merge($basePayload, [
-                        'booking_code' => $this->generateBookingCode(),
+                        'booking_code' => $returnBookingCode,
                         'pickup_address' => $data['dropoff'],
                         'dropoff_address' => $data['pickup'],
                         'pickup_date' => $data['return_pickup_date'] ?? null,
@@ -140,6 +145,17 @@ class PublicBookingController extends Controller
             'created_count' => count($result['bookings']),
             'return_booking' => $isReturn,
         ], 201)->withHeaders($this->corsHeaders($request));
+    }
+
+    protected function resolveBookingCodeFromQuoteRef(?string $quoteRef): string
+    {
+        $candidate = strtoupper(trim((string) $quoteRef));
+
+        if ($candidate !== '' && !Booking::where('booking_code', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        return $this->generateBookingCode();
     }
 
     protected function corsHeaders(Request $request): array
