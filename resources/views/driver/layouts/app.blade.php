@@ -468,6 +468,26 @@
         </div>
     </nav>
 
+    <!-- Driver Broadcast Banner -->
+    @php
+      $driverBroadcasts = $driverBroadcasts ?? collect();
+    @endphp
+    @if($driverBroadcasts->count() > 0)
+    <div class="bg-indigo-600 text-white overflow-hidden" id="driver-broadcast-banner">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-10">
+            <div class="flex items-center gap-2 flex-shrink-0 mr-3">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
+                </svg>
+                <span class="font-semibold text-sm">Broadcast:</span>
+            </div>
+            <div id="driver-ticker-viewport" class="flex-1 overflow-hidden min-w-0 flex items-center h-full">
+                <div id="driver-ticker-track" class="inline-block whitespace-nowrap"></div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Main Content -->
     <main id="page-content" class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <!-- Flash Messages -->
@@ -1201,6 +1221,68 @@
                 applyTheme(isDark);
             });
         })();
+
+        // Ticker Animation Script (Driver Header)
+        @php
+          $driverBroadcasts = $driverBroadcasts ?? collect();
+        @endphp
+        @if($driverBroadcasts->count() > 0)
+        (function(){
+          var track = document.getElementById('driver-ticker-track');
+          var viewport = document.getElementById('driver-ticker-viewport');
+          if (!track || !viewport) return;
+
+          // Build concatenated items
+          var broadcasts = @json($driverBroadcasts);
+          var itemsHtml = '';
+          broadcasts.forEach(function(b){
+            var title = (b.title || '').toString().trim();
+            var msg = (b.message || '').toString().replace(/\n+/g,' ').trim();
+            itemsHtml += '<span class="inline-block px-8 text-sm font-medium text-white">' +
+                          escapeHtml(title ? title + ' — ' + msg : msg) + '</span>';
+          });
+          if (!itemsHtml) itemsHtml = '<span class="inline-block px-8 text-sm font-medium text-white">No announcements</span>';
+
+          // Duplicate content to allow continuous scroll
+          track.innerHTML = itemsHtml + itemsHtml;
+
+          // Ensure style tag for animation exists
+          var styleEl = document.getElementById('driver-ticker-style');
+          if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'driver-ticker-style'; document.head.appendChild(styleEl); }
+
+          function startTicker(){
+            // remove any previous animation
+            track.style.animation = 'none';
+            // small timeout to ensure layout measurements are correct
+            setTimeout(function(){
+              var trackWidth = track.offsetWidth / 2; // single sequence width
+              var viewWidth = viewport.offsetWidth;
+              var pxPerSecond = 80; // speed
+              var duration = Math.max(10, (trackWidth + viewWidth) / pxPerSecond);
+
+              // create keyframes
+              styleEl.textContent = "@keyframes driverMarqueeAnim { from { transform: translateX(0); } to { transform: translateX(-" + trackWidth + "px); } }";
+
+              track.style.display = 'inline-block';
+              track.style.willChange = 'transform';
+              track.style.animation = 'driverMarqueeAnim ' + duration + 's linear infinite';
+            }, 50);
+          }
+
+          startTicker();
+          window.addEventListener('resize', function(){ startTicker(); });
+
+          // Pause on hover
+          viewport.addEventListener('mouseenter', function(){
+            track.style.animationPlayState = 'paused';
+          });
+          viewport.addEventListener('mouseleave', function(){
+            track.style.animationPlayState = 'running';
+          });
+
+          function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        })();
+        @endif
     </script>
     
     @yield('scripts')

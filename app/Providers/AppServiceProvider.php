@@ -74,5 +74,14 @@ class AppServiceProvider extends ServiceProvider
                 ->with('adminThemeMode', $themeMode)
                 ->with('idleTimeoutSeconds', $idleTimeoutSeconds);
         });
+
+        // Share driver broadcasts
+        view()->composer('driver.layouts.app', function ($view) {
+            $driverBroadcasts = \App\Models\DriverBroadcast::query()
+                ->orderBy('created_at', 'desc')
+                ->limit(1)
+                ->get();
+            $view->with('driverBroadcasts', $driverBroadcasts);
+        });
     }
 }

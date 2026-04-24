@@ -103,7 +103,7 @@ class ManageBookingController extends Controller
 
         try {
             $createdBookings = DB::transaction(function () use ($validated, $basePayload, $isReturnBooking, $perLegBasePrice, $vatPercentage, $now) {
-                $outboundCode = $this->generateBookingCode();
+                $outboundCode = $this->resolveBookingCode($validated['quote_ref'] ?? null);
                 $outboundPayload = array_merge($basePayload, [
                     'booking_code' => $outboundCode,
                     'pickup_address' => trim($validated['pickup']),
@@ -131,7 +131,7 @@ class ManageBookingController extends Controller
                 ];
 
                 if ($isReturnBooking) {
-                    $returnCode = $this->generateBookingCode();
+                    $returnCode = $this->resolveBookingCode($validated['return_ref'] ?? null);
                     $returnPayload = array_merge($basePayload, [
                         'booking_code' => $returnCode,
                         'pickup_address' => trim($validated['dropoff']),
@@ -1024,6 +1024,23 @@ class ManageBookingController extends Controller
         }
 
         return (string) $value;
+    }
+
+    private function resolveBookingCode(?string $quoteRef): string
+    {
+        $candidate = strtoupper(trim((string) $quoteRef));
+
+        if ($candidate !== '') {
+            $exists = DB::table('executiveairport_database.bookings')
+                ->where('booking_code', $candidate)
+                ->exists();
+
+            if (!$exists) {
+                return $candidate;
+            }
+        }
+
+        return $this->generateBookingCode();
     }
 
     private function generateBookingCode(): string
