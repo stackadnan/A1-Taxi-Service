@@ -41,9 +41,20 @@ class AppServiceProvider extends ServiceProvider
 
         // Share broadcasts globally for all admin views
         view()->composer('layouts.admin', function ($view) {
-            $broadcasts = \App\Models\Broadcast::where(function($q){
-                $q->whereNull('scheduled_at')->orWhere('scheduled_at', '<=', now());
-            })->orderBy('created_at','desc')->limit(5)->get();
+            $broadcasts = \App\Models\Broadcast::query()
+                ->where(function ($q) {
+                    $q->where('channel', 'admin_panel')
+                        ->orWhere(function ($qq) {
+                            $qq->whereNull('channel')
+                               ->where(function ($sq) {
+                                   $sq->whereNull('scheduled_at')
+                                      ->orWhere('scheduled_at', '<=', now());
+                               });
+                        });
+                })
+                ->orderBy('created_at', 'desc')
+                ->limit(1)
+                ->get();
 
             try {
                 $themeMode = (string) AdminSetting::get('admin_theme_mode', 'light');

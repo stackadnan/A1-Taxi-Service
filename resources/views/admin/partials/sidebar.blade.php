@@ -211,6 +211,11 @@
         <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/driver-broadcasts*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6-9 6-9-6z"/><path d="M5 14l7 5 7-5"/></svg>
         <span class="ml-3 sidebar-label">Driver Broadcast Message</span>
       </a>
+
+      <a href="{{ route('admin.admin-broadcasts.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/admin-broadcasts*') ? 'bg-gray-100 font-semibold' : '' }}">
+        <svg class="h-5 w-5 flex-shrink-0 {{ Request::is('admin/admin-broadcasts*') ? 'text-indigo-600' : 'text-gray-500' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h10"/></svg>
+        <span class="ml-3 sidebar-label">Admin Broadcast Message</span>
+      </a>
       @endif
 
       <a href="{{ route('admin.complaints.index') }}" class="flex items-center px-3 h-12 rounded relative hover:bg-gray-100 {{ Request::is('admin/complaints-lost-found*') ? 'bg-gray-100 font-semibold' : '' }}">

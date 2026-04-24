@@ -25,6 +25,7 @@
             <a href="{{ route('admin.drivers.show', $d) }}" class="driver-view-button text-indigo-600 mr-2 text-sm" data-title="View Driver">View</a>
             <a href="{{ route('admin.drivers.edit', $d) }}" class="driver-edit-button text-gray-600 text-sm" data-title="Edit Driver">Edit</a>
             <a href="{{ route('admin.drivers.jobs', $d) }}" class="text-blue-600 text-sm ml-2">View Jobs</a>
+            <a href="{{ route('admin.drivers.invoices', $d) }}" class="text-emerald-600 text-sm ml-2">View Invoices</a>
           </td>
         </tr>
         @empty

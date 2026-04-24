@@ -274,11 +274,17 @@ class DriverController extends Controller
             ->get();
 
         $invoiceTotal = (float) $invoiceJobs->sum(function (Booking $booking) {
-            return (float) ($booking->driver_price ?? 0);
+            $baseFare = $this->resolveDriverVisibleFare($booking);
+
+            return $this->calculateDriverPriceFromBookingType(
+                $baseFare,
+                (string) ($booking->payment_type ?? ''),
+                (float) ($booking->driver_price ?? 0)
+            );
         });
 
         $invoiceAmountTotal = (float) $invoiceJobs->sum(function (Booking $booking) {
-            return (float) ($booking->total_price ?? 0);
+            return $this->resolveDriverVisibleFare($booking);
         });
 
         $invoiceDate = now()->toDateString();
@@ -295,6 +301,27 @@ class DriverController extends Controller
             'invoiceDate',
             'invoiceNumber'
         ));
+    }
+
+    /**
+     * Show all invoices for a specific driver.
+     */
+    public function invoices(Request $request, Driver $driver)
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        $invoicesQuery = DriverInvoice::query()
+            ->where('driver_id', $driver->id)
+            ->orderByDesc('invoice_date')
+            ->orderByDesc('id');
+
+        if ($q !== '') {
+            $invoicesQuery->where('invoice_number', 'like', '%' . $q . '%');
+        }
+
+        $invoices = $invoicesQuery->paginate(20)->withQueryString();
+
+        return view('admin.drivers.invoices', compact('driver', 'invoices', 'q'));
     }
 
     /**
@@ -326,6 +353,14 @@ class DriverController extends Controller
         }
 
         $lineItems = $invoiceJobs->map(function (Booking $job) {
+            $bookingType = (string) ($job->payment_type ?? '');
+            $baseFare = $this->resolveDriverVisibleFare($job);
+            $driverPrice = $this->calculateDriverPriceFromBookingType(
+                $baseFare,
+                $bookingType,
+                (float) ($job->driver_price ?? 0)
+            );
+
             return [
                 'booking_id' => $job->id,
                 'booking_code' => $job->booking_code ?? ('#' . $job->id),
@@ -334,11 +369,11 @@ class DriverController extends Controller
                 'passenger_name' => $job->passenger_name,
                 'pickup_address' => $job->pickup_address,
                 'dropoff_address' => $job->dropoff_address,
-                'total_price' => (float) ($job->total_price ?? 0),
-                'driver_price' => (float) ($job->driver_price ?? 0),
+                'total_price' => $baseFare,
+                'driver_price' => $driverPrice,
                 'partial_received_by_driver' => 0,
-                'driver_fare' => (float) ($job->driver_price ?? 0),
-                'booking_type' => $job->payment_type,
+                'driver_fare' => $driverPrice,
+                'booking_type' => $bookingType,
                 'vehicle_type' => $job->vehicle_type,
                 'status' => optional($job->status)->name,
                 'phone' => $job->phone,
@@ -644,11 +679,43 @@ class DriverController extends Controller
 
     private function normalizeInvoiceLineItems($lineItems): array
     {
-        $normalized = collect($lineItems)->map(function ($row) {
-            $item = is_array($row) ? $row : (array) $row;
+        $rawItems = collect($lineItems)->map(function ($row) {
+            return is_array($row) ? $row : (array) $row;
+        });
 
-            $totalPrice = round((float) ($item['total_price'] ?? 0), 2);
-            $driverPrice = round((float) ($item['driver_price'] ?? ($item['driver_fare'] ?? 0)), 2);
+        $bookingIds = $rawItems
+            ->pluck('booking_id')
+            ->filter(function ($id) {
+                return is_numeric($id) && (int) $id > 0;
+            })
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->unique()
+            ->values()
+            ->all();
+
+        $bookingsById = collect();
+        if (!empty($bookingIds)) {
+            $bookingsById = Booking::query()
+                ->whereIn('id', $bookingIds)
+                ->get(['id', 'total_price', 'meta'])
+                ->keyBy('id');
+        }
+
+        $normalized = $rawItems->map(function ($item) use ($bookingsById) {
+
+            $bookingType = strtolower(trim((string) ($item['booking_type'] ?? ($item['payment_type'] ?? ''))));
+            $bookingId = (int) ($item['booking_id'] ?? 0);
+            $baseFare = round((float) ($item['total_price'] ?? 0), 2);
+            if ($bookingId > 0) {
+                $sourceBooking = $bookingsById->get($bookingId);
+                if ($sourceBooking instanceof Booking) {
+                    $baseFare = $this->resolveDriverVisibleFare($sourceBooking);
+                }
+            }
+            $fallbackDriverPrice = round((float) ($item['driver_price'] ?? ($item['driver_fare'] ?? 0)), 2);
+            $driverPrice = round($this->calculateDriverPriceFromBookingType($baseFare, $bookingType, $fallbackDriverPrice), 2);
             $partialReceived = round(max(0, (float) ($item['partial_received_by_driver'] ?? 0)), 2);
             $driverFare = round($driverPrice - $partialReceived, 2);
 
@@ -660,11 +727,11 @@ class DriverController extends Controller
                 'passenger_name' => $item['passenger_name'] ?? null,
                 'pickup_address' => $item['pickup_address'] ?? null,
                 'dropoff_address' => $item['dropoff_address'] ?? null,
-                'total_price' => $totalPrice,
+                'total_price' => $baseFare,
                 'driver_price' => $driverPrice,
                 'partial_received_by_driver' => $partialReceived,
                 'driver_fare' => $driverFare,
-                'booking_type' => $item['booking_type'] ?? ($item['payment_type'] ?? null),
+                'booking_type' => $bookingType !== '' ? $bookingType : null,
                 'vehicle_type' => $item['vehicle_type'] ?? null,
                 'status' => $item['status'] ?? null,
                 'phone' => $item['phone'] ?? null,
@@ -680,6 +747,33 @@ class DriverController extends Controller
         }), 2);
 
         return [$normalized->all(), $invoiceAmountTotal, $invoiceTotal];
+    }
+
+    private function resolveDriverVisibleFare(Booking $booking): float
+    {
+        $meta = is_array($booking->meta) ? $booking->meta : [];
+        $driverVisible = data_get($meta, 'driver_display_price');
+
+        if (is_numeric($driverVisible)) {
+            return round(max(0, (float) $driverVisible), 2);
+        }
+
+        return round((float) ($booking->total_price ?? 0), 2);
+    }
+
+    private function calculateDriverPriceFromBookingType(float $totalPrice, ?string $bookingType, float $fallbackDriverPrice = 0.0): float
+    {
+        $type = strtolower(trim((string) $bookingType));
+
+        if ($type === 'card') {
+            return round($totalPrice * 0.8, 2);
+        }
+
+        if ($type === 'cash') {
+            return round($totalPrice * -0.2, 2);
+        }
+
+        return round($fallbackDriverPrice, 2);
     }
 
     /**

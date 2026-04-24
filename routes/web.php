@@ -85,6 +85,7 @@ Route::name('admin.')->group(function () {
         Route::get('drivers/booking-timing', [\App\Http\Controllers\Admin\DriverController::class, 'getBookingTiming'])->name('drivers.booking_timing')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         // View all jobs for a selected driver
         Route::get('drivers/{driver}/jobs', [\App\Http\Controllers\Admin\DriverController::class, 'jobs'])->name('drivers.jobs')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
+        Route::get('drivers/{driver}/invoices', [\App\Http\Controllers\Admin\DriverController::class, 'invoices'])->name('drivers.invoices')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::get('drivers/{driver}/invoices/{invoice}', [\App\Http\Controllers\Admin\DriverController::class, 'showInvoice'])->name('drivers.invoices.show')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::post('drivers/{driver}/jobs/invoice', [\App\Http\Controllers\Admin\DriverController::class, 'sendInvoice'])->name('drivers.jobs.invoice')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
         Route::post('drivers/{driver}/invoices/{invoice}/update-draft', [\App\Http\Controllers\Admin\DriverController::class, 'updateInvoiceDraft'])->name('drivers.invoices.update_draft')->middleware(\App\Http\Middleware\EnsurePermission::class.':driver.view');
@@ -161,6 +162,8 @@ Route::name('admin.')->group(function () {
         Route::get('notifications', function(){ return view('admin.notifications.index'); })->name('notifications.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':notification.view');
         Route::get('driver-broadcasts', [\App\Http\Controllers\Admin\DriverBroadcastController::class, 'index'])->name('driver-broadcasts.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':notifications.view');
         Route::post('driver-broadcasts', [\App\Http\Controllers\Admin\DriverBroadcastController::class, 'store'])->name('driver-broadcasts.store')->middleware(\App\Http\Middleware\EnsurePermission::class.':notifications.edit');
+        Route::get('admin-broadcasts', [\App\Http\Controllers\Admin\AdminBroadcastController::class, 'index'])->name('admin-broadcasts.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':notifications.view');
+        Route::post('admin-broadcasts', [\App\Http\Controllers\Admin\AdminBroadcastController::class, 'store'])->name('admin-broadcasts.store')->middleware(\App\Http\Middleware\EnsurePermission::class.':notifications.edit');
         Route::get('reviews', [\App\Http\Controllers\Admin\ReviewsController::class, 'index'])->name('reviews.index')->middleware(\App\Http\Middleware\EnsurePermission::class.':review.view');
         Route::get('complaints-lost-found', [\App\Http\Controllers\Admin\ComplaintLostFoundController::class, 'index'])->name('complaints.index');
         Route::get('complaints-lost-found/{complaint}/edit', [\App\Http\Controllers\Admin\ComplaintLostFoundController::class, 'edit'])->name('complaints.edit');

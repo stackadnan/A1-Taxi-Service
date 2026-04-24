@@ -57,9 +57,20 @@ class AdminController extends Controller
         $airportJobsChart = $this->buildAirportJobsChartData($chartFrom, $chartTo);
 
         // Load recent broadcasts (only those scheduled at or before now)
-        $broadcasts = \App\Models\Broadcast::where(function($q){
-                $q->whereNull('scheduled_at')->orWhere('scheduled_at', '<=', now());
-            })->orderBy('created_at','desc')->limit(5)->get();
+        $broadcasts = \App\Models\Broadcast::query()
+            ->where(function ($q) {
+                $q->where('channel', 'admin_panel')
+                    ->orWhere(function ($qq) {
+                        $qq->whereNull('channel')
+                           ->where(function ($sq) {
+                               $sq->whereNull('scheduled_at')
+                                  ->orWhere('scheduled_at', '<=', now());
+                           });
+                    });
+            })
+            ->orderBy('created_at', 'desc')
+            ->limit(1)
+            ->get();
 
         // Booking sections for dashboard
         $sections = [

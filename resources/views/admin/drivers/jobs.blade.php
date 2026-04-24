@@ -83,6 +83,16 @@
             $meta = $job->meta ?? [];
             $driverResponse = strtolower((string) ($meta['driver_response'] ?? ''));
             $statusName = strtolower((string) (optional($job->status)->name ?? ''));
+            $paymentType = strtolower(trim((string) ($job->payment_type ?? '')));
+            $driverVisibleFare = is_numeric($meta['driver_display_price'] ?? null)
+              ? round(max(0, (float) $meta['driver_display_price']), 2)
+              : round((float) ($job->total_price ?? 0), 2);
+            $calculatedDriverFare = (float) ($job->driver_price ?? 0);
+            if ($paymentType === 'card') {
+              $calculatedDriverFare = round($driverVisibleFare * 0.8, 2);
+            } elseif ($paymentType === 'cash') {
+              $calculatedDriverFare = round($driverVisibleFare * -0.2, 2);
+            }
             $inRoute = filter_var($meta['in_route'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $arrivedAtPickup = filter_var($meta['arrived_at_pickup'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $pobMarked = !empty($meta['pob_marked_at']);
@@ -125,8 +135,8 @@
             </td>
             <td class="p-3 text-sm text-gray-900">{{ $job->pickup_address ?: '-' }}</td>
             <td class="p-3 text-sm text-gray-900">{{ $job->dropoff_address ?: '-' }}</td>
-            <td class="p-3 text-sm text-gray-900">£{{ number_format((float) ($job->total_price ?? 0), 2) }}</td>
-            <td class="p-3 text-sm text-gray-900">£{{ number_format((float) ($job->driver_price ?? 0), 2) }}</td>
+            <td class="p-3 text-sm text-gray-900">£{{ number_format($driverVisibleFare, 2) }}</td>
+            <td class="p-3 text-sm text-gray-900">£{{ number_format($calculatedDriverFare, 2) }}</td>
             <td class="p-3 text-sm text-gray-900">{{ $job->vehicle_type ?: '-' }}</td>
             <td class="p-3">
               <span class="text-xs px-2 py-1 rounded-full font-medium bg-gray-100 text-gray-700">

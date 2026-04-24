@@ -90,6 +90,7 @@
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Price</th>
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Trip</th>
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Linked Ref</th>
+            <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Converted</th>
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Source IP</th>
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Source URL</th>
             <th class="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Submitted</th>
@@ -126,6 +127,13 @@
                   <span class="font-mono text-xs text-gray-500">{{ $quote->linked_quote_ref }}</span>
                 @else
                   <span class="text-gray-300">—</span>
+                @endif
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                @if(!empty($convertedQuoteRefMap[$quote->quote_ref]))
+                  <span class="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full">Converted</span>
+                @else
+                  <span class="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full">Not Converted</span>
                 @endif
               </td>
               <td class="px-4 py-3 whitespace-nowrap text-gray-500 text-xs font-mono">{{ $quote->source_ip }}</td>
