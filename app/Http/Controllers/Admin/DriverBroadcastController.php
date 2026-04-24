@@ -20,7 +20,7 @@ class DriverBroadcastController extends Controller
             ->paginate(15);
 
         $driverCount = Driver::count();
-        $councils = DB::table('councils')->where('status', 'active')->orderBy('council_name')->get();
+        $councils = DB::table('councils')->orderBy('council_name')->get();
 
         return view('admin.driver-broadcasts.index', compact('broadcasts', 'driverCount', 'councils'));
     }
