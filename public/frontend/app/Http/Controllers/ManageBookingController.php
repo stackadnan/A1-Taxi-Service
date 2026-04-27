@@ -640,8 +640,8 @@ class ManageBookingController extends Controller
             'baby_seat' => (int) ($validated['baby_seat'] ?? 0),
             'baby_seat_age' => $this->blankToNull($validated['baby_seat_age'] ?? null),
             'message_to_driver' => $this->blankToNull($validated['message_to_driver'] ?? null),
-            'total_price' => $this->blankToNull($validated['total_price'] ?? null),
-            'currency' => $this->blankToNull($validated['currency'] ?? null),
+            'total_price' => $this->blankToNull($validated['total_price'] ?? '') ?? $booking->total_price,
+            'currency' => $this->blankToNull($validated['currency'] ?? '') ?? $booking->currency,
             'updated_at' => now(),
         ];
 

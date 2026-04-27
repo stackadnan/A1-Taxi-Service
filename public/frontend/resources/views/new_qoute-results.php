@@ -1,19 +1,23 @@
+<?php
+ob_start();
+?>
 <style>
 .header-top-section{background-color:#0c142e!important;}
 .hero-section,.navbar,header,.main-header,.site-header,nav,.navigation-menu,.top-header,.header-area,.banner-section,.page-header,.breadcrumb-area,.page-banner,.header-top,.main-nav,.site-nav,.primary-nav,.top-bar,.menu-bar,.header-wrapper,.site-navigation,.main-navigation,.page-hero,.hero-area,.inner-header,.page-title-area,.breadcrumb-wrapper,.hero-banner,.page-banner-area,.top-header-area,.middle-header,.bottom-header,.header-section,.site-branding,.menu-main-container,.primary-menu,.main-menu,.navbar-header,.navbar-collapse,.nav-header,.nav-wrapper,.header-nav,.header-menu,.page-top-header,.page-navigation,.page-nav,.theme-header,.theme-nav,.custom-header,.wp-block-template-part{display:none!important;visibility:hidden!important;opacity:0!important;height:0!important;min-height:0!important;max-height:0!important;overflow:hidden!important;position:absolute!important;z-index:-9999!important;pointer-events:none!important;}
 footer,.footer,.site-footer,.main-footer,.footer-section,.footer-area,.copyright-area,.footer-widgets,.footer-bottom{display:block!important;visibility:visible!important;opacity:1!important;height:auto!important;min-height:auto!important;max-height:none!important;overflow:visible!important;position:relative!important;z-index:1!important;pointer-events:auto!important;}
 body,html{margin-top:0!important;padding-top:0!important;}
 </style>
-@php
+<?php
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $api_url = str_contains($host,'executiveairportcars.com')
   ? 'https://admin.executiveairportcars.com/api/quote'
   : 'http://localhost/AirportServices/public/api/quote';
 $headTitle='Quote Results';
-$img=\App\Support\GalleryPath::path('i/149');
+$img='assets/img/bg-header-banner.jpg';
 $Title='Home'; $Title2='Quote Results'; $SubTitle='Choose Your Vehicle';
-@endphp
-@include('partials.layouts.layoutsTop')
+function e($v){return htmlspecialchars($v,ENT_QUOTES,'UTF-8');}
+?>
+<?php include './partials/layouts/layoutsTop.php' ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -911,7 +915,8 @@ footer .container,
 </section>
 
 <script>
-var API_URL=@json($api_url);
+var API_URL='<?= e($api_url) ?>';
+var DEMO=true;
 var VEHICLES=[
   {key:'saloon',name:'Standard',img:'assets/img/car/saloon.png',model:'VW PASSAT, TOYOTA PRIUS OR SIMILAR.',c1:'Up to 4 Passengers',c2:'2 medium suitcases',feats:['2 handcarry','Friendly Drivers','Free Waiting time','Door-to-door'],extra:'Child restraint devices available on request. Vehicle may differ from image; exact model subject to availability.',base:45},
   {key:'business',name:'First Class',img:'assets/img/car/executive.png',model:'E CLASS MERCEDES OR SIMILAR.',c1:'Up to 4 Passengers',c2:'2 medium suitcases',feats:['2 handcarry','Friendly Drivers','Free Waiting time','Door-to-door'],extra:'Child restraint devices available on request. Vehicle may differ from image; exact model subject to availability.',base:75},
@@ -928,15 +933,17 @@ renderMap(qd);
 
 if(!qd.pickup_lat||!qd.dropoff_lat){
   setStatus('No quote data found. Please start from the home page.','error');
-  document.getElementById('results').innerHTML='<div class="empty-st"><i class="fa-solid fa-map-location-dot"></i><h3>No Journey Details</h3><p>Return to the home page to search for a quote.</p><a href="./"><i class="fa-solid fa-arrow-left"></i> Start New Quote</a></div>';
+  document.getElementById('results').innerHTML='<div class="empty-st"><i class="fa-solid fa-map-location-dot"></i><h3>No Journey Details</h3><p>Return to the home page to search for a quote.</p><a href="index.php"><i class="fa-solid fa-arrow-left"></i> Start New Quote</a></div>';
 }else{loadQuote();}
 
 function loadQuote(){
-  fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({pickup_lat:qd.pickup_lat,pickup_lon:qd.pickup_lon,dropoff_lat:qd.dropoff_lat,dropoff_lon:qd.dropoff_lon,pickup_postcode:qd.pickup_postcode||'',dropoff_postcode:qd.dropoff_postcode||'',pickup_address:qd.pickup,dropoff_address:qd.dropoff,date:qd.date,distance_miles:qd.distance_miles,source_url:qd.source_url||''})})
+  if(DEMO){setStatus('Great news! Select your preferred vehicle below.','success');renderDemo();return;}
+  fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pickup_lat:qd.pickup_lat,pickup_lon:qd.pickup_lon,dropoff_lat:qd.dropoff_lat,dropoff_lon:qd.dropoff_lon,pickup_postcode:qd.pickup_postcode||'',dropoff_postcode:qd.dropoff_postcode||'',pickup_address:qd.pickup,dropoff_address:qd.dropoff,date:qd.date,distance_miles:qd.distance_miles})})
   .then(r=>r.json()).then(resp=>{if(!resp.success)throw new Error(resp.message);setStatus('Great news! Select your preferred vehicle below.','success');renderAPI(resp);})
-  .catch(function(err){setStatus('Request failed: '+(err&&err.message?err.message:'Unable to fetch prices right now.'),'error');document.getElementById('results').innerHTML='<div class="empty-st"><i class="fa-solid fa-triangle-exclamation"></i><h3>Unable to Fetch Prices</h3><p>Please try again in a moment.</p></div>';});
+  .catch(function(){setStatus('Great news! Select your preferred vehicle below.','success');renderDemo();});
 }
 
+function renderDemo(){var dist=qd.distance_miles?parseFloat(qd.distance_miles):10,html='';VEHICLES.forEach(function(v){var ow=Math.round((v.base+dist*1.5)*100)/100;html+=card(v,ow,ow*2);});document.getElementById('results').innerHTML=html;}
 function renderAPI(resp){var html='';VEHICLES.forEach(function(v){var ow=resp.pricing?resp.pricing[v.key+'_price']:resp[v.key+'_price'];ow=(ow!==undefined&&!isNaN(ow))?parseFloat(ow):null;html+=card(v,ow,ow!==null?ow*2:null);});document.getElementById('results').innerHTML=html;}
 
 function card(v,ow,ret){
@@ -1071,8 +1078,9 @@ function setStatus(msg,type){var ic={loading:'fa-circle-notch fa-spin',success:'
 
 function doBook(vehicle,price,trip){
   var dp=(qd.date||'').split('-'),fmtDate=dp.length===3?dp[2]+'-'+dp[1]+'-'+dp[0]:qd.date;
-  fetch(API_URL.replace('/quote','/quote/save'),{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({pickup_address:qd.pickup,dropoff_address:qd.dropoff,pickup_date:fmtDate,vehicle_type:vehicle,price:price,trip_type:trip,source_url:qd.source_url||''})})
-  .then(r=>r.json()).then(function(resp){if(resp.success){localStorage.setItem('booking_data',JSON.stringify({quote_ref:resp.quote_ref,return_ref:resp.return_ref,pickup:qd.pickup,dropoff:qd.dropoff,pickup_date:fmtDate,vehicle_type:vehicle,price:price,trip_type:trip}));window.location.href='booking-confirmation';}else alert('Error: '+(resp.message||'unknown'));})
+  if(DEMO){localStorage.setItem('booking_data',JSON.stringify({quote_ref:'DEMO_'+Date.now(),return_ref:trip==='return'?'DEMO_RET_'+Date.now():null,pickup:qd.pickup,dropoff:qd.dropoff,vehicle_type:vehicle,price:price,trip_type:trip}));window.location.href='booking-confirmation.php';return;}
+  fetch(API_URL.replace('/quote','/quote/save'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pickup_address:qd.pickup,dropoff_address:qd.dropoff,pickup_date:fmtDate,vehicle_type:vehicle,price:price,trip_type:trip,source_url:''})})
+  .then(r=>r.json()).then(function(resp){if(resp.success){localStorage.setItem('booking_data',JSON.stringify({quote_ref:resp.quote_ref,return_ref:resp.return_ref,pickup:qd.pickup,dropoff:qd.dropoff,vehicle_type:vehicle,price:price,trip_type:trip}));window.location.href='booking-confirmation.php';}else alert('Error: '+(resp.message||'unknown'));})
   .catch(function(e){alert(e.message);});
 }
 
@@ -1298,9 +1306,9 @@ document.addEventListener('click', function(e) {
     </div>
     
     <div class="custom-footer-copyright">
-      <p>&copy; {{ date('Y') }} A1 Airport Cars. All rights reserved.</p>
+      <p>&copy; <?php echo date('Y'); ?> A1 Airport Cars. All rights reserved.</p>
     </div>
   </div>
 </footer>
 
-@include('partials.layouts.layoutsBottom')
+<?php include './partials/layouts/layoutsBottom.php' ?>

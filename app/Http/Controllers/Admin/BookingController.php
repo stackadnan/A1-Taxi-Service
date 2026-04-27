@@ -883,23 +883,7 @@ class BookingController extends Controller
             }
 
             $subject = 'Booking Confirmation - ' . ($booking->booking_code ?? ('#' . $booking->id));
-            $bodyLines = [
-                'Dear ' . ($booking->passenger_name ?: 'Customer') . ',',
-                '',
-                'Your booking has been confirmed.',
-                '',
-                'Booking Reference: ' . ($booking->booking_code ?? ('#' . $booking->id)),
-                'Pickup: ' . ($booking->pickup_address ?: '-'),
-                'Dropoff: ' . ($booking->dropoff_address ?: '-'),
-                'Pickup Date: ' . (optional($booking->pickup_date)->format('Y-m-d') ?: '-'),
-                'Pickup Time: ' . ($booking->pickup_time ?: '-'),
-                'Price: ' . ($booking->total_price !== null ? ('£' . number_format((float)$booking->total_price, 2)) : '-'),
-                '',
-                'Thank you for booking with us.',
-            ];
-            $body = implode("\n", $bodyLines);
-
-            $this->sendPlainTextMail($email, $subject, $body);
+            $this->sendBookingEmailView('emails.booking_confirmation', $email, $subject, ['booking' => $booking]);
 
             return response()->json(['success' => true, 'message' => 'Confirmation email sent successfully.']);
         } catch (\Throwable $e) {
@@ -932,22 +916,7 @@ class BookingController extends Controller
             }
 
             $subject = 'Booking Cancellation - ' . ($booking->booking_code ?? ('#' . $booking->id));
-            $bodyLines = [
-                'Dear ' . ($booking->passenger_name ?: 'Customer') . ',',
-                '',
-                'Your booking has been cancelled.',
-                '',
-                'Booking Reference: ' . ($booking->booking_code ?? ('#' . $booking->id)),
-                'Pickup: ' . ($booking->pickup_address ?: '-'),
-                'Dropoff: ' . ($booking->dropoff_address ?: '-'),
-                'Pickup Date: ' . (optional($booking->pickup_date)->format('Y-m-d') ?: '-'),
-                'Pickup Time: ' . ($booking->pickup_time ?: '-'),
-                '',
-                'If you have any questions, please contact support.',
-            ];
-            $body = implode("\n", $bodyLines);
-
-            $this->sendPlainTextMail($email, $subject, $body);
+            $this->sendBookingEmailView('emails.booking_cancellation', $email, $subject, ['booking' => $booking]);
 
             return response()->json(['success' => true, 'message' => 'Cancellation email sent successfully.']);
         } catch (\Throwable $e) {
@@ -1018,27 +987,10 @@ class BookingController extends Controller
             }
 
             $subject = 'Driver Details - ' . ($booking->booking_code ?? ('#' . $booking->id));
-            $bodyLines = [
-                'Dear ' . ($booking->passenger_name ?: 'Customer') . ',',
-                '',
-                'Your assigned driver details are below:',
-                '',
-                'Driver Name: ' . ($driver->name ?: '-'),
-                'Driver Phone: ' . ($driver->phone ?: '-'),
-                'Vehicle: ' . trim(($driver->vehicle_make ?: '') . ' ' . ($driver->vehicle_model ?: '')),
-                'Plate Number: ' . ($driver->vehicle_plate ?: '-'),
-                '',
-                'Booking Reference: ' . ($booking->booking_code ?? ('#' . $booking->id)),
-                'Pickup: ' . ($booking->pickup_address ?: '-'),
-                'Dropoff: ' . ($booking->dropoff_address ?: '-'),
-                'Pickup Date: ' . (optional($booking->pickup_date)->format('Y-m-d') ?: '-'),
-                'Pickup Time: ' . ($booking->pickup_time ?: '-'),
-                '',
-                'Thank you for choosing us.',
-            ];
-            $body = implode("\n", $bodyLines);
-
-            $this->sendPlainTextMail($email, $subject, $body);
+            $this->sendBookingEmailView('emails.driver_info', $email, $subject, [
+                'booking' => $booking,
+                'driver' => $driver,
+            ]);
 
             return response()->json(['success' => true, 'message' => 'Driver information email sent successfully.']);
         } catch (\Throwable $e) {
@@ -1058,6 +1010,13 @@ class BookingController extends Controller
     protected function sendPlainTextMail(string $to, string $subject, string $body): void
     {
         Mail::raw($body, function ($message) use ($to, $subject) {
+            $message->to($to)->subject($subject);
+        });
+    }
+
+    protected function sendBookingEmailView(string $view, string $to, string $subject, array $data = []): void
+    {
+        Mail::send($view, $data, function ($message) use ($to, $subject) {
             $message->to($to)->subject($subject);
         });
     }
