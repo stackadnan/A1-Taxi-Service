@@ -13,4 +13,4 @@ Price: <strong>{{ $booking->total_price !== null ? '£' . number_format((float)$
 
 <p>Thank you for choosing Airport Services. We hope to serve you again soon.</p>
 
-<p>Regards,<br>Airport Services</p>
+<p>Regards,<br>A1 Airport Transfers</p>

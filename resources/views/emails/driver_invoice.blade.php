@@ -12,4 +12,4 @@ Total Driver Fare: <strong>£{{ number_format((float) $invoiceTotal, 2) }}</stro
 
 <p>If you have any questions, please contact the admin team.</p>
 
-<p>Regards,<br>Airport Services Admin</p>
+<p>Regards,<br>A1 Airport Transfers Admin</p>

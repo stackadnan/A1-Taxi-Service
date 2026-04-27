@@ -19,4 +19,4 @@ Pickup Time: <strong>{{ $booking->pickup_time ?: '-' }}</strong>
 
 <p>Thank you for choosing us.</p>
 
-<p>Regards,<br>Airport Services</p>
+<p>Regards,<br>A1 Airport Transfers</p>
