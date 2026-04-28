@@ -3,12 +3,12 @@
         <div class="swiper hero-slider-3">
             <div class="swiper-wrapper">
                 <div class="swiper-slide">
-                    <div class="hero-image bg-cover" style="background-image: url('{{ \App\Support\GalleryPath::path('i/148') }}');">
+                    <div class="hero-image bg-cover" style="background-image: url('<?php echo e(\App\Support\GalleryPath::path('i/148')); ?>');">
                         <div class="line-shape" data-animation="slideInLeft" data-duration="3s" data-delay="2.1s">
-                            <img src="{{ \App\Support\GalleryPath::path('i/145') }}" alt="shape-img">
+                            <img src="<?php echo e(\App\Support\GalleryPath::path('i/145')); ?>" alt="shape-img">
                         </div>
                         <div class="line-shape-2" data-animation="slideInLeft" data-duration="3s" data-delay="2.3s">
-                            <img src="{{ \App\Support\GalleryPath::path('i/146') }}" alt="shape-img">
+                            <img src="<?php echo e(\App\Support\GalleryPath::path('i/146')); ?>" alt="shape-img">
                         </div>
                     </div>
                     <div class="container">
@@ -20,7 +20,7 @@
                                         <div class="product-search-area">
                                             <h2 class="search-text">Get Instant Quotes</h2>
                                             <div class="line-icon">
-                                                <img src="{{ \App\Support\GalleryPath::path('i/147') }}" alt="img">
+                                                <img src="<?php echo e(\App\Support\GalleryPath::path('i/147')); ?>" alt="img">
                                             </div>
                                             <form action="#" id="contact-form" method="POST">
                                                 <div class="row g-4">
@@ -83,28 +83,33 @@
                                         <div class="hero-content">
 
                                             <h4 class="text-white mb-2" data-animation="fadeInUp">
-                                                    {{ $heroTitle ?? 'Reliable London Airport Taxi Service' }}
+                                                    <?php echo e($heroTitle ?? 'Reliable London Airport Taxi Service'); ?>
+
                                                 </h4>
 
                                                 <h1 class="text-white mb-3" data-animation="fadeInUp">
-                                                    {{ $heroSubtitle ?? 'Airport Transfers Across the UK' }}
+                                                    <?php echo e($heroSubtitle ?? 'Airport Transfers Across the UK'); ?>
+
                                                 </h1>
 
-                                                @if(!empty($heroDescriptionHtml))
-                                                    {!! $heroDescriptionHtml !!}
-                                                @else
+                                                <?php if(!empty($heroDescriptionHtml)): ?>
+                                                    <?php echo $heroDescriptionHtml; ?>
+
+                                                <?php else: ?>
                                                     <p class="text-white mb-3" data-animation="fadeInUp">
-                                                        {{ $heroDescription ?? 'Book professional London airport taxi transfers to and from all major UK airports. Whether you are travelling alone, with family, or in a group, we provide comfortable, punctual and affordable transport with fixed prices and no hidden charges.' }}
+                                                        <?php echo e($heroDescription ?? 'Book professional London airport taxi transfers to and from all major UK airports. Whether you are travelling alone, with family, or in a group, we provide comfortable, punctual and affordable transport with fixed prices and no hidden charges.'); ?>
+
                                                     </p>
 
                                                     <p class="text-white mb-4" data-animation="fadeInUp">
-                                                        {{ $heroAdditional ?? 'Reserve your taxi in advance through our quick online booking system and enjoy a smooth, stress-free journey to or from the airport.' }}
+                                                        <?php echo e($heroAdditional ?? 'Reserve your taxi in advance through our quick online booking system and enjoy a smooth, stress-free journey to or from the airport.'); ?>
+
                                                     </p>
 
                                                     <p class="text-white mb-4" data-animation="fadeInUp">
-                                                        {{ $contactSentence ?? 'Need assistance? Our customer support team is available' }} 
+                                                        <?php echo e($contactSentence ?? 'Need assistance? Our customer support team is available'); ?> 
                                                         <strong>24 hours a day, 7 days a week</strong> on 
-                                                        <strong>{{ $phoneNumber ?? '(+44) 1582 801 611' }}</strong>.
+                                                        <strong><?php echo e($phoneNumber ?? '(+44) 1582 801 611'); ?></strong>.
                                                     </p>
 
                                                     <ul class="text-white list-unstyled hero-features" data-animation="fadeInUp">
@@ -114,7 +119,7 @@
                                                         <li>✔ Comfortable vehicles for individuals and groups</li>
                                                         <li>✔ 24/7 customer support and assistance</li>
                                                     </ul>
-                                                @endif
+                                                <?php endif; ?>
 
                                         </div>
                                     </div>
@@ -131,7 +136,7 @@
         
 </section>
         <?php
-        $maps_api_key = env('GOOGLE_MAPS_API_KEY');
+        $maps_api_key = 'AIzaSyBdmyqdJzsLJJuo7ZiZOAlY3nMx-IMrS8g';
         ?>
         <script>
             // Store the page URL when user first lands here
@@ -318,4 +323,4 @@
                     callback(null);
                 }
             }
-        </script>
+        </script><?php /**PATH C:\xampp\htdocs\frontend\resources\views/partials/quotes.blade.php ENDPATH**/ ?>

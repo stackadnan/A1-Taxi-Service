@@ -6,7 +6,7 @@
                     <div class="offcanvas__top mb-5 d-flex justify-content-between align-items-center">
                         <div class="offcanvas__logo">
                             <a href="./">
-                                <img src="{{ \App\Support\GalleryPath::path($logo ?? 'i/154') }}" alt="logo-img">
+                                <img src="<?php echo e(\App\Support\GalleryPath::path($logo ?? 'i/154')); ?>" alt="logo-img">
                             </a>
                         </div>
                         <div class="offcanvas__close">
@@ -28,7 +28,7 @@
                                     <i class="fal fa-map-marker-alt"></i>
                                 </div>
                                 <div class="offcanvas__contact-text">
-                                    <a target="_blank" href="#">{{ $address ?? '960 Capability Green, LU1 3PE Luton' }}</a>
+                                    <a target="_blank" href="#"><?php echo e($address ?? '960 Capability Green, LU1 3PE Luton'); ?></a>
                                 </div>
                             </li>
                             <li class="d-flex align-items-center">
@@ -36,7 +36,7 @@
                                     <i class="fal fa-envelope"></i>
                                 </div>
                                 <div class="offcanvas__contact-text">
-                                    <a href="mailto:{{ $email ?? 'info@a1airportcars.co.uk' }}"><span>{{ $email ?? 'info@a1airportcars.co.uk' }}</span></a>
+                                    <a href="mailto:<?php echo e($email ?? 'info@a1airportcars.co.uk'); ?>"><span><?php echo e($email ?? 'info@a1airportcars.co.uk'); ?></span></a>
                                 </div>
                             </li>
                             
@@ -45,19 +45,19 @@
                                     <i class="far fa-phone"></i>
                                 </div>
                                 <div class="offcanvas__contact-text">
-                                    <a href="tel:{{ $phone ?? '(+44) - 1582 - 801 - 611' }}">{{ $phone ?? '(+44) - 1582 - 801 - 611' }}</a>
+                                    <a href="tel:<?php echo e($phone ?? '(+44) - 1582 - 801 - 611'); ?>"><?php echo e($phone ?? '(+44) - 1582 - 801 - 611'); ?></a>
                                 </div>
                             </li>
                         </ul>
                         <div class="header-button mt-4">
                             <a href="manage-booking" class="theme-btn text-center">
-                                <span>{{ $buttonText ?? 'Manage My Booking' }}<i class="fa-solid fa-arrow-right-long"></i></span>
+                                <span><?php echo e($buttonText ?? 'Manage My Booking'); ?><i class="fa-solid fa-arrow-right-long"></i></span>
                             </a>
                         </div>
                         <div class="social-icon d-flex align-items-center">
-                            @foreach($socialLinks ?? [] as $social)
-                                <a href="{{ $social['link'] ?? '#' }}"><i class="{{ $social['icon'] ?? 'fab fa-facebook-f' }}"></i></a>
-                            @endforeach
+                            <?php $__currentLoopData = $socialLinks ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $social): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <a href="<?php echo e($social['link'] ?? '#'); ?>"><i class="<?php echo e($social['icon'] ?? 'fab fa-facebook-f'); ?>"></i></a>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
                     </div>
                 </div>
@@ -66,3 +66,4 @@
     </div>
     <div class="offcanvas__overlay"></div>
 
+<?php /**PATH /home/executiveairport/public_html/frontend/resources/views/partials/offcanvas.blade.php ENDPATH**/ ?>

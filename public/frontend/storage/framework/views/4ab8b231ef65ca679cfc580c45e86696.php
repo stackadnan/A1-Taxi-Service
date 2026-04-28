@@ -10,7 +10,7 @@ $paymentType = strtolower((string) ($confirmation['payment_type'] ?? ''));
 $paymentLabel = $paymentType === 'card' ? 'Card' : 'Cash';
 ?>
 
-@include('partials.layouts.layoutsTop')
+<?php echo $__env->make('partials.layouts.layoutsTop', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
 <section class="contact-section-1 fix section-padding pb-0">
   <div class="container">
@@ -19,7 +19,7 @@ $paymentLabel = $paymentType === 'card' ? 'Card' : 'Cash';
         <div class="col-lg-8">
           <div class="contact-content text-center">
             <div class="section-title">
-              <img src="{{ \App\Support\GalleryPath::path('i/2') }}" alt="icon-img" class="wow fadeInUp">
+              <img src="<?php echo e(\App\Support\GalleryPath::path('i/2')); ?>" alt="icon-img" class="wow fadeInUp">
               <span class="wow fadeInUp" data-wow-delay=".2s">booking complete</span>
               <h2 class="wow fadeInUp" data-wow-delay=".4s">Thank you for your booking</h2>
             </div>
@@ -27,32 +27,32 @@ $paymentLabel = $paymentType === 'card' ? 'Card' : 'Cash';
             <div class="contact-form-items mt-4">
               <div class="form-clt mb-3">
                 <span>Booking Reference</span>
-                <input type="text" readonly value="{{ $confirmation['booking_code'] ?? '-' }}">
+                <input type="text" readonly value="<?php echo e($confirmation['booking_code'] ?? '-'); ?>">
               </div>
-              @if(!empty($confirmation['return_booking_code']))
+              <?php if(!empty($confirmation['return_booking_code'])): ?>
               <div class="form-clt mb-3">
                 <span>Return Booking Reference</span>
-                <input type="text" readonly value="{{ $confirmation['return_booking_code'] }}">
+                <input type="text" readonly value="<?php echo e($confirmation['return_booking_code']); ?>">
               </div>
-              @endif
+              <?php endif; ?>
               <div class="form-clt mb-3">
                 <span>Passenger Name</span>
-                <input type="text" readonly value="{{ $confirmation['passenger_name'] ?? '-' }}">
+                <input type="text" readonly value="<?php echo e($confirmation['passenger_name'] ?? '-'); ?>">
               </div>
               <div class="form-clt mb-3">
                 <span>Email</span>
-                <input type="text" readonly value="{{ $confirmation['email'] ?? '-' }}">
+                <input type="text" readonly value="<?php echo e($confirmation['email'] ?? '-'); ?>">
               </div>
               <div class="form-clt mb-0">
                 <span>Payment Type</span>
-                <input type="text" readonly value="{{ $paymentLabel }}">
+                <input type="text" readonly value="<?php echo e($paymentLabel); ?>">
               </div>
-              @if(!empty($confirmation['payment_id']))
+              <?php if(!empty($confirmation['payment_id'])): ?>
               <div class="form-clt mb-0 mt-3">
                 <span>Payment ID</span>
-                <input type="text" readonly value="{{ $confirmation['payment_id'] }}">
+                <input type="text" readonly value="<?php echo e($confirmation['payment_id']); ?>">
               </div>
-              @endif
+              <?php endif; ?>
             </div>
 
             <p class="mt-4 mb-4">
@@ -67,4 +67,5 @@ $paymentLabel = $paymentType === 'card' ? 'Card' : 'Cash';
   </div>
 </section>
 
-@include('partials.layouts.layoutsBottom')
+<?php echo $__env->make('partials.layouts.layoutsBottom', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php /**PATH /home/executiveairport/public_html/frontend/resources/views/booking-thank-you.blade.php ENDPATH**/ ?>

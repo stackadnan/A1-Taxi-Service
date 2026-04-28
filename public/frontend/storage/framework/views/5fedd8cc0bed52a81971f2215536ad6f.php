@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $formTitle }}</title>
-    <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
+    <title><?php echo e($formTitle); ?></title>
+    <link rel="stylesheet" href="<?php echo e(asset('assets/css/bootstrap.min.css')); ?>">
     <style>
         .row-code-editor {
             font-family: Consolas, "Courier New", monospace;
@@ -40,40 +40,40 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1 class="h4 mb-1">{{ $formTitle }}</h1>
+            <h1 class="h4 mb-1"><?php echo e($formTitle); ?></h1>
             <p class="text-muted mb-0">Configure content blocks and URL for this page.</p>
         </div>
         <div class="d-flex gap-2">
-            <a class="btn btn-outline-secondary" href="{{ route('admin.pages.index') }}">Back to Pages</a>
-            <form action="{{ route('admin.logout') }}" method="POST">
-                @csrf
+            <a class="btn btn-outline-secondary" href="<?php echo e(route('admin.pages.index')); ?>">Back to Pages</a>
+            <form action="<?php echo e(route('admin.logout')); ?>" method="POST">
+                <?php echo csrf_field(); ?>
                 <button type="submit" class="btn btn-outline-danger">Logout</button>
             </form>
         </div>
     </div>
 
-    @if (session('status'))
-        <div class="alert alert-success">{{ session('status') }}</div>
-    @endif
+    <?php if(session('status')): ?>
+        <div class="alert alert-success"><?php echo e(session('status')); ?></div>
+    <?php endif; ?>
 
-    @if ($errors->any())
+    <?php if($errors->any()): ?>
         <div class="alert alert-danger">
             <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
+                <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <li><?php echo e($error); ?></li>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </ul>
         </div>
-    @endif
+    <?php endif; ?>
 
-    <form action="{{ $formAction }}" method="POST" class="card shadow-sm">
-        @csrf
-        @if ($formMethod !== 'POST')
-            @method($formMethod)
-        @endif
+    <form action="<?php echo e($formAction); ?>" method="POST" class="card shadow-sm">
+        <?php echo csrf_field(); ?>
+        <?php if($formMethod !== 'POST'): ?>
+            <?php echo method_field($formMethod); ?>
+        <?php endif; ?>
 
         <div class="card-body">
-            @php
+            <?php
                 $seoTabFields = [
                     'seo_meta_title',
                     'seo_canonical',
@@ -93,64 +93,64 @@
                 if (!in_array($activeAdminTab, ['page', 'seo'], true)) {
                     $activeAdminTab = 'page';
                 }
-            @endphp
+            ?>
 
-            <input type="hidden" name="admin_tab" id="admin_tab" value="{{ $activeAdminTab }}">
+            <input type="hidden" name="admin_tab" id="admin_tab" value="<?php echo e($activeAdminTab); ?>">
 
             <ul class="nav nav-tabs mb-4" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button type="button" class="nav-link admin-tab-btn {{ $activeAdminTab === 'page' ? 'active' : '' }}" data-tab-target="page" role="tab">Page</button>
+                    <button type="button" class="nav-link admin-tab-btn <?php echo e($activeAdminTab === 'page' ? 'active' : ''); ?>" data-tab-target="page" role="tab">Page</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button type="button" class="nav-link admin-tab-btn {{ $activeAdminTab === 'seo' ? 'active' : '' }}" data-tab-target="seo" role="tab">SEO</button>
+                    <button type="button" class="nav-link admin-tab-btn <?php echo e($activeAdminTab === 'seo' ? 'active' : ''); ?>" data-tab-target="seo" role="tab">SEO</button>
                 </li>
             </ul>
 
-            <div id="admin-tab-page" class="admin-tab-pane {{ $activeAdminTab === 'page' ? '' : 'd-none' }}">
+            <div id="admin-tab-page" class="admin-tab-pane <?php echo e($activeAdminTab === 'page' ? '' : 'd-none'); ?>">
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label">Page Name</label>
-                    <input type="text" name="name" class="form-control" value="{{ old('name', $page->name) }}" required>
+                    <input type="text" name="name" class="form-control" value="<?php echo e(old('name', $page->name)); ?>" required>
                 </div>
 
                 <!--<div class="col-md-6">-->
                 <!--    <label class="form-label">Rows Pattern (auto-generated)</label>-->
-                <!--    <input type="text" id="rows_pattern_preview" class="form-control" value="{{ old('number_of_rows', $page->number_of_rows ?: '1,2,1') }}" readonly>-->
+                <!--    <input type="text" id="rows_pattern_preview" class="form-control" value="<?php echo e(old('number_of_rows', $page->number_of_rows ?: '1,2,1')); ?>" readonly>-->
                 <!--    <div class="form-text">This value updates automatically from the row builder.</div>-->
                 <!--</div>-->
 
                 <div class="col-md-6">
                     <label class="form-label">Head Title</label>
-                    <input type="text" name="head_title" class="form-control" value="{{ old('head_title', $page->head_title) }}">
+                    <input type="text" name="head_title" class="form-control" value="<?php echo e(old('head_title', $page->head_title)); ?>">
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label">Header Title</label>
-                    <input type="text" name="quote_title" class="form-control" value="{{ old('quote_title', $page->quote_title) }}">
+                    <input type="text" name="quote_title" class="form-control" value="<?php echo e(old('quote_title', $page->quote_title)); ?>">
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label">Header Subtitle</label>
-                    <input type="text" name="quote_subtitle" class="form-control" value="{{ old('quote_subtitle', $page->quote_subtitle) }}">
+                    <input type="text" name="quote_subtitle" class="form-control" value="<?php echo e(old('quote_subtitle', $page->quote_subtitle)); ?>">
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label">Why Us Title</label>
-                    <input type="text" name="why_us_title" class="form-control" value="{{ old('why_us_title', $page->why_us_title) }}">
+                    <input type="text" name="why_us_title" class="form-control" value="<?php echo e(old('why_us_title', $page->why_us_title)); ?>">
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label">Why Us Heading</label>
-                    <input type="text" name="why_us_heading" class="form-control" value="{{ old('why_us_heading', $page->why_us_heading) }}">
+                    <input type="text" name="why_us_heading" class="form-control" value="<?php echo e(old('why_us_heading', $page->why_us_heading)); ?>">
                 </div>
 
                 <div class="col-md-6">
                     <label class="form-label">Why Use Heading</label>
-                    <input type="text" name="why_use_heading" class="form-control" value="{{ old('why_use_heading', $page->why_use_heading) }}">
+                    <input type="text" name="why_use_heading" class="form-control" value="<?php echo e(old('why_use_heading', $page->why_use_heading)); ?>">
                 </div>
 
                 <div class="col-12">
-                    @php
+                    <?php
                         $defaultServiceHighlightsTemplate = '<!-- Service Highlights -->'
                             ."\n"
                             .'<ul class="text-white list-unstyled hero-features" data-animation="fadeInUp">'
@@ -186,21 +186,21 @@
                         if (!in_array($quoteDescriptionMode, ['design', 'code'], true)) {
                             $quoteDescriptionMode = 'design';
                         }
-                    @endphp
+                    ?>
 
                     <label class="form-label">Header Description</label>
-                    <input type="hidden" name="quote_description_mode" id="quote_description_mode" value="{{ $quoteDescriptionMode }}">
+                    <input type="hidden" name="quote_description_mode" id="quote_description_mode" value="<?php echo e($quoteDescriptionMode); ?>">
 
                     <div class="d-flex gap-2 mb-2">
-                        <button type="button" class="btn btn-sm row-tab-btn quote-desc-tab-btn {{ $quoteDescriptionMode === 'code' ? 'btn-primary active' : 'btn-outline-primary' }}" data-mode="code">Code Editor</button>
-                        <button type="button" class="btn btn-sm row-tab-btn quote-desc-tab-btn {{ $quoteDescriptionMode === 'design' ? 'btn-primary active' : 'btn-outline-primary' }}" data-mode="design">Design Editor</button>
+                        <button type="button" class="btn btn-sm row-tab-btn quote-desc-tab-btn <?php echo e($quoteDescriptionMode === 'code' ? 'btn-primary active' : 'btn-outline-primary'); ?>" data-mode="code">Code Editor</button>
+                        <button type="button" class="btn btn-sm row-tab-btn quote-desc-tab-btn <?php echo e($quoteDescriptionMode === 'design' ? 'btn-primary active' : 'btn-outline-primary'); ?>" data-mode="design">Design Editor</button>
                     </div>
 
-                    <div id="quote_description_code_pane" class="{{ $quoteDescriptionMode === 'code' ? '' : 'd-none' }}">
-                        <textarea name="quote_description" id="quote_description" rows="10" class="form-control row-code-editor">{{ $quoteDescriptionValue }}</textarea>
+                    <div id="quote_description_code_pane" class="<?php echo e($quoteDescriptionMode === 'code' ? '' : 'd-none'); ?>">
+                        <textarea name="quote_description" id="quote_description" rows="10" class="form-control row-code-editor"><?php echo e($quoteDescriptionValue); ?></textarea>
                     </div>
 
-                    <div id="quote_description_design_pane" class="{{ $quoteDescriptionMode === 'design' ? '' : 'd-none' }}">
+                    <div id="quote_description_design_pane" class="<?php echo e($quoteDescriptionMode === 'design' ? '' : 'd-none'); ?>">
                         <div class="d-flex gap-2 mb-2">
                             <button type="button" class="btn btn-sm btn-outline-secondary quote-desc-cmd" data-cmd="bold"><b>B</b></button>
                             <button type="button" class="btn btn-sm btn-outline-secondary quote-desc-cmd" data-cmd="italic"><i>I</i></button>
@@ -231,8 +231,8 @@
                         </div>
                     </div>
 
-                    <input type="hidden" name="number_of_rows" id="number_of_rows" value="{{ old('number_of_rows', $page->number_of_rows ?: '1,2,1') }}">
-                    <input type="hidden" name="row_blocks_json" id="row_blocks_json" value="{{ old('row_blocks_json', '') }}">
+                    <input type="hidden" name="number_of_rows" id="number_of_rows" value="<?php echo e(old('number_of_rows', $page->number_of_rows ?: '1,2,1')); ?>">
+                    <input type="hidden" name="row_blocks_json" id="row_blocks_json" value="<?php echo e(old('row_blocks_json', '')); ?>">
 
                     <div id="rowBlocksContainer" class="vstack gap-3"></div>
                     <div class="form-text mt-2">Each row stores separate HTML. Example: pattern 1,1 can have two different one-column rows.</div>
@@ -242,7 +242,7 @@
                     <h2 class="h6 mb-3">Includes</h2>
                     <p class="text-muted mb-3">Enable or disable individual page sections. Example: uncheck Breadcrumb to hide it on this page.</p>
 
-                    @php
+                    <?php
                         $partials = [
                             'head' => 'Head',
                             'preloader' => 'Preloader',
@@ -260,28 +260,29 @@
                             'footer' => 'Footer',
                             'script' => 'Script',
                         ];
-                    @endphp
+                    ?>
 
                     <div class="row g-2">
-                        @foreach ($partials as $key => $label)
-                            @php
+                        <?php $__currentLoopData = $partials; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php
                                 $isChecked = old("partials.$key", ($partialToggles[$key] ?? true) ? '1' : '0') == '1';
-                            @endphp
+                            ?>
                             <div class="col-md-3 col-sm-6">
-                                <input type="hidden" name="partials[{{ $key }}]" value="0">
+                                <input type="hidden" name="partials[<?php echo e($key); ?>]" value="0">
                                 <div class="form-check border rounded p-2 bg-white">
                                     <input
                                         class="form-check-input"
                                         type="checkbox"
-                                        name="partials[{{ $key }}]"
-                                        id="partial_{{ $key }}"
+                                        name="partials[<?php echo e($key); ?>]"
+                                        id="partial_<?php echo e($key); ?>"
                                         value="1"
-                                        {{ $isChecked ? 'checked' : '' }}
+                                        <?php echo e($isChecked ? 'checked' : ''); ?>
+
                                     >
-                                    <label class="form-check-label" for="partial_{{ $key }}">{{ $label }}</label>
+                                    <label class="form-check-label" for="partial_<?php echo e($key); ?>"><?php echo e($label); ?></label>
                                 </div>
                             </div>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
                 </div>
             </div>
@@ -289,24 +290,25 @@
             <hr class="my-4">
 
             <h2 class="h6 mb-3">Primary URL Mapping (Auto appears in header)</h2>
-            <input type="hidden" name="url_id" value="{{ old('url_id', $primaryUrl?->id) }}">
+            <input type="hidden" name="url_id" value="<?php echo e(old('url_id', $primaryUrl?->id)); ?>">
 
-            @php
+            <?php
                 $selectedGroupSlug = old('group_slug', $primaryUrl?->group_slug ?? '');
                 $groupSlugList = $groupSlugOptions ?? [];
                 $selectedGroupExists = in_array($selectedGroupSlug, $groupSlugList, true);
-            @endphp
+            ?>
 
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Existing Group Slugs</label>
                     <select name="group_slug" class="form-select">
                         <option value="">Select group slug</option>
-                        @foreach (($groupSlugOptions ?? []) as $existingGroupSlug)
-                            <option value="{{ $existingGroupSlug }}" {{ $selectedGroupSlug === $existingGroupSlug ? 'selected' : '' }}>
-                                {{ $existingGroupSlug }}
+                        <?php $__currentLoopData = ($groupSlugOptions ?? []); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $existingGroupSlug): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($existingGroupSlug); ?>" <?php echo e($selectedGroupSlug === $existingGroupSlug ? 'selected' : ''); ?>>
+                                <?php echo e($existingGroupSlug); ?>
+
                             </option>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
                     <div class="form-text">Pick from existing group slugs below.</div>
                 </div>
@@ -317,7 +319,7 @@
                         type="text"
                         name="group_slug_custom"
                         class="form-control"
-                        value="{{ old('group_slug_custom', $selectedGroupExists ? '' : $selectedGroupSlug) }}"
+                        value="<?php echo e(old('group_slug_custom', $selectedGroupExists ? '' : $selectedGroupSlug)); ?>"
                         placeholder="testing"
                     >
                     <div class="form-text">Optional. If provided, this value is used instead of the dropdown.</div>
@@ -325,7 +327,7 @@
 
                 <div class="col-md-4">
                     <label class="form-label">Page Slug</label>
-                    <input type="text" name="slug" class="form-control" value="{{ old('slug', $primaryUrl?->slug) }}" placeholder="heathrow-airport-transfers">
+                    <input type="text" name="slug" class="form-control" value="<?php echo e(old('slug', $primaryUrl?->slug)); ?>" placeholder="heathrow-airport-transfers">
                 </div>
 
                 <div class="col-md-4 d-flex align-items-end">
@@ -336,7 +338,8 @@
                             name="url_is_active"
                             value="1"
                             id="url_is_active"
-                            {{ old('url_is_active', $primaryUrl?->is_active ? 1 : 0) ? 'checked' : '' }}
+                            <?php echo e(old('url_is_active', $primaryUrl?->is_active ? 1 : 0) ? 'checked' : ''); ?>
+
                         >
                         <label class="form-check-label" for="url_is_active">Active URL</label>
                     </div>
@@ -344,7 +347,7 @@
             </div>
             </div>
 
-            <div id="admin-tab-seo" class="admin-tab-pane {{ $activeAdminTab === 'seo' ? '' : 'd-none' }}">
+            <div id="admin-tab-seo" class="admin-tab-pane <?php echo e($activeAdminTab === 'seo' ? '' : 'd-none'); ?>">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Meta Title</label>
@@ -352,7 +355,7 @@
                             type="text"
                             name="seo_meta_title"
                             class="form-control"
-                            value="{{ old('seo_meta_title', $seoData['meta_title'] ?? '') }}"
+                            value="<?php echo e(old('seo_meta_title', $seoData['meta_title'] ?? '')); ?>"
                             placeholder="Enter meta title"
                         >
                     </div>
@@ -363,14 +366,14 @@
                             type="url"
                             name="seo_canonical"
                             class="form-control"
-                            value="{{ old('seo_canonical', $seoData['canonical'] ?? '') }}"
+                            value="<?php echo e(old('seo_canonical', $seoData['canonical'] ?? '')); ?>"
                             placeholder="https://example.com/your-page"
                         >
                     </div>
 
                     <div class="col-md-8">
                         <label class="form-label">Meta Description</label>
-                        <textarea name="seo_meta_description" rows="4" class="form-control" placeholder="Enter meta description">{{ old('seo_meta_description', $seoData['meta_description'] ?? '') }}</textarea>
+                        <textarea name="seo_meta_description" rows="4" class="form-control" placeholder="Enter meta description"><?php echo e(old('seo_meta_description', $seoData['meta_description'] ?? '')); ?></textarea>
                     </div>
 
                     <div class="col-md-4">
@@ -379,22 +382,22 @@
                             type="text"
                             name="seo_meta_keywords"
                             class="form-control"
-                            value="{{ old('seo_meta_keywords', $seoData['meta_keywords'] ?? '') }}"
+                            value="<?php echo e(old('seo_meta_keywords', $seoData['meta_keywords'] ?? '')); ?>"
                             placeholder="keyword1, keyword2"
                         >
                     </div>
 
                     <div class="col-12">
                         <label class="form-label">SEO Schema</label>
-                        <textarea name="seo_schema_script" rows="14" class="form-control" placeholder="Paste JSON-LD schema script here">{{ old('seo_schema_script', $seoData['schema_script'] ?? '') }}</textarea>
+                        <textarea name="seo_schema_script" rows="14" class="form-control" placeholder="Paste JSON-LD schema script here"><?php echo e(old('seo_schema_script', $seoData['schema_script'] ?? '')); ?></textarea>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="card-footer d-flex gap-2 justify-content-end">
-            <a class="btn btn-outline-secondary" href="{{ route('admin.pages.index') }}">Cancel</a>
-            <button type="submit" class="btn btn-primary">{{ $submitLabel }}</button>
+            <a class="btn btn-outline-secondary" href="<?php echo e(route('admin.pages.index')); ?>">Cancel</a>
+            <button type="submit" class="btn btn-primary"><?php echo e($submitLabel); ?></button>
         </div>
     </form>
 </div>
@@ -783,7 +786,7 @@
             };
         }
 
-        const oldRowBlocksJson = @json(old('row_blocks_json', ''));
+        const oldRowBlocksJson = <?php echo json_encode(old('row_blocks_json', ''), 512) ?>;
         let rows = [];
 
         if (typeof oldRowBlocksJson === 'string' && oldRowBlocksJson.trim() !== '') {
@@ -798,7 +801,7 @@
         }
 
         if (!Array.isArray(rows) || rows.length === 0) {
-            rows = @json($rowBlocks ?? []);
+            rows = <?php echo json_encode($rowBlocks ?? [], 15, 512) ?>;
         }
 
         if (!Array.isArray(rows)) {
@@ -1115,3 +1118,4 @@
 </script>
 </body>
 </html>
+<?php /**PATH /home/executiveairport/public_html/frontend/resources/views/admin/pages/form.blade.php ENDPATH**/ ?>

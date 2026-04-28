@@ -44,7 +44,7 @@
             <input id="booking-charges-input" type="number" step="0.01" name="booking_charges" value="{{ old('booking_charges', $booking->total_price) }}" class="mt-1 block w-full border rounded p-2 form-input form-input-with-icon" placeholder="0.00" />
           </div>
         </div>
-        <div>
+        <!-- <div>
           <label class="block text-sm font-medium text-gray-700">Source</label>
           <div class="mt-1 flex gap-2">
             <input type="text" name="source" value="{{ old('source', $booking->source_url ?? ($booking->meta['source'] ?? '')) }}" class="block w-full border rounded p-2" placeholder="Source URL">
@@ -52,7 +52,7 @@
               <button type="submit" id="source-update-btn" class="px-3 py-2 text-white rounded text-sm whitespace-nowrap" style="background-color: #1E293B;">Update</button>
             @endif
           </div>
-        </div>
+        </div> -->
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">

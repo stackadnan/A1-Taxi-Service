@@ -4,17 +4,16 @@
 footer,.footer,.site-footer,.main-footer,.footer-section,.footer-area,.copyright-area,.footer-widgets,.footer-bottom{display:block!important;visibility:visible!important;opacity:1!important;height:auto!important;min-height:auto!important;max-height:none!important;overflow:visible!important;position:relative!important;z-index:1!important;pointer-events:auto!important;}
 body,html{margin-top:0!important;padding-top:0!important;}
 </style>
-@php
+<?php
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $api_url = str_contains($host,'executiveairportcars.com')
   ? 'https://admin.executiveairportcars.com/api/quote'
   : 'http://localhost/AirportServices/public/api/quote';
-$googleMapsKey = env('GOOGLE_MAPS_API_KEY');
 $headTitle='Quote Results';
 $img=\App\Support\GalleryPath::path('i/149');
 $Title='Home'; $Title2='Quote Results'; $SubTitle='Choose Your Vehicle';
-@endphp
-@include('partials.layouts.layoutsTop')
+?>
+<?php echo $__env->make('partials.layouts.layoutsTop', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -912,9 +911,8 @@ footer .container,
 </section>
 
 <script>
-var API_URL=@json($api_url);
-var GOOGLE_MAPS_API_KEY=@json($googleMapsKey);
-var VEHICLES=[ 
+var API_URL=<?php echo json_encode($api_url, 15, 512) ?>;
+var VEHICLES=[
   {key:'saloon',name:'Standard',img:'assets/img/car/saloon.png',model:'VW PASSAT, TOYOTA PRIUS OR SIMILAR.',c1:'Up to 4 Passengers',c2:'2 medium suitcases',feats:['2 handcarry','Friendly Drivers','Free Waiting time','Door-to-door'],extra:'Child restraint devices available on request. Vehicle may differ from image; exact model subject to availability.',base:45},
   {key:'business',name:'First Class',img:'assets/img/car/executive.png',model:'E CLASS MERCEDES OR SIMILAR.',c1:'Up to 4 Passengers',c2:'2 medium suitcases',feats:['2 handcarry','Friendly Drivers','Free Waiting time','Door-to-door'],extra:'Child restraint devices available on request. Vehicle may differ from image; exact model subject to availability.',base:75},
   {key:'mpv6',name:'People Carrier',img:'assets/img/car/mpv6.png',model:'VW SHARAN, SEAT ALHAMBRA OR SIMILAR.',c1:'Up to 5 Passengers',c2:'3 medium suitcases',feats:['2 handcarry','Friendly Drivers','Free Waiting time','Door-to-door'],extra:'Child restraint devices available on request. Vehicle may differ from image; exact model subject to availability.',base:65},
@@ -935,7 +933,7 @@ if(!qd.pickup_lat||!qd.dropoff_lat){
 
 function loadQuote(){
   fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({pickup_lat:qd.pickup_lat,pickup_lon:qd.pickup_lon,dropoff_lat:qd.dropoff_lat,dropoff_lon:qd.dropoff_lon,pickup_postcode:qd.pickup_postcode||'',dropoff_postcode:qd.dropoff_postcode||'',pickup_address:qd.pickup,dropoff_address:qd.dropoff,date:qd.date,distance_miles:qd.distance_miles,source_url:qd.source_url||''})})
-  .then(r=>r.json()).then(resp=>{if(!resp.success)throw new Error(resp.message);setStatus('Great news! Select your preferred vehicle below.','success'); if (resp.pricing && resp.pricing.airport_charges !== undefined) { qd.airport_charges = Number(resp.pricing.airport_charges) || 0; localStorage.setItem('quote_data', JSON.stringify(qd)); } renderAPI(resp);})
+  .then(r=>r.json()).then(resp=>{if(!resp.success)throw new Error(resp.message);setStatus('Great news! Select your preferred vehicle below.','success');renderAPI(resp);})
   .catch(function(err){setStatus('Request failed: '+(err&&err.message?err.message:'Unable to fetch prices right now.'),'error');document.getElementById('results').innerHTML='<div class="empty-st"><i class="fa-solid fa-triangle-exclamation"></i><h3>Unable to Fetch Prices</h3><p>Please try again in a moment.</p></div>';});
 }
 
@@ -1059,23 +1057,14 @@ function initMap(d){
   var iframe=document.getElementById('route-iframe');
   var placeholder=document.getElementById('map-placeholder');
   if(!iframe) return;
-  if (d && d.pickup_lat && d.dropoff_lat) {
-    if (GOOGLE_MAPS_API_KEY) {
-      var src = 'https://www.google.com/maps/embed/v1/directions?key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY)
-        + '&origin=' + encodeURIComponent((d.pickup_lat || 51.5) + ',' + (d.pickup_lon || -0.1))
-        + '&destination=' + encodeURIComponent((d.dropoff_lat || 51.5) + ',' + (d.dropoff_lon || -0.1))
-        + '&mode=driving';
-    } else {
-      var src = 'https://www.openstreetmap.org/export/embed.html?marker='
-        + (d.pickup_lat || 51.5) + '%2C' + (d.pickup_lon || -0.1) + '&layer=mapnik';
-    }
-    iframe.src = src;
-    iframe.onload = function() { placeholder.style.display = 'none'; iframe.style.display = 'block'; };
+  if(d&&d.pickup_lat){
+    var src='https://www.openstreetmap.org/export/embed.html?marker='+
+      (d.pickup_lat||51.5)+'%2C'+(d.pickup_lon||-0.1)+'&layer=mapnik';
+    iframe.src=src;
+    iframe.onload=function(){placeholder.style.display='none';iframe.style.display='block';};
   } else {
-    iframe.src = GOOGLE_MAPS_API_KEY
-      ? 'https://www.google.com/maps/embed/v1/view?key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY) + '&center=51.505,-0.09&zoom=10'
-      : 'https://www.openstreetmap.org/export/embed.html?bbox=-0.5,51.3,0.3,51.6&layer=mapnik';
-    iframe.onload = function() { placeholder.style.display = 'none'; iframe.style.display = 'block'; };
+    iframe.src='https://www.openstreetmap.org/export/embed.html?bbox=-0.5,51.3,0.3,51.6&layer=mapnik';
+    iframe.onload=function(){placeholder.style.display='none';iframe.style.display='block';};
   }
 }
 
@@ -1084,7 +1073,7 @@ function setStatus(msg,type){var ic={loading:'fa-circle-notch fa-spin',success:'
 function doBook(vehicle,vehicleName,price,trip){
   var dp=(qd.date||'').split('-'),fmtDate=dp.length===3?dp[2]+'-'+dp[1]+'-'+dp[0]:qd.date;
   fetch(API_URL.replace('/quote','/quote/save'),{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({pickup_address:qd.pickup,dropoff_address:qd.dropoff,pickup_date:fmtDate,vehicle_type:vehicle,price:price,trip_type:trip,source_url:qd.source_url||''})})
-  .then(r=>r.json()).then(function(resp){if(resp.success){localStorage.setItem('booking_data',JSON.stringify({quote_ref:resp.quote_ref,return_ref:resp.return_ref,pickup:qd.pickup,dropoff:qd.dropoff,pickup_date:fmtDate,vehicle_type:vehicle,vehicle_name:vehicleName,price:price,trip_type:trip,airport_charges:(qd.airport_charges||0)}));window.location.href='booking-confirmation';}else alert('Error: '+(resp.message||'unknown'));})
+  .then(r=>r.json()).then(function(resp){if(resp.success){localStorage.setItem('booking_data',JSON.stringify({quote_ref:resp.quote_ref,return_ref:resp.return_ref,pickup:qd.pickup,dropoff:qd.dropoff,pickup_date:fmtDate,vehicle_type:vehicle,vehicle_name:vehicleName,price:price,trip_type:trip}));window.location.href='booking-confirmation';}else alert('Error: '+(resp.message||'unknown'));})
   .catch(function(e){alert(e.message);});
 }
 
@@ -1310,9 +1299,9 @@ document.addEventListener('click', function(e) {
     </div>
     
     <div class="custom-footer-copyright">
-      <p>&copy; {{ date('Y') }} A1 Airport Cars. All rights reserved.</p>
+      <p>&copy; <?php echo e(date('Y')); ?> A1 Airport Cars. All rights reserved.</p>
     </div>
   </div>
 </footer>
 
-@include('partials.layouts.layoutsBottom')
+<?php echo $__env->make('partials.layouts.layoutsBottom', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\frontend\resources\views/quote-results.blade.php ENDPATH**/ ?>

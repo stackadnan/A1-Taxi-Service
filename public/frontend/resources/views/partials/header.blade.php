@@ -84,7 +84,7 @@
                             </div>
                         </div>
                         <div class="header-button">
-                            <a href="{{ $baseUrl.'/'.ltrim($buttonLink, '/') }}" class="theme-btn">
+                            <a href="{{ url($buttonLink) }}" class="theme-btn">
                                 {{ $buttonText }}
                             </a>
                         </div>

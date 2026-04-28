@@ -222,7 +222,7 @@
   })();
 </script>
 
-@php
+<?php
 $headTitle = 'Passenger Information';
 $img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
@@ -266,9 +266,9 @@ $stripePublishableKey = (function () {
 
   return $defaultKey;
 })();
-@endphp
+?>
 
-@include('partials.layouts.layoutsTop')
+<?php echo $__env->make('partials.layouts.layoutsTop', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -1684,14 +1684,14 @@ $stripePublishableKey = (function () {
                 </select>
               </div>
               <div class="input-modern" style="justify-content: flex-end; padding-bottom: 2px;">
-                <label style="margin-bottom: 6px;"><i class="fas fa-baby"></i> Child Seat Age</label>
-                <select name="child_seat" id="childSeat" required>
-                  <option value="none">No seat</option>
-                  <option value="0-1">0 to 1 Years</option>
-                  <option value="1-3">1 to 3 Years</option>
-                  <option value="4-7">4 to 7 Years</option>
-                  <option value="8-12">8 to 12 Years</option>
-                </select>
+                <label style="margin-bottom: 6px;"><i class="fas fa-baby"></i> Child Seat</label>
+                <div class="toggle-row">
+                  <span class="toggle-label">I need a child seat</span>
+                  <label class="toggle-switch">
+                    <input type="checkbox" name="child_seat" id="childSeat">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -1708,26 +1708,26 @@ $stripePublishableKey = (function () {
               </div>
             </div>
 
-              <div class="field-row-2 airport-service-field">
-                <div class="input-modern">
-                  <label><i class="fas fa-plane"></i> Flight Number</label>
-                  <input type="text" name="flight_number" placeholder="Flight Number">
-                </div>
-                <div class="input-modern">
-                  <label><i class="fas fa-clock"></i> Flight Landing Time</label>
-                  <select name="flight_landing_time">
-                    <option value="">Select Landing Time</option>
-                  </select>
-                </div>
+            <div class="field-row-2">
+              <div class="input-modern">
+                <label><i class="fas fa-plane"></i> Flight Number</label>
+                <input type="text" name="flight_number" placeholder="Flight Number">
               </div>
+              <div class="input-modern">
+                <label><i class="fas fa-clock"></i> Flight Landing Time</label>
+                <select name="flight_landing_time">
+                  <option value="">Select Landing Time</option>
+                </select>
+              </div>
+            </div>
 
-              <!-- Meet and Greet -->
-              <label class="checkbox-row airport-service-field" for="meetGreet">
-                <input type="checkbox" name="meet_and_greet" id="meetGreet" value="1">
-                <span class="checkbox-row-label">
-                  Meet &amp; Greet Service £20 Extra
-                </span>
-              </label>
+            <!-- Meet and Greet -->
+            <label class="checkbox-row" for="meetGreet">
+              <input type="checkbox" name="meet_and_greet" id="meetGreet" value="1">
+              <span class="checkbox-row-label">
+                Meet &amp; Greet Service £20 Extra
+              </span>
+            </label>
 
             <label class="checkbox-row" for="returnCheckbox">
               <input type="checkbox" id="returnCheckbox" name="has_return" value="1">
@@ -1755,7 +1755,7 @@ $stripePublishableKey = (function () {
                 </div>
               </div>
 
-              <div class="field-row-2 airport-service-field" style="margin-bottom:0;">
+              <div class="field-row-2" style="margin-bottom:0;">
                 <div class="input-modern">
                   <label><i class="fas fa-plane"></i> Flight Number</label>
                   <input type="text" name="return_flight_number" placeholder="Flight Number">
@@ -1768,7 +1768,7 @@ $stripePublishableKey = (function () {
                 </div>
               </div>
               <br>
-              <label class="checkbox-row airport-service-field" for="meetGreetReturn">
+              <label class="checkbox-row" for="meetGreetReturn">
                 <input type="checkbox" name="meet_and_greet_return" id="meetGreetReturn" value="1">
                 <span class="checkbox-row-label">
                   Meet &amp; Greet Service £20 Extra
@@ -1841,9 +1841,8 @@ $stripePublishableKey = (function () {
 </div>
 
 <script>
-  var bookingSubmitUrl = @json(route('booking.submit'));
-  var stripePublishableKey = @json($stripePublishableKey);
-  var GOOGLE_MAPS_API_KEY = @json(env('GOOGLE_MAPS_API_KEY'));
+  var bookingSubmitUrl = <?php echo json_encode(route('booking.submit'), 15, 512) ?>;
+  var stripePublishableKey = <?php echo json_encode($stripePublishableKey, 15, 512) ?>;
   var stripeJsLoader = null;
 
   var bookingData = {};
@@ -1860,67 +1859,6 @@ $stripePublishableKey = (function () {
 
   var distanceMiles = bookingData.distance_miles || null;
   var durationMins  = bookingData.duration_mins  || null;
-
-  function getVehicleCapacity() {
-    var type = (bookingData.vehicle_type || '').toLowerCase();
-    if (type === 'saloon' || type === 'business') {
-      return { passengers: 4, suitcases: 2 };
-    }
-    if (type === 'mpv6') {
-      return { passengers: 5, suitcases: 3 };
-    }
-    if (type === 'mpv8') {
-      return { passengers: 8, suitcases: 8 };
-    }
-    return { passengers: 8, suitcases: 8 };
-  }
-
-  function normalizeSuitcaseValue(value) {
-    return value === 'none' ? 0 : parseInt(value, 10) || 0;
-  }
-
-  function updateCapacityOptions() {
-    var capacity = getVehicleCapacity();
-    var passengerSelect = document.querySelector('[name="passengers"]');
-    if (passengerSelect) {
-      var currentValue = passengerSelect.value || '1';
-      passengerSelect.innerHTML = '';
-      for (var p = 1; p <= capacity.passengers; p++) {
-        passengerSelect.innerHTML += '<option value="' + p + '">' + p + '</option>';
-      }
-      if (parseInt(currentValue, 10) > capacity.passengers) {
-        passengerSelect.value = String(capacity.passengers);
-      } else {
-        passengerSelect.value = currentValue;
-      }
-    }
-
-    var suitcaseSelect = document.querySelector('[name="suitcases"]');
-    if (suitcaseSelect) {
-      var currentSuitcase = suitcaseSelect.value || 'none';
-      suitcaseSelect.innerHTML = '<option value="none">None</option>';
-      for (var s = 1; s <= capacity.suitcases; s++) {
-        suitcaseSelect.innerHTML += '<option value="' + s + '">' + s + '</option>';
-      }
-      if (currentSuitcase === 'none' || normalizeSuitcaseValue(currentSuitcase) <= capacity.suitcases) {
-        suitcaseSelect.value = currentSuitcase;
-      } else {
-        suitcaseSelect.value = String(capacity.suitcases);
-      }
-    }
-  }
-
-  function updateAirportServiceFields() {
-    var showAirportFields = bookingData && bookingData.airport_charges && parseFloat(bookingData.airport_charges) > 0;
-    var airportFields = document.querySelectorAll('.airport-service-field');
-    if (!airportFields) return;
-    airportFields.forEach(function(el) {
-      el.style.display = showAirportFields ? 'block' : 'none';
-    });
-  }
-
-  updateAirportServiceFields();
-  updateCapacityOptions();
 
   if (!distanceMiles || !durationMins) {
     var pickup  = (bookingData.pickup  || '').toLowerCase();
@@ -1955,10 +1893,7 @@ $stripePublishableKey = (function () {
     setReturnVisible(true);
   }
 
-  returnCheckbox.addEventListener('change', function() {
-    setReturnVisible(this.checked);
-    renderSummary();
-  });
+  returnCheckbox.addEventListener('change', function() { setReturnVisible(this.checked); });
 
   /* Populate all time selects */
   function populateTimes(selectEl) {
@@ -2022,28 +1957,12 @@ $stripePublishableKey = (function () {
     return total;
   }
 
-  function getBaseFare() {
-    var price = parseFloat(bookingData.price) || 0;
-    if (bookingData.trip_type === 'return') {
-      return price / 2;
-    }
-    return price;
-  }
-
-  function getReturnFee() {
-    if (!returnCheckbox || !returnCheckbox.checked) {
-      return 0;
-    }
-    return getBaseFare();
-  }
-
-  function calculatePricingSummary(baseFare, returnFee, meetFee) {
+  function calculatePricingSummary(baseFare, meetFee) {
     return new Promise(function(resolve) {
       setTimeout(function() {
-        var totalFare = parseFloat((baseFare + returnFee).toFixed(2));
-        var vatAmount = parseFloat((totalFare * VAT_RATE).toFixed(2));
-        var total = parseFloat((totalFare + vatAmount + meetFee).toFixed(2));
-        resolve({ baseFare: baseFare, returnFee: returnFee, totalFare: totalFare, vatAmount: vatAmount, meetFee: meetFee, total: total });
+        var vatAmount = parseFloat((baseFare * VAT_RATE).toFixed(2));
+        var total = parseFloat((baseFare + vatAmount + meetFee).toFixed(2));
+        resolve({ baseFare: baseFare, vatAmount: vatAmount, meetFee: meetFee, total: total });
       }, 100);
     });
   }
@@ -2191,8 +2110,7 @@ $stripePublishableKey = (function () {
     }
 
     /* ── 4. Total Fare, VAT and Total ── */
-    var baseFare = getBaseFare();
-    var returnFee = getReturnFee();
+    var baseFare = parseFloat(bookingData.price) || 0;
     var meetFee = getMeetGreetFee();
 
     html += '<div id="sbFareSummary">'
@@ -2204,19 +2122,12 @@ $stripePublishableKey = (function () {
 
     container.innerHTML = html;
 
-    calculatePricingSummary(baseFare, returnFee, meetFee).then(function(calc) {
+    calculatePricingSummary(baseFare, meetFee).then(function(calc) {
       var summaryHtml = '';
       summaryHtml += '<div class="sb-fare-row">'
         + '<span class="sb-fare-label">Fare</span>'
         + '<span class="sb-fare-amount">£ ' + calc.baseFare.toFixed(2) + '</span>'
         + '</div>';
-
-      if (calc.returnFee > 0) {
-        summaryHtml += '<div class="sb-fare-row" style="border-top:1px solid rgba(0,0,0,0.08);">'
-          + '<span class="sb-fare-label">Return fare</span>'
-          + '<span class="sb-fare-amount">£ ' + calc.returnFee.toFixed(2) + '</span>'
-          + '</div>';
-      }
 
       summaryHtml += '<div class="sb-fare-row" style="border-top:1px solid rgba(0,0,0,0.08);">'
         + '<span class="sb-fare-label">VAT (' + Math.round(VAT_RATE * 100) + '%)</span>'
@@ -2271,11 +2182,9 @@ $stripePublishableKey = (function () {
       + '</div>'
       + '<div class="sb-map-embed" id="sbMapLeaflet"><div id="routeMap" style="width:100%;height:100%;"></div></div>'
       + '<div class="sb-map-embed sb-map-satellite-frame" id="sbMapSat">'
-      + (bookingData.pickup && bookingData.dropoff && GOOGLE_MAPS_API_KEY
-          ? '<iframe src="https://www.google.com/maps/embed/v1/directions?key=' + encodeURIComponent(GOOGLE_MAPS_API_KEY) + '&origin=' + encodeURIComponent(bookingData.pickup) + '&destination=' + encodeURIComponent(bookingData.dropoff) + '&mode=driving" frameborder="0" style="width:100%;height:100%;border:none;"></iframe>'
-          : (bookingData.pickup && bookingData.dropoff
-              ? '<iframe src="https://maps.google.com/maps?q=' + encodeURIComponent(bookingData.pickup + ' to ' + bookingData.dropoff) + '&output=embed&t=k" frameborder="0" style="width:100%;height:100%;border:none;"></iframe>'
-              : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--gray-500);font-size:13px;">No route data</div>'))
+      + (bookingData.pickup && bookingData.dropoff
+          ? '<iframe src="https://maps.google.com/maps?q=' + encodeURIComponent(bookingData.pickup + ' to ' + bookingData.dropoff) + '&output=embed&t=k" frameborder="0" style="width:100%;height:100%;border:none;"></iframe>'
+          : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--gray-500);font-size:13px;">No route data</div>')
       + '</div>'
       + '</div>';
 
@@ -2383,7 +2292,6 @@ $stripePublishableKey = (function () {
       try {
         bookingData = JSON.parse(e.newValue || '{}');
         renderSummary();
-        updateCapacityOptions();
         if (bookingData.pickup_date && document.getElementById('pickupDate')) {
           document.getElementById('pickupDate').value = bookingData.pickup_date;
         }
@@ -2422,19 +2330,19 @@ $stripePublishableKey = (function () {
       email:               document.querySelector('[name="email"]').value,
       phone:               fullPhone,
       passengers:          document.querySelector('[name="passengers"]').value,
-      suitcases:           normalizeSuitcaseValue(document.querySelector('[name="suitcases"]').value),
+      suitcases:           document.querySelector('[name="suitcases"]').value,
       flight_number:       document.querySelector('[name="flight_number"]').value,
       flight_time:         document.querySelector('[name="flight_landing_time"]').value,
       flight_landing_time: document.querySelector('[name="flight_landing_time"]').value,
       meet_and_greet:      document.querySelector('[name="meet_and_greet"]').checked ? 1 : 0,
-      baby_seat:           (document.querySelector('[name="child_seat"]').value !== 'none') ? 1 : 0,
-      baby_seat_age:       document.querySelector('[name="child_seat"]').value === 'none' ? '' : document.querySelector('[name="child_seat"]').value,
-      child_seat:          (document.querySelector('[name="child_seat"]').value !== 'none') ? 1 : 0,
+      baby_seat:           document.querySelector('[name="child_seat"]').checked ? 1 : 0,
+      baby_seat_age:       '',
+      child_seat:          document.querySelector('[name="child_seat"]').checked ? 1 : 0,
       has_return:          returnCheckbox.checked ? 1 : 0,
       message_to_driver:   document.querySelector('[name="message_to_driver"]').value,
       vehicle_type:        bookingData.vehicle_type,
-      price:               parseFloat((getBaseFare() + getReturnFee()).toFixed(2)),
-      trip_type:           returnCheckbox.checked ? 'return' : 'one-way',
+      price:               parseFloat((parseFloat(bookingData.price) || 0) + getMeetGreetFee()).toFixed(2),
+      trip_type:           returnCheckbox.checked ? 'return' : (bookingData.trip_type || 'one-way'),
       payment_type:        paymentType,
       source_url:          window.location.href,
       distance_miles:      bookingData.distance_miles || distanceMiles,
@@ -2449,18 +2357,6 @@ $stripePublishableKey = (function () {
       formData.return_flight_landing_time = returnFlightLandingInput ? returnFlightLandingInput.value : '';
       formData.return_meet_and_greet      = returnMeetAndGreetInput && returnMeetAndGreetInput.checked ? 1 : 0;
       formData.return_baby_seat           = 0;
-    }
-
-    var capacity = getVehicleCapacity();
-    var passengerCount = parseInt(document.querySelector('[name="passengers"]').value, 10);
-    var suitcaseCount = normalizeSuitcaseValue(document.querySelector('[name="suitcases"]').value);
-    if (passengerCount > capacity.passengers) {
-      alert('Selected vehicle allows a maximum of ' + capacity.passengers + ' passengers.');
-      return;
-    }
-    if (suitcaseCount > capacity.suitcases) {
-      alert('Selected vehicle allows a maximum of ' + capacity.suitcases + ' suitcases.');
-      return;
     }
 
     var cashBtn = document.getElementById('cashBtn');
@@ -2559,9 +2455,9 @@ $stripePublishableKey = (function () {
 
     </div>
     <div class="custom-footer-copyright">
-      <p>&copy; {{ date('Y') }} A1 Airport Cars. All rights reserved.</p>
+      <p>&copy; <?php echo e(date('Y')); ?> A1 Airport Cars. All rights reserved.</p>
     </div>
   </div>
 </footer>
 
-@include('partials.layouts.layoutsBottom')
+<?php echo $__env->make('partials.layouts.layoutsBottom', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\frontend\resources\views/booking-confirmation.blade.php ENDPATH**/ ?>

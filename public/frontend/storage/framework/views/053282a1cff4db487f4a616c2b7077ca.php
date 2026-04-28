@@ -1,7 +1,3 @@
-<?php
-ob_start();
-?>
-
 <style>
 
 .header-top-section{
@@ -227,14 +223,52 @@ ob_start();
 </script>
 
 <?php
-$headTitle = 'Booking Confirmation';
-$img = 'assets/img/bg-header-banner.jpg';
+$headTitle = 'Passenger Information';
+$img = \App\Support\GalleryPath::path('i/149');
 $Title = 'Home';
-$Title2 = 'Booking Confirmation';
-$SubTitle = 'Thank You';
+$Title2 = 'Passenger Information';
+$SubTitle = 'Complete Your Booking';
+
+$stripePublishableKey = (function () {
+  $defaultKey = (string) config('services.stripe.key', '');
+  $tables = [
+    'executiveairport_database.admin_settings',
+    'admin_settings',
+  ];
+
+  foreach ($tables as $table) {
+    try {
+      $row = \Illuminate\Support\Facades\DB::table($table)->first();
+      if (!$row) {
+        continue;
+      }
+
+      $misc = [];
+      $rawMisc = $row->misc ?? null;
+
+      if (is_array($rawMisc)) {
+        $misc = $rawMisc;
+      } elseif (is_string($rawMisc) && trim($rawMisc) !== '') {
+        $decoded = json_decode($rawMisc, true);
+        if (is_array($decoded)) {
+          $misc = $decoded;
+        }
+      }
+
+      $dbKey = trim((string) ($misc['stripe_public_key'] ?? ''));
+      if ($dbKey !== '') {
+        return $dbKey;
+      }
+    } catch (\Throwable $e) {
+      continue;
+    }
+  }
+
+  return $defaultKey;
+})();
 ?>
 
-<?php include './partials/layouts/layoutsTop.php' ?>
+<?php echo $__env->make('partials.layouts.layoutsTop', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -1369,90 +1403,6 @@ $SubTitle = 'Thank You';
 
 </style>
 
-<?php
-function sendBookingConfirmationEmail($bookingData) {
-    $adminEmail   = "admin@yourdomain.com";
-    $companyName  = "Your Transport Company";
-    $companyEmail = "bookings@yourdomain.com";
-
-    $customerEmail   = $bookingData['email'];
-    $customerSubject = "✓ Booking Confirmation - " . $companyName;
-    $adminSubject    = "New Booking Received - Ref: " . $bookingData['quote_ref'];
-
-    $customerMessage = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Booking Confirmation</title>
-    <style>
-      body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;color:#333;background-color:#f4f4f4;margin:0;padding:0;}
-      .email-container{max-width:600px;margin:20px auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
-      .email-header{background:linear-gradient(135deg,#008B9E 0%,#006d7c 100%);color:white;padding:40px 30px;text-align:center;}
-      .email-header h1{margin:0;font-size:28px;font-weight:700;}
-      .email-header p{margin:8px 0 0;opacity:0.9;}
-      .email-body{padding:30px;}
-      .booking-ref{background:#f8f9fa;padding:15px;border-radius:12px;text-align:center;margin-bottom:25px;border-left:4px solid #008B9E;}
-      .booking-ref strong{color:#008B9E;font-size:18px;}
-      .section{margin-bottom:25px;}
-      .section-title{font-size:16px;font-weight:700;color:#008B9E;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e9ecef;}
-      .info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;}
-      .info-label{font-weight:600;color:#666;font-size:13px;}
-      .info-value{color:#333;font-size:13px;text-align:right;}
-      .price-box{background:#e6f4f5;padding:20px;border-radius:12px;text-align:center;margin-top:20px;}
-      .price-box .amount{font-size:32px;font-weight:800;color:#008B9E;}
-      .price-box .label{font-size:12px;color:#666;display:block;margin-bottom:5px;}
-      .footer{background:#f8f9fa;padding:20px;text-align:center;font-size:12px;color:#999;}
-      @media only screen and (max-width:480px){.info-row{flex-direction:column;}.info-value{text-align:left;margin-top:4px;}}
-    </style></head><body>
-    <div class="email-container">
-      <div class="email-header"><h1>✓ Booking Confirmed!</h1><p>Thank you for choosing ' . $companyName . '</p></div>
-      <div class="email-body">
-        <div class="booking-ref"><strong>Booking Reference: ' . htmlspecialchars($bookingData['quote_ref']) . '</strong></div>
-        <div class="section">
-          <div class="section-title">🚗 Journey Details</div>
-          <div class="info-row"><span class="info-label">From:</span><span class="info-value">' . htmlspecialchars($bookingData['pickup']) . '</span></div>
-          <div class="info-row"><span class="info-label">To:</span><span class="info-value">' . htmlspecialchars($bookingData['dropoff']) . '</span></div>
-          <div class="info-row"><span class="info-label">Vehicle:</span><span class="info-value">' . htmlspecialchars($bookingData['vehicle_type']) . '</span></div>
-        </div>
-        <div class="section">
-          <div class="section-title">📅 Pickup Details</div>
-          <div class="info-row"><span class="info-label">Date:</span><span class="info-value">' . htmlspecialchars($bookingData['pickup_date']) . '</span></div>
-          <div class="info-row"><span class="info-label">Time:</span><span class="info-value">' . htmlspecialchars($bookingData['pickup_time']) . '</span></div>
-        </div>
-        <div class="section">
-          <div class="section-title">👤 Passenger Details</div>
-          <div class="info-row"><span class="info-label">Name:</span><span class="info-value">' . htmlspecialchars($bookingData['passenger_name']) . '</span></div>
-          <div class="info-row"><span class="info-label">Email:</span><span class="info-value">' . htmlspecialchars($bookingData['email']) . '</span></div>
-          <div class="info-row"><span class="info-label">Phone:</span><span class="info-value">' . htmlspecialchars($bookingData['phone']) . '</span></div>
-        </div>
-        <div class="price-box">
-          <span class="label">Total Amount</span>
-          <div class="amount">£' . number_format($bookingData['price'], 2) . '</div>
-          <span class="label">Payment: ' . ucfirst($bookingData['payment_type']) . '</span>
-        </div>
-      </div>
-      <div class="footer"><p>Questions? Contact us at ' . $companyEmail . '</p><p>&copy; ' . date('Y') . ' ' . $companyName . '</p></div>
-    </div></body></html>';
-
-    $headers  = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: " . $companyName . " <" . $companyEmail . ">\r\n";
-
-    mail($customerEmail, $customerSubject, $customerMessage, $headers);
-    mail($adminEmail,    $adminSubject,    $customerMessage, $headers);
-
-    return true;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
-    header('Content-Type: application/json');
-    $bookingData = json_decode(file_get_contents('php://input'), true);
-    if ($bookingData) {
-        sendBookingConfirmationEmail($bookingData);
-        echo json_encode(['success' => true, 'message' => 'Booking confirmed! Check your email.']);
-        exit;
-    }
-    echo json_encode(['success' => false, 'message' => 'Invalid booking data']);
-    exit;
-}
-?>
-
 <!-- PROGRESS BAR -->
 <div class="progress-bar-wrap">
   <div class="progress-steps">
@@ -1882,7 +1832,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         <!-- content injected by JS -->
       </div>
 
-      <a href="https://executiveairportcars.com/design/quote-results.php" class="back-btn">
+      <a href="quote-results" class="back-btn">
         <i class="fas fa-arrow-left"></i> Back to Vehicles
       </a>
     </aside>
@@ -1891,6 +1841,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
 </div>
 
 <script>
+  var bookingSubmitUrl = <?php echo json_encode(route('booking.submit'), 15, 512) ?>;
+  var stripePublishableKey = <?php echo json_encode($stripePublishableKey, 15, 512) ?>;
+  var stripeJsLoader = null;
+
   var bookingData = {};
   try {
     bookingData = JSON.parse(localStorage.getItem('booking_data') || '{}');
@@ -1991,6 +1945,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
     });
   }
 
+  function loadStripeJs() {
+    if (window.Stripe) {
+      return Promise.resolve(window.Stripe);
+    }
+
+    if (stripeJsLoader) {
+      return stripeJsLoader;
+    }
+
+    stripeJsLoader = new Promise(function(resolve, reject) {
+      var script = document.createElement('script');
+      script.src = 'https://js.stripe.com/v3/';
+      script.async = true;
+      script.onload = function() {
+        if (window.Stripe) {
+          resolve(window.Stripe);
+        } else {
+          reject(new Error('Stripe.js failed to initialize.'));
+        }
+      };
+      script.onerror = function() {
+        reject(new Error('Unable to load Stripe.js.'));
+      };
+      document.head.appendChild(script);
+    });
+
+    return stripeJsLoader;
+  }
+
+  function redirectToStripeCheckout(sessionId, fallbackUrl) {
+    if (!sessionId || !stripePublishableKey) {
+      if (fallbackUrl) {
+        window.location.href = fallbackUrl;
+      } else {
+        alert('Card payment could not be started. Please try again.');
+      }
+      return;
+    }
+
+    loadStripeJs()
+      .then(function(Stripe) {
+        var stripe = Stripe(stripePublishableKey);
+        return stripe.redirectToCheckout({ sessionId: sessionId });
+      })
+      .then(function(result) {
+        if (result && result.error) {
+          if (fallbackUrl) {
+            window.location.href = fallbackUrl;
+            return;
+          }
+
+          alert(result.error.message || 'Unable to redirect to card checkout.');
+        }
+      })
+      .catch(function(err) {
+        if (fallbackUrl) {
+          window.location.href = fallbackUrl;
+          return;
+        }
+
+        alert('Unable to open Stripe checkout: ' + err.message);
+      });
+  }
+
   /* Leaflet map instance */
   var leafletMap = null;
 
@@ -2072,7 +2090,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
     if (bookingData.price) {
       html += '<div class="sb-fare-row">'
         + '<span class="sb-fare-label">Total Fare</span>'
-        + '<span class="sb-fare-amount">€ ' + Number(bookingData.price).toFixed(2) + '</span>'
+        + '<span class="sb-fare-amount">£ ' + Number(bookingData.price).toFixed(2) + '</span>'
         + '</div>';
     }
 
@@ -2226,10 +2244,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
 
     var phoneCodeSelect = document.querySelector('[name="phone_code"]');
     var phoneInput      = document.querySelector('[name="phone"]');
-    var fullPhone = (phoneCodeSelect ? phoneCodeSelect.value : '') + (phoneInput ? phoneInput.value : '');
+    var fullPhone = (phoneCodeSelect ? '+' + phoneCodeSelect.value + ' ' : '') + (phoneInput ? phoneInput.value.trim() : '');
+
+    var returnFlightLandingInput = document.querySelector('[name="return_flight_landing_time"]');
+    var returnMeetAndGreetInput = document.querySelector('[name="meet_and_greet_return"]');
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
 
     var formData = {
-      quote_ref:           bookingData.quote_ref || 'REF-' + Math.random().toString(36).substr(2, 8).toUpperCase(),
+      quote_ref:           bookingData.quote_ref || null,
       return_ref:          bookingData.return_ref || null,
       pickup:              bookingData.pickup,
       dropoff:             bookingData.dropoff,
@@ -2241,15 +2264,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
       passengers:          document.querySelector('[name="passengers"]').value,
       suitcases:           document.querySelector('[name="suitcases"]').value,
       flight_number:       document.querySelector('[name="flight_number"]').value,
+      flight_time:         document.querySelector('[name="flight_landing_time"]').value,
       flight_landing_time: document.querySelector('[name="flight_landing_time"]').value,
       meet_and_greet:      document.querySelector('[name="meet_and_greet"]').checked ? 1 : 0,
+      baby_seat:           document.querySelector('[name="child_seat"]').checked ? 1 : 0,
+      baby_seat_age:       '',
       child_seat:          document.querySelector('[name="child_seat"]').checked ? 1 : 0,
       has_return:          returnCheckbox.checked ? 1 : 0,
       message_to_driver:   document.querySelector('[name="message_to_driver"]').value,
       vehicle_type:        bookingData.vehicle_type,
       price:               bookingData.price,
-      trip_type:           bookingData.trip_type,
+      trip_type:           returnCheckbox.checked ? 'return' : (bookingData.trip_type || 'one-way'),
       payment_type:        paymentType,
+      source_url:          window.location.href,
       distance_miles:      bookingData.distance_miles || distanceMiles,
       duration_mins:       bookingData.duration_mins  || durationMins
     };
@@ -2258,7 +2285,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
       formData.return_pickup_date         = document.querySelector('[name="return_pickup_date"]').value;
       formData.return_pickup_time         = document.querySelector('[name="return_pickup_time"]').value;
       formData.return_flight_number       = document.querySelector('[name="return_flight_number"]').value;
-      formData.return_flight_landing_time = document.querySelector('[name="return_flight_landing_time"]').value;
+      formData.return_flight_time         = returnFlightLandingInput ? returnFlightLandingInput.value : '';
+      formData.return_flight_landing_time = returnFlightLandingInput ? returnFlightLandingInput.value : '';
+      formData.return_meet_and_greet      = returnMeetAndGreetInput && returnMeetAndGreetInput.checked ? 1 : 0;
+      formData.return_baby_seat           = 0;
     }
 
     var cashBtn = document.getElementById('cashBtn');
@@ -2274,24 +2304,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
     }
 
     try {
-      var response = await fetch(window.location.href, {
+      var response = await fetch(bookingSubmitUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': csrfToken
+        },
         body: JSON.stringify(formData)
       });
       var result = await response.json();
-      if (result.success) {
-        alert('✓ ' + result.message + '\n\nA confirmation email has been sent to your inbox.');
-        localStorage.removeItem('booking_data');
-        window.location.href = 'thank-you.php';
+      if (!response.ok || !result.success) {
+        alert('Error: ' + (result.message || 'Could not complete your booking.'));
+        return;
+      }
+
+      try {
+        localStorage.setItem('booking_result', JSON.stringify(result));
+      } catch (storageError) {}
+
+      if (paymentType === 'card' && result.stripe_session_id) {
+        redirectToStripeCheckout(result.stripe_session_id, result.redirect_url || '');
+        return;
+      }
+
+      if (result.redirect_url) {
+        window.location.href = result.redirect_url;
       } else {
-        alert('Error: ' + result.message);
+        alert('✓ Booking submitted successfully.');
       }
     } catch(error) {
       console.error('Error:', error);
-      alert('✓ Booking confirmed! Check your email for confirmation.');
-      localStorage.removeItem('booking_data');
-      window.location.href = 'thank-you.php';
+      alert('Request failed: ' + error.message);
     } finally {
       cashBtn.innerHTML = origCash;
       cardBtn.innerHTML = origCard;
@@ -2342,9 +2387,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
 
     </div>
     <div class="custom-footer-copyright">
-      <p>&copy; <?php echo date('Y'); ?> A1 Airport Cars. All rights reserved.</p>
+      <p>&copy; <?php echo e(date('Y')); ?> A1 Airport Cars. All rights reserved.</p>
     </div>
   </div>
 </footer>
 
-<?php include './partials/layouts/layoutsBottom.php' ?>
+<?php echo $__env->make('partials.layouts.layoutsBottom', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/executiveairport/public_html/frontend/resources/views/booking-confirmation.blade.php ENDPATH**/ ?>
