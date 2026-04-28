@@ -4,9 +4,37 @@ import * as Turbo from '@hotwired/turbo';
 // Configure Turbo for smooth SPA-like navigation
 Turbo.start();
 
+function ensureGlobalPageLoader() {
+    var overlay = document.getElementById('global-page-loader-overlay');
+    if (overlay) return overlay;
+    overlay = document.createElement('div');
+    overlay.id = 'global-page-loader-overlay';
+    overlay.className = 'global-page-loader';
+    overlay.innerHTML = '<div class="loader"></div><div class="text-sm font-semibold">Loading…</div>';
+    document.body.appendChild(overlay);
+    return overlay;
+}
+
+window.showGlobalPageLoader = function(message) {
+    var overlay = ensureGlobalPageLoader();
+    if (!overlay) return;
+    var label = overlay.querySelector('div.text-sm');
+    if (label && message) label.textContent = message;
+    overlay.classList.add('visible');
+    document.body.classList.add('page-loading');
+};
+
+window.hideGlobalPageLoader = function() {
+    var overlay = document.getElementById('global-page-loader-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('visible');
+    document.body.classList.remove('page-loading');
+};
+
 // Add smooth page transition effect
 document.addEventListener('turbo:before-visit', () => {
     document.body.style.opacity = '1';
+    window.showGlobalPageLoader('Loading page…');
 });
 
 document.addEventListener('turbo:visit', () => {
@@ -16,6 +44,7 @@ document.addEventListener('turbo:visit', () => {
 
 document.addEventListener('turbo:load', () => {
     document.body.style.opacity = '1';
+    window.hideGlobalPageLoader();
     
     // Reinitialize any JavaScript that needs to run on each page
     initializePageScripts();

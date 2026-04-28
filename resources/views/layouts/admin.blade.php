@@ -80,9 +80,73 @@
       background-color: rgba(255, 255, 255, 0.72) !important;
       color: #0f172a !important;
     }
+
+    #global-page-loader-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      background: transparent;
+      color: #f8fafc;
+      --loader-stroke: #fff;
+      z-index: 999999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease-in-out;
+    }
+
+    body:not(.admin-theme-dark) #global-page-loader-overlay {
+      color: #111;
+      --loader-stroke: #111;
+    }
+
+    body.admin-theme-dark #global-page-loader-overlay {
+      color: #f8fafc;
+      --loader-stroke: #fff;
+    }
+
+    #global-page-loader-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #global-page-loader-overlay .loader {
+      width: 55px;
+      aspect-ratio: 1;
+      --g1: conic-gradient(from 90deg at 3px 3px, #0000 90deg, var(--loader-stroke) 0);
+      --g2: conic-gradient(from -90deg at 22px 22px, #0000 90deg, var(--loader-stroke) 0);
+      background: var(--g1), var(--g1), var(--g1), var(--g2), var(--g2), var(--g2);
+      background-size: 25px 25px;
+      background-repeat: no-repeat;
+      animation: l7 1.5s infinite;
+    }
+
+    @keyframes l7 {
+      0%   { background-position: 0 0, 0 100%, 100% 100%; }
+      25%  { background-position: 100% 0, 0 100%, 100% 100%; }
+      50%  { background-position: 100% 0, 0 0, 100% 100%; }
+      75%  { background-position: 100% 0, 0 0, 0 100%; }
+      100% { background-position: 100% 100%, 0 0, 0 100%; }
+    }
+
+    .page-loading a[data-tab],
+    .page-loading .driver-tab,
+    .page-loading .bookings-tabs-wrap a,
+    .page-loading .driver-create-button {
+      opacity: 0.55 !important;
+      pointer-events: none !important;
+      cursor: not-allowed !important;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 overflow-x-hidden {{ $isAdminDarkMode ? 'admin-theme-dark' : '' }}">
+  <div id="global-page-loader-overlay" aria-hidden="true">
+    <div class="loader"></div>
+    <div class="text-sm font-semibold">Loading…</div>
+  </div>
   <!-- Sidebar for lg+ -->
     @include('admin.partials.sidebar')
 
@@ -222,6 +286,37 @@
 
     // close user menu when clicking outside
     document.addEventListener('click', function(e){ if (!e.target.closest('#userMenu') && !e.target.closest('#userMenuButton')) { var menu = document.getElementById('userMenu'); if (menu && !menu.classList.contains('hidden')) menu.classList.add('hidden'); } });
+
+    // Fallback page loader helper when app bundle is not available
+    (function(){
+      function layoutShowLoader(message){
+        var overlay = document.getElementById('global-page-loader-overlay');
+        if (!overlay) return;
+        if (message) {
+          var label = overlay.querySelector('.text-sm');
+          if (label) label.textContent = message;
+        }
+        overlay.classList.add('visible');
+        document.body.classList.add('page-loading');
+      }
+      function layoutHideLoader(){
+        var overlay = document.getElementById('global-page-loader-overlay');
+        if (!overlay) return;
+        overlay.classList.remove('visible');
+        document.body.classList.remove('page-loading');
+      }
+      window.showGlobalPageLoader = window.showGlobalPageLoader || layoutShowLoader;
+      window.hideGlobalPageLoader = window.hideGlobalPageLoader || layoutHideLoader;
+
+      document.addEventListener('turbo:before-visit', function(){ window.showGlobalPageLoader('Loading page…'); });
+      document.addEventListener('turbo:render', function(){ window.hideGlobalPageLoader(); });
+
+      ['a[data-tab]', '.driver-tab', '.bookings-tabs-wrap a', '#driver-create-button'].forEach(function(selector){
+        document.querySelectorAll(selector).forEach(function(el){
+          el.addEventListener('click', function(){ window.showGlobalPageLoader('Loading page…'); });
+        });
+      });
+    })();
 
     // Desktop sidebar collapse/expand
     function setSidebarCollapsed(collapsed) {

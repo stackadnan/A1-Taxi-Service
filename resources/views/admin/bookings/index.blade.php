@@ -116,7 +116,8 @@
           e.preventDefault();
           var href = a.getAttribute('href');
           if (!href) return;
-          fetch(href + (href.indexOf('?') === -1 ? '?' : '&') + 'partial=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(r){ return r.text(); }).then(function(html){ container.innerHTML = html; runInjectedScripts(container); attachPagination(container); attachBookingViewButtons(container); }).catch(function(err){ console.error('Pagination load failed', err); });
+          if (typeof window.showGlobalPageLoader === 'function') window.showGlobalPageLoader('Loading page…');
+          fetch(href + (href.indexOf('?') === -1 ? '?' : '&') + 'partial=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(r){ return r.text(); }).then(function(html){ container.innerHTML = html; runInjectedScripts(container); attachPagination(container); attachBookingViewButtons(container); }).catch(function(err){ console.error('Pagination load failed', err); }).finally(function(){ if (typeof window.hideGlobalPageLoader === 'function') window.hideGlobalPageLoader(); });
         });
       });
     }
@@ -154,7 +155,8 @@
       if (!force && container.dataset.loaded) return Promise.resolve();
       container.innerHTML = '<div class="p-4 text-gray-600">Loading…</div>';
       var url = '{{ route('admin.bookings.index') }}?partial=1&section=' + encodeURIComponent(key);
-      return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(res){ if (!res.ok) return res.text().then(function(t){ throw new Error('Failed to load: ' + res.status + '\n' + t.slice(0,200)); }); return res.text(); }).then(function(html){ container.innerHTML = html; container.dataset.loaded = '1'; runInjectedScripts(container); attachPagination(container); attachBookingViewButtons(container); return Promise.resolve(); }).catch(function(err){ console.error('Load section '+key+' error', err); container.innerHTML = '<div class="text-red-600">Failed to load. <button id="retry-'+key+'" class="ml-2 px-2 py-1 border rounded">Retry</button></div>'; var btn = document.getElementById('retry-'+key); if (btn) btn.addEventListener('click', function(){ loadSection(key); }); return Promise.resolve(); });
+      if (typeof window.showGlobalPageLoader === 'function') window.showGlobalPageLoader('Loading bookings…');
+      return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(res){ if (!res.ok) return res.text().then(function(t){ throw new Error('Failed to load: ' + res.status + '\n' + t.slice(0,200)); }); return res.text(); }).then(function(html){ container.innerHTML = html; container.dataset.loaded = '1'; runInjectedScripts(container); attachPagination(container); attachBookingViewButtons(container); return Promise.resolve(); }).catch(function(err){ console.error('Load section '+key+' error', err); container.innerHTML = '<div class="text-red-600">Failed to load. <button id="retry-'+key+'" class="ml-2 px-2 py-1 border rounded">Retry</button></div>'; var btn = document.getElementById('retry-'+key); if (btn) btn.addEventListener('click', function(){ loadSection(key); }); return Promise.resolve(); }).finally(function(){ if (typeof window.hideGlobalPageLoader === 'function') window.hideGlobalPageLoader(); });
     }
 
     // Expose a force refresh helper for move events.

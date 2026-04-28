@@ -81,7 +81,8 @@
     window.refreshDrivers = function(driver){
       var tab = (driver && driver.status) ? driver.status : '{{ request('tab', 'active') }}';
       var url = '{{ route('admin.drivers.index') }}?partial=1&tab=' + encodeURIComponent(tab);
-      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(r){ return r.text(); }).then(function(html){ var cont = document.getElementById('drivers-container'); if (cont) { cont.innerHTML = html; bindDriverListActions(cont); } updateDriverTabs(tab); if (typeof window.showToast === 'function') window.showToast('Drivers updated'); }).catch(function(){ if (typeof window.showToast === 'function') window.showToast('Failed to refresh drivers'); });
+      if (typeof window.showGlobalPageLoader === 'function') window.showGlobalPageLoader('Loading drivers…');
+      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).then(function(r){ return r.text(); }).then(function(html){ var cont = document.getElementById('drivers-container'); if (cont) { cont.innerHTML = html; bindDriverListActions(cont); } updateDriverTabs(tab); if (typeof window.showToast === 'function') window.showToast('Drivers updated'); }).catch(function(){ if (typeof window.showToast === 'function') window.showToast('Failed to refresh drivers'); }).finally(function(){ if (typeof window.hideGlobalPageLoader === 'function') window.hideGlobalPageLoader(); });
     };
 
     function updateDriverTabs(tab){
