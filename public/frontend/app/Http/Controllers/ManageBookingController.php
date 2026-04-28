@@ -527,6 +527,16 @@ class ManageBookingController extends Controller
         ]);
     }
 
+    public function show(): View
+    {
+        return view('manage-booking', [
+            'lookupInput' => [
+                'booking_email' => '',
+                'booking_reference' => '',
+            ],
+        ]);
+    }
+
     public function lookup(Request $request): View
     {
         $validated = $request->validate([

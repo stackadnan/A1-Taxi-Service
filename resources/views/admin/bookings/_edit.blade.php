@@ -164,9 +164,15 @@
     <div class="lg:col-span-1">
       <div class="min-h-full rounded border border-dashed border-gray-300 bg-white p-4 space-y-3">
         @if($isConfirmedTab)
-          <div>
-            <button type="button" id="assign-driver-open" class="w-full px-3 py-2 text-white rounded text-sm" style="background-color: #4F46E5;">Assign Driver</button>
-          </div>
+          @if($booking->driver_id)
+            <div>
+              <button type="button" id="remove-driver-btn" class="w-full px-3 py-2 text-white rounded text-sm" style="background-color: #DC2626;">Remove Driver</button>
+            </div>
+          @else
+            <div>
+              <button type="button" id="assign-driver-open" class="w-full px-3 py-2 text-white rounded text-sm" style="background-color: #4F46E5;">Assign Driver</button>
+            </div>
+          @endif
         @endif
 
         <div>
@@ -205,9 +211,12 @@
             <button type="button" id="copy-job-details-btn" class="w-full px-3 py-2 border rounded text-sm text-white" style="background-color: #64748B;">Copy Job details</button>
           </div>
         @endif
-        <div>
-          <a type="button" href="https://www.google.com/search?q={{ $booking->flight_number }}" target="_blank"  class="w-full px-3 py-2 border rounded text-sm text-center text-white" style="background-color: #a812b3;">Track Flight</a>
-        </div>
+
+        @if($isConfirmedTab)
+          <div>
+            <a type="button" href="https://www.google.com/search?q={{ $booking->flight_number }}" target="_blank"  class="w-full px-3 py-2 border rounded text-sm text-center text-white" style="background-color: #a812b3;">Track Flight</a>
+          </div>
+        @endif
 
 @if($isConfirmedTab || $isCompletedTab)
 
@@ -301,6 +310,23 @@
             </div>
           </div>
         </div>
+
+        <div id="remove-driver-confirmation-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+          <div class="fixed inset-0 bg-black opacity-40"></div>
+          <div class="bg-white rounded-lg shadow-lg z-60 w-full max-w-md p-6 mx-4 space-y-4">
+            <div class="flex items-start justify-between">
+              <div>
+                <h3 class="text-lg font-semibold">Confirm Removal</h3>
+                <p class="text-sm text-gray-600 mt-1">Are you sure you want to remove the assigned driver from this booking?</p>
+              </div>
+              <button type="button" class="text-gray-400 hover:text-gray-600" id="remove-driver-cancel-btn" aria-label="Close">✕</button>
+            </div>
+            <div class="flex justify-end gap-3">
+              <button type="button" id="remove-driver-cancel-action" class="px-4 py-2 border rounded text-sm">Cancel</button>
+              <button type="button" id="remove-driver-confirm-btn" class="px-4 py-2 text-white rounded text-sm" style="background-color: #DC2626;">Remove Driver</button>
+            </div>
+          </div>
+        </div>
       @endif
 
       <script>
@@ -321,6 +347,65 @@
                   var readonlyForm = document.getElementById('booking-edit-form');
                   if (readonlyForm && typeof readonlyForm.requestSubmit === 'function') {
                     readonlyForm.requestSubmit();
+                  }
+                }
+              });
+            }
+
+            var removeDriverBtn = document.getElementById('remove-driver-btn');
+            var removeDriverModal = document.getElementById('remove-driver-confirmation-modal');
+            var removeDriverCancelBtn = document.getElementById('remove-driver-cancel-action');
+            var removeDriverCloseBtn = document.getElementById('remove-driver-cancel-btn');
+            var removeDriverConfirmBtn = document.getElementById('remove-driver-confirm-btn');
+
+            function openRemoveDriverModal() {
+              if (removeDriverModal) {
+                removeDriverModal.classList.remove('hidden');
+              }
+            }
+
+            function closeRemoveDriverModal() {
+              if (removeDriverModal) {
+                removeDriverModal.classList.add('hidden');
+              }
+            }
+
+            if (removeDriverBtn) {
+              removeDriverBtn.addEventListener('click', function() {
+                openRemoveDriverModal();
+              });
+            }
+
+            if (removeDriverCancelBtn) {
+              removeDriverCancelBtn.addEventListener('click', function() {
+                closeRemoveDriverModal();
+              });
+            }
+
+            if (removeDriverCloseBtn) {
+              removeDriverCloseBtn.addEventListener('click', function() {
+                closeRemoveDriverModal();
+              });
+            }
+
+            if (removeDriverConfirmBtn) {
+              removeDriverConfirmBtn.addEventListener('click', function() {
+                if (removeDriverBtn) {
+                  removeDriverBtn.disabled = true;
+                  removeDriverBtn.style.opacity = '0.65';
+                  removeDriverBtn.style.cursor = 'not-allowed';
+                }
+                closeRemoveDriverModal();
+                var driverSelect = document.querySelector('select[name="driver_id"]');
+                if (driverSelect) {
+                  driverSelect.value = '__remove__';
+                }
+                var form = document.getElementById('booking-edit-form');
+                if (form) {
+                  if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                  } else {
+                    form.submit();
                   }
                 }
               });
@@ -372,13 +457,44 @@
               });
             }
 
-            var sendConfirmationBtn = document.getElementById('send-confirmation-btn');
-            if (sendConfirmationBtn) {
-              sendConfirmationBtn.addEventListener('click', function(){
+            function configureSendButton(button, options) {
+              if (!button) return;
+              var originalText = button.textContent;
+              var loadingText = options.loadingText || 'Sending';
+              var successMessage = options.successMessage;
+              var errorMessage = options.errorMessage;
+              var url = options.url;
+              var loadingTimer = null;
+
+              var setLoading = function() {
+                button.disabled = true;
+                button.dataset.originalText = originalText;
+                button.textContent = loadingText + '...';
+                button.style.opacity = '0.65';
+                button.style.cursor = 'not-allowed';
+                var dots = 0;
+                loadingTimer = setInterval(function() {
+                  dots = (dots + 1) % 4;
+                  button.textContent = loadingText + new Array(dots + 1).join('.');
+                }, 400);
+              };
+
+              var resetButton = function() {
+                if (loadingTimer) {
+                  clearInterval(loadingTimer);
+                  loadingTimer = null;
+                }
+                button.disabled = false;
+                button.textContent = button.dataset.originalText || originalText;
+                button.style.opacity = '';
+                button.style.cursor = '';
+              };
+
+              button.addEventListener('click', function() {
                 var tokenEl = document.querySelector('meta[name="csrf-token"]') || document.querySelector('input[name="_token"]');
                 var token = tokenEl ? (tokenEl.getAttribute('content') || tokenEl.value) : '';
-                sendConfirmationBtn.disabled = true;
-                fetch('{{ route('admin.bookings.send_confirmation', $booking) }}', {
+                setLoading();
+                fetch(url, {
                   method: 'POST',
                   credentials: 'same-origin',
                   headers: {
@@ -390,21 +506,28 @@
                 .then(function(res){ return res.json().catch(function(){ return { success: false, message: 'Invalid response from server' }; }); })
                 .then(function(json){
                   if (json && json.success) {
-                    if (typeof window.showToast === 'function') window.showToast(json.message || 'Confirmation email sent');
-                    else alert(json.message || 'Confirmation email sent');
+                    if (typeof window.showToast === 'function') window.showToast(json.message || successMessage);
+                    else alert(json.message || successMessage);
                   } else {
-                    if (typeof window.showAlert === 'function') window.showAlert('Error', (json && json.message) ? json.message : 'Failed to send confirmation email');
-                    else alert((json && json.message) ? json.message : 'Failed to send confirmation email');
+                    if (typeof window.showAlert === 'function') window.showAlert('Error', (json && json.message) ? json.message : errorMessage);
+                    else alert((json && json.message) ? json.message : errorMessage);
                   }
                 })
                 .catch(function(err){
-                  console.error('send confirmation failed', err);
-                  if (typeof window.showAlert === 'function') window.showAlert('Error', 'Failed to send confirmation email');
-                  else alert('Failed to send confirmation email');
+                  console.error(errorMessage.toLowerCase(), err);
+                  if (typeof window.showAlert === 'function') window.showAlert('Error', errorMessage);
+                  else alert(errorMessage);
                 })
-                .finally(function(){ sendConfirmationBtn.disabled = false; });
+                .finally(function(){ resetButton(); });
               });
             }
+
+            configureSendButton(document.getElementById('send-confirmation-btn'), {
+              url: '{{ route('admin.bookings.send_confirmation', $booking) }}',
+              loadingText: 'Sending confirmation...',
+              successMessage: 'Confirmation email sent',
+              errorMessage: 'Failed to send confirmation email'
+            });
 
             var sendDriverInfoBtn = document.getElementById('send-driver-info-btn');
             if (sendDriverInfoBtn) {
@@ -440,39 +563,19 @@
               });
             }
 
-            var sendCancellationBtn = document.getElementById('send-cancellation-btn');
-            if (sendCancellationBtn) {
-              sendCancellationBtn.addEventListener('click', function(){
-                var tokenEl = document.querySelector('meta[name="csrf-token"]') || document.querySelector('input[name="_token"]');
-                var token = tokenEl ? (tokenEl.getAttribute('content') || tokenEl.value) : '';
-                sendCancellationBtn.disabled = true;
-                fetch('{{ route('admin.bookings.send_cancellation', $booking) }}', {
-                  method: 'POST',
-                  credentials: 'same-origin',
-                  headers: {
-                    'X-CSRF-TOKEN': token,
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                  }
-                })
-                .then(function(res){ return res.json().catch(function(){ return { success: false, message: 'Invalid response from server' }; }); })
-                .then(function(json){
-                  if (json && json.success) {
-                    if (typeof window.showToast === 'function') window.showToast(json.message || 'Cancellation email sent');
-                    else alert(json.message || 'Cancellation email sent');
-                  } else {
-                    if (typeof window.showAlert === 'function') window.showAlert('Error', (json && json.message) ? json.message : 'Failed to send cancellation email');
-                    else alert((json && json.message) ? json.message : 'Failed to send cancellation email');
-                  }
-                })
-                .catch(function(err){
-                  console.error('send cancellation failed', err);
-                  if (typeof window.showAlert === 'function') window.showAlert('Error', 'Failed to send cancellation email');
-                  else alert('Failed to send cancellation email');
-                })
-                .finally(function(){ sendCancellationBtn.disabled = false; });
-              });
-            }
+            configureSendButton(document.getElementById('send-cancellation-btn'), {
+              url: '{{ route('admin.bookings.send_cancellation', $booking) }}',
+              loadingText: 'Sending cancellation...',
+              successMessage: 'Cancellation email sent',
+              errorMessage: 'Failed to send cancellation email'
+            });
+
+            configureSendButton(document.getElementById('send-receipt-btn'), {
+              url: '{{ route('admin.bookings.send_completion', $booking) }}',
+              loadingText: 'Sending receipt...',
+              successMessage: 'Completion receipt sent',
+              errorMessage: 'Failed to send completion receipt'
+            });
 
             var sendReviewApprovalBtn = document.getElementById('send-review-approval-btn');
             if (sendReviewApprovalBtn) {

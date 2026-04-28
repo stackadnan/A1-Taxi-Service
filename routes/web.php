@@ -183,6 +183,7 @@ Route::name('admin.')->group(function () {
         Route::post('bookings/{booking}/send-cancellation', [\App\Http\Controllers\Admin\BookingController::class, 'sendCancellationEmail'])->name('bookings.send_cancellation')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
         Route::post('bookings/{booking}/send-review-approval', [\App\Http\Controllers\Admin\BookingController::class, 'sendReviewApprovalRequest'])->name('bookings.send_review_approval')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
         Route::post('bookings/{booking}/send-driver-info', [\App\Http\Controllers\Admin\BookingController::class, 'sendDriverInfoEmail'])->name('bookings.send_driver_info')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
+        Route::post('bookings/{booking}/send-completion', [\App\Http\Controllers\Admin\BookingController::class, 'sendCompletionEmail'])->name('bookings.send_completion')->middleware(\App\Http\Middleware\EnsurePermission::class.':booking.edit');
 
         // Review approval management
         Route::post('reviews/{booking}/approve', [\App\Http\Controllers\Admin\ReviewsController::class, 'approve'])->name('reviews.approve')->middleware(\App\Http\Middleware\EnsurePermission::class.':review.view');

@@ -26,6 +26,9 @@ Route::get('/', [PageController::class, 'home'])->name('home');
 
 Route::post('/contact/send', [ContactController::class, 'send'])->name('contact.send');
 
+Route::get('/manage-booking', [ManageBookingController::class, 'show'])
+    ->name('manage-booking.show');
+
 Route::post('/manage-booking', [ManageBookingController::class, 'lookup'])
     ->name('manage-booking.lookup');
 

@@ -899,6 +899,31 @@ class BookingController extends Controller
         }
     }
 
+    public function sendCompletionEmail(Request $request, Booking $booking)
+    {
+        try {
+            $email = trim((string)($booking->email ?? ''));
+            if ($email === '') {
+                return response()->json(['success' => false, 'message' => 'Customer email is missing for this booking.'], 422);
+            }
+
+            $subject = 'Booking Completed - ' . ($booking->booking_code ?? ('#' . $booking->id));
+            $this->sendBookingEmailView('emails.booking_completion', $email, $subject, ['booking' => $booking]);
+
+            return response()->json(['success' => true, 'message' => 'Completion receipt sent successfully.']);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to send booking completion email', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+            $message = 'Failed to send completion receipt email.';
+            if (config('app.debug')) {
+                $message .= ' ' . $e->getMessage();
+            }
+            return response()->json(['success' => false, 'message' => $message], 500);
+        }
+    }
+
     /**
      * Send booking cancellation email to customer from admin panel.
      */

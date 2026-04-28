@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 use Carbon\Carbon;
+use App\Models\AdminSetting;
 use App\Models\Driver;
 use App\Models\UserNotification;
 use Illuminate\Support\Facades\Log;
@@ -160,6 +161,50 @@ class Booking extends Model
         'review_email_sent_at' => 'datetime',
         'meta' => 'array'
     ];
+
+    public function getVatPercentageAttribute(): float
+    {
+        $raw = AdminSetting::get('vat_percentage', 0);
+        if (!is_numeric($raw)) {
+            return 0.0;
+        }
+
+        return max(0.0, min(100.0, round((float) $raw, 2)));
+    }
+
+    public function getFareAttribute(): ?float
+    {
+        if ($this->total_price === null) {
+            return null;
+        }
+
+        $vatPercentage = $this->vat_percentage;
+        $totalPrice = (float) $this->total_price;
+
+        if ($vatPercentage <= 0) {
+            return round($totalPrice, 2);
+        }
+
+        return round($totalPrice / (1 + $vatPercentage / 100), 2);
+    }
+
+    public function getVatAttribute(): ?float
+    {
+        if ($this->total_price === null) {
+            return null;
+        }
+
+        return round((float) $this->total_price - ($this->fare ?? 0.0), 2);
+    }
+
+    public function getTotalFareAttribute(): ?float
+    {
+        if ($this->total_price === null) {
+            return null;
+        }
+
+        return round((float) $this->total_price, 2);
+    }
 
     public function status()
     {
