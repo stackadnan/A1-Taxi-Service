@@ -311,10 +311,8 @@
       document.addEventListener('turbo:before-visit', function(){ window.showGlobalPageLoader('Loading page…'); });
       document.addEventListener('turbo:render', function(){ window.hideGlobalPageLoader(); });
 
-      ['a[data-tab]', '.driver-tab', '.bookings-tabs-wrap a', '#driver-create-button'].forEach(function(selector){
-        document.querySelectorAll(selector).forEach(function(el){
-          el.addEventListener('click', function(){ window.showGlobalPageLoader('Loading page…'); });
-        });
+      document.querySelectorAll('aside[aria-label="Sidebar"] a').forEach(function(el){
+        el.addEventListener('click', function(){ window.showGlobalPageLoader('Loading page…'); });
       });
     })();
 
