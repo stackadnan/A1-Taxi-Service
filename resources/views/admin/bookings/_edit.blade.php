@@ -49,7 +49,7 @@
           <div class="mt-1 flex gap-2">
             <!-- <input type="text" name="source" value="{{ old('source', $booking->source_url ?? ($booking->meta['source'] ?? '')) }}" class="block w-full border rounded p-2" placeholder="Source URL"> -->
             @if(!$isReadOnly)
-              <button type="submit" id="source-update-btn" class="px-3 py-2 text-white rounded text-sm whitespace-nowrap" style="background-color: #1E293B;">Update</button>
+              <button type="submit" id="source-update-btn" class="px-6 py-2 mt-6 text-white rounded text-sm whitespace-nowrap" style="background-color: #1E293B;">Update</button>
             @endif
           </div>
         </div>
