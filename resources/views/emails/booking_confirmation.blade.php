@@ -37,8 +37,32 @@ a { text-decoration: none; }
               <tr><td style="padding:8px 0;border-bottom:1px solid #eef2e6;">Passenger</td><td style="padding:8px 0;border-bottom:1px solid #eef2e6;" align="right">{{ $booking->passenger_name ?: 'Not provided' }}</td></tr>
               <tr><td style="padding:8px 0;border-bottom:1px solid #eef2e6;">Phone</td><td style="padding:8px 0;border-bottom:1px solid #eef2e6;" align="right">{{ $booking->phone ?: 'Not provided' }}</td></tr>
               <tr><td style="padding:8px 0;border-bottom:1px solid #eef2e6;">Payment method</td><td style="padding:8px 0;border-bottom:1px solid #eef2e6;" align="right">{{ $booking->payment_type ?: 'Not provided' }}</td></tr>
+              <tr><td style="padding:8px 0;border-bottom:1px solid #eef2e6;">Payment status</td><td style="padding:8px 0;border-bottom:1px solid #eef2e6;" align="right">
+                @php
+                  $paymentType = strtolower(trim((string) ($booking->payment_type ?? '')));
+                  $paymentId = trim((string) ($booking->payment_id ?? ''));
+                @endphp
+                @if($paymentType === 'card')
+                  @if($paymentId !== '')
+                    Payment completed
+                  @else
+                    Payment pending
+                  @endif
+                @else
+                  {{ $booking->payment_type ?: 'Not provided' }}
+                @endif
+              </td></tr>
               <tr><td style="padding:8px 0;">Vehicle</td><td style="padding:8px 0;" align="right">{{ $booking->vehicle_type ?: 'Not provided' }}</td></tr>
             </table>
+            @if(!empty($paymentUrl) && strtolower(trim((string) ($booking->payment_type ?? ''))) === 'card')
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;">
+              <tr>
+                <td align="center">
+                  <a href="{{ $paymentUrl }}" style="display:inline-block;padding:12px 24px;background:#008B9E;color:#ffffff;border-radius:999px;font-size:14px;font-weight:700;">Pay Now</a>
+                </td>
+              </tr>
+            </table>
+            @endif
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;font-size:14px;color:#374151;">
               <tr><td style="padding:8px 0;border-bottom:1px solid #eef2e6;">Pickup</td><td style="padding:8px 0;border-bottom:1px solid #eef2e6;" align="right">{{ $booking->pickup_address ?: 'Not provided' }}</td></tr>
               <tr><td style="padding:8px 0;border-bottom:1px solid #eef2e6;">Dropoff</td><td style="padding:8px 0;border-bottom:1px solid #eef2e6;" align="right">{{ $booking->dropoff_address ?: 'Not provided' }}</td></tr>

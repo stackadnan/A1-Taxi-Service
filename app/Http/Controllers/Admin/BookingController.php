@@ -10,6 +10,7 @@ use App\Models\BookingStatus;
 use App\Models\Driver;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class BookingController extends Controller
 {
@@ -882,8 +883,27 @@ class BookingController extends Controller
                 return response()->json(['success' => false, 'message' => 'Customer email is missing for this booking.'], 422);
             }
 
+            $paymentUrl = null;
+            $isCardPayment = strtolower(trim((string) ($booking->payment_type ?? ''))) === 'card';
+            $hasPaymentId = trim((string) ($booking->payment_id ?? '')) !== '';
+
+            if ($isCardPayment && !$hasPaymentId) {
+                try {
+                    $checkoutSession = $this->createStripeCheckoutSessionForBooking($booking);
+                    $paymentUrl = (string) ($checkoutSession['url'] ?? '');
+                } catch (\Throwable $e) {
+                    logger()->error('Failed to create Stripe checkout session for booking confirmation email', [
+                        'booking_id' => $booking->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             $subject = 'Booking Confirmation - ' . ($booking->booking_code ?? ('#' . $booking->id));
-            $this->sendBookingEmailView('emails.booking_confirmation', $email, $subject, ['booking' => $booking]);
+            $this->sendBookingEmailView('emails.booking_confirmation', $email, $subject, [
+                'booking' => $booking,
+                'paymentUrl' => $paymentUrl,
+            ]);
 
             return response()->json(['success' => true, 'message' => 'Confirmation email sent successfully.']);
         } catch (\Throwable $e) {
@@ -1044,6 +1064,58 @@ class BookingController extends Controller
         Mail::send($view, $data, function ($message) use ($to, $subject) {
             $message->to($to)->subject($subject);
         });
+    }
+
+    protected function createStripeCheckoutSessionForBooking(Booking $booking): array
+    {
+        $secretKey = trim((string) AdminSetting::get('stripe_secret_key', '')) ?: (string) config('services.stripe.secret', '');
+        if ($secretKey === '') {
+            throw new \RuntimeException('Stripe secret key is not configured.');
+        }
+
+        $appUrl = rtrim((string) config('app.url', ''), '/');
+        $successUrl = $appUrl . '/booking/stripe/success?session_id={CHECKOUT_SESSION_ID}';
+        $cancelUrl = $appUrl . '/booking/stripe/cancel?booking_id=' . rawurlencode((string) $booking->id);
+
+        $amount = (float) ($booking->total_price ?? 0);
+        if ($amount <= 0) {
+            throw new \RuntimeException('Stripe amount must be greater than zero.');
+        }
+
+        $requestPayload = [
+            'mode' => 'payment',
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'customer_email' => strtolower(trim((string) ($booking->email ?? ''))),
+            'client_reference_id' => (string) ($booking->booking_code ?? ''),
+            'metadata[booking_id]' => (string) $booking->id,
+            'metadata[booking_code]' => (string) ($booking->booking_code ?? ''),
+            'metadata[customer_email]' => strtolower(trim((string) ($booking->email ?? ''))),
+            'line_items[0][quantity]' => 1,
+            'line_items[0][price_data][currency]' => 'gbp',
+            'line_items[0][price_data][unit_amount]' => (int) round($amount * 100),
+            'line_items[0][price_data][product_data][name]' => 'Booking ' . ($booking->booking_code ?? ''),
+            'line_items[0][price_data][product_data][description]' => 'Airport transfer booking',
+        ];
+
+        $response = Http::asForm()
+            ->withBasicAuth($secretKey, '')
+            ->post('https://api.stripe.com/v1/checkout/sessions', $requestPayload);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Stripe session request failed: ' . $response->status() . ' ' . $response->body());
+        }
+
+        $sessionUrl = (string) $response->json('url', '');
+        $sessionId = (string) $response->json('id', '');
+        if ($sessionUrl === '') {
+            throw new \RuntimeException('Stripe did not return a checkout URL.');
+        }
+
+        return [
+            'url' => $sessionUrl,
+            'id' => $sessionId,
+        ];
     }
 
     private function buildBookingChangeSet(Booking $booking, array $originalAttributes, array $originalMeta, array $newMeta): array
