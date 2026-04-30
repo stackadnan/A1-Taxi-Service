@@ -25,7 +25,7 @@ class ZoneController extends Controller
             return view('admin.pricing.zones._list', compact('items','q'));
         }
 
-        return view('admin.pricing.zones.index', compact('items','q'));
+        return redirect()->to(route('admin.pricing.index') . '#zone');
     }
 
     public function create(Request $request)
@@ -176,7 +176,8 @@ class ZoneController extends Controller
             return view('admin.pricing.zones._map_content', ['geojson' => $geojson, 'zones' => $zones]);
         }
 
-        return view('admin.pricing.zones.map_index', ['geojson' => $geojson, 'zones' => $zones]);
+        // Preserve the old map route for AJAX, but redirect full-page access to the pricing index with #map.
+        return redirect()->to(route('admin.pricing.index') . '#map');
     }
 
     // API: given a lat/lon, return the Zone that contains the point (if any)
