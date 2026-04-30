@@ -104,15 +104,42 @@ class DriverController extends Controller
         if ($tab === 'status') {
             // Get status ids that mean a booking is finished
             $finishedStatusIds = \App\Models\BookingStatus::whereIn('name', ['completed', 'cancelled'])->pluck('id')->toArray();
+            $driverIds = $drivers->pluck('id')->filter()->all();
+            $currentBookingsByDriver = [];
+            $lastCompletedByDriver = [];
+
+            if (!empty($driverIds)) {
+                $activeBookings = \App\Models\Booking::with('status')
+                    ->whereIn('driver_id', $driverIds)
+                    ->whereNotIn('status_id', $finishedStatusIds)
+                    ->orderBy('driver_id')
+                    ->orderBy('scheduled_at', 'desc')
+                    ->orderBy('id', 'desc')
+                    ->get();
+
+                foreach ($activeBookings as $booking) {
+                    if (!isset($currentBookingsByDriver[$booking->driver_id])) {
+                        $currentBookingsByDriver[$booking->driver_id] = $booking;
+                    }
+                }
+
+                $completedBookings = \App\Models\Booking::with('status')
+                    ->whereIn('driver_id', $driverIds)
+                    ->whereHas('status', function($q){ $q->where('name', 'completed'); })
+                    ->orderBy('driver_id')
+                    ->orderByDesc('updated_at')
+                    ->get();
+
+                foreach ($completedBookings as $booking) {
+                    if (!isset($lastCompletedByDriver[$booking->driver_id])) {
+                        $lastCompletedByDriver[$booking->driver_id] = $booking;
+                    }
+                }
+            }
 
             foreach ($drivers as $drv) {
                 // find most relevant active booking for this driver (not completed/cancelled)
-                $currentBooking = \App\Models\Booking::where('driver_id', $drv->id)
-                    ->whereNotIn('status_id', $finishedStatusIds)
-                    ->orderBy('scheduled_at', 'desc')
-                    ->orderBy('id', 'desc')
-                    ->first();
-
+                $currentBooking = $currentBookingsByDriver[$drv->id] ?? null;
                 $drv->current_booking = $currentBooking;
 
                 if ($currentBooking) {
@@ -150,10 +177,7 @@ class DriverController extends Controller
 
                     // Show idle time since the driver's last completed booking if available,
                     // otherwise fall back to driver's last_active_at
-                    $lastCompleted = \App\Models\Booking::where('driver_id', $drv->id)
-                        ->whereHas('status', function($q){ $q->where('name', 'completed'); })
-                        ->orderBy('updated_at', 'desc')
-                        ->first();
+                    $lastCompleted = $lastCompletedByDriver[$drv->id] ?? null;
 
                     // Debug log to check what we're finding
                     if ($lastCompleted) {

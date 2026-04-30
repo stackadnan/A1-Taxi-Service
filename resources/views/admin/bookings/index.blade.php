@@ -162,12 +162,12 @@
       return loadSection(key, true);
     };
 
-    // preload all sections on first load, then hide via CSS (so switching is instant)
+    // lazy-load only the active section first, then load others on demand
     var sections = @json(array_keys($sections));
-    Promise.all(sections.map(function(k){ return loadSection(k); })).then(function(){ console.debug('All booking sections loaded');
-      // Ensure modal view handlers are attached to any server-rendered panes that did not go through AJAX load
-      sections.forEach(function(k){ var c = document.getElementById('booking-' + k + '-container'); if (c) attachBookingViewButtons(c); });
-    }).catch(function(){ console.warn('Some booking sections failed to load'); });
+    loadSection('{{ $active }}').then(function(){
+      var activeContainer = document.getElementById('booking-{{ $active }}-container');
+      if (activeContainer) attachBookingViewButtons(activeContainer);
+    }).catch(function(){ console.warn('Active booking section failed to load'); });
 
     // Tab activation (show/hide panes similar to pricing)
     var tabs = document.querySelectorAll('ul[role="tablist"] [data-tab]');
@@ -187,6 +187,8 @@
       panes.forEach(function(p){ if(p.getAttribute('data-pane') === tabName) p.classList.remove('hidden'); else p.classList.add('hidden'); });
       // update querystring (so links remain meaningful)
       try { history.replaceState(null, '', '?section=' + tabName); } catch(e){}
+      // load content for the newly activated pane if not loaded yet
+      loadSection(tabName);
     }
 
     tabs.forEach(function(t){ t.addEventListener('click', function(e){ e.preventDefault(); activate(t.getAttribute('data-tab')); }); });

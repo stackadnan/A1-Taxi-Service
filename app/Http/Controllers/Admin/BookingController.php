@@ -31,14 +31,15 @@ class BookingController extends Controller
             $active = 'new';
         }
 
-        // gather counts
-        $counts = [];
-        foreach (array_keys($sections) as $key) {
-            $counts[$key] = $this->countForSection($key);
-        }
+        $wantsCounts = $request->boolean('counts') || $request->routeIs('admin.bookings.counts');
+        $isPartial = $request->get('partial') || $request->ajax();
 
         // Counts endpoint must return JSON even for AJAX requests.
-        if ($request->boolean('counts') || $request->routeIs('admin.bookings.counts')) {
+        if ($wantsCounts) {
+            $counts = [];
+            foreach (array_keys($sections) as $key) {
+                $counts[$key] = $this->countForSection($key);
+            }
             return response()->json(['counts' => $counts]);
         }
 
@@ -92,11 +93,17 @@ class BookingController extends Controller
         }
 
         // If partial requested (ajax tab load) return only the relevant partial
-        if ($request->get('partial') || $request->ajax()) {
+        if ($isPartial) {
             if ($active === 'new_manual') {
                 return view('admin.bookings._manual', compact('statuses','vehicleTypes'));
             }
             return view('admin.bookings._list', compact('bookings','active'));
+        }
+
+        // Full page render needs counts for the tab badges.
+        $counts = [];
+        foreach (array_keys($sections) as $key) {
+            $counts[$key] = $this->countForSection($key);
         }
 
         return view('admin.bookings.index', compact('sections', 'active', 'counts', 'bookings','statuses','vehicleTypes'));
