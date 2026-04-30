@@ -798,6 +798,7 @@ class BookingController extends Controller
 
             // Refresh model and clear any cached relation so subsequent views/queries see the change immediately
             $booking->refresh();
+            $booking->load(['status', 'driver']);
 
             // Fire event for real-time updates. Include a driver_changed flag so listeners can avoid duplicate notifications.
             $data['driver_changed'] = (isset($oldDriverId) && $oldDriverId != $booking->driver_id) || (!isset($oldDriverId) && $booking->driver_id);

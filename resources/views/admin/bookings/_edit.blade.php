@@ -214,7 +214,7 @@
 
         @if($isConfirmedTab)
           <div>
-            <a type="button" href="https://www.google.com/search?q={{ $booking->flight_number }}" target="_blank"  class="w-full px-3 py-2 border rounded text-sm text-center text-white" style="background-color: #a812b3;">Track Flight</a>
+            <a id="track-flight-btn" type="button" href="https://www.google.com/search?q={{ $booking->flight_number }}" target="_blank"  class="w-full px-3 py-2 border rounded text-sm text-center text-white" style="background-color: #a812b3;">Track Flight</a>
           </div>
         @endif
 
@@ -230,14 +230,14 @@
     $isAssigned = $assignedDriverName || $booking->driver_id;
   @endphp
 
-  <div class="rounded border border-gray-200 bg-gray-50 p-3 text-sm">
+  <div id="assigned-driver-info-box" class="rounded border border-gray-200 bg-gray-50 p-3 text-sm">
     <div class="font-semibold text-gray-800 mb-2">Assigned Driver Info</div>
 
     @if($isAssigned)
-      <div class="text-gray-700"><span class="font-medium">Name:</span> {{ $assignedDriverName }}</div>
-      <div class="text-gray-700"><span class="font-medium">Phone:</span> {{ $assignedDriverPhone ?? '-' }}</div>
-      <div class="text-gray-700"><span class="font-medium">Car Type:</span> {{ $assignedDriverCarType ?? '-' }}</div>
-      <div class="text-gray-700"><span class="font-medium">Number Plate:</span> {{ $assignedDriverPlate ?? '-' }}</div>
+      <div class="text-gray-700"><span class="font-medium">Name:</span> <span id="assigned-driver-name">{{ $assignedDriverName }}</span></div>
+      <div class="text-gray-700"><span class="font-medium">Phone:</span> <span id="assigned-driver-phone">{{ $assignedDriverPhone ?? '-' }}</span></div>
+      <div class="text-gray-700"><span class="font-medium">Car Type:</span> <span id="assigned-driver-cartype">{{ $assignedDriverCarType ?? '-' }}</span></div>
+      <div class="text-gray-700"><span class="font-medium">Number Plate:</span> <span id="assigned-driver-plate">{{ $assignedDriverPlate ?? '-' }}</span></div>
     @else
       <div class="text-gray-500 italic">Not assigned yet</div>
     @endif
@@ -782,6 +782,84 @@
         }).join('');
       }
 
+      function syncBookingFormFields(booking) {
+        if (!booking || typeof booking !== 'object') return;
+        var meta = booking.meta || {};
+        var normalizeDateValue = function(value) {
+          if (value === null || typeof value === 'undefined' || value === '') return '';
+          if (typeof value === 'object' && typeof value.toString === 'function') {
+            value = value.toString();
+          }
+          if (typeof value !== 'string') return '';
+          var datePart = value.split('T')[0].split(' ')[0];
+          return datePart.match(/^\d{4}-\d{2}-\d{2}$/) ? datePart : '';
+        };
+        var normalizeTimeValue = function(value) {
+          if (value === null || typeof value === 'undefined' || value === '') return '';
+          if (typeof value === 'object' && typeof value.toString === 'function') {
+            value = value.toString();
+          }
+          if (typeof value !== 'string') return '';
+          var match = value.match(/^(\d{2}:\d{2})/);
+          return match ? match[1] : '';
+        };
+        var setValue = function(name, value) {
+          var el = form.querySelector('[name="' + name + '"]');
+          if (!el) return;
+          el.value = value === null || typeof value === 'undefined' ? '' : value;
+        };
+
+        setValue('booking_code', booking.booking_code);
+        setValue('payment_type', booking.payment_type || '');
+        setValue('payment_id', booking.payment_id || '');
+        setValue('booking_charges', booking.total_price ?? '');
+        setValue('passenger_name', booking.passenger_name || '');
+        setValue('email', booking.email || '');
+        setValue('phone', booking.phone || '');
+        setValue('alternate_phone', booking.alternate_phone || '');
+        setValue('pickup_address', booking.pickup_address || '');
+        setValue('dropoff_address', booking.dropoff_address || '');
+        setValue('pickup_date', normalizeDateValue(booking.pickup_date));
+        setValue('pickup_time', normalizeTimeValue(booking.pickup_time));
+        setValue('passengers', booking.passengers_count ?? '');
+        setValue('luggage', booking.luggage_count || '');
+        setValue('flight_number', booking.flight_number || '');
+        setValue('flight_time', meta.flight_time || booking.flight_arrival_time || '');
+        setValue('meet_and_greet', booking.meet_and_greet ? '1' : '0');
+        setValue('baby_seat_age', booking.baby_seat_age || '');
+        setValue('baby_seat', booking.baby_seat ? '1' : '0');
+        setValue('message_to_driver', booking.message_to_driver || '');
+        setValue('message_to_admin', booking.message_to_admin || '');
+        setValue('status', booking.status ? booking.status.name : (booking.status_id ? booking.status_id : ''));
+        setValue('driver_id', booking.driver_id || '');
+        setValue('driver_price', booking.driver_price ?? '');
+        setValue('driver_percentage', typeof meta.driver_percentage !== 'undefined' ? meta.driver_percentage : '');
+        setValue('driver_display_price', typeof meta.driver_display_price !== 'undefined' ? meta.driver_display_price : '');
+
+        var trackFlight = document.getElementById('track-flight-btn');
+        if (trackFlight) {
+          trackFlight.href = 'https://www.google.com/search?q=' + encodeURIComponent(booking.flight_number || '');
+        }
+
+        var assignedNameEl = document.getElementById('assigned-driver-name');
+        var assignedPhoneEl = document.getElementById('assigned-driver-phone');
+        var assignedCarTypeEl = document.getElementById('assigned-driver-cartype');
+        var assignedPlateEl = document.getElementById('assigned-driver-plate');
+        var assignedInfoBox = document.getElementById('assigned-driver-info-box');
+        var assignedDriverName = booking.driver_name || (booking.driver ? booking.driver.name : '');
+        var assignedDriverPhone = booking.driver ? booking.driver.phone : '';
+        var assignedDriverCarType = booking.driver ? (booking.driver.car_type || booking.vehicle_type) : (booking.vehicle_type || '');
+        var assignedDriverPlate = booking.driver ? booking.driver.vehicle_plate : '';
+
+        if (assignedNameEl) assignedNameEl.textContent = assignedDriverName || '-';
+        if (assignedPhoneEl) assignedPhoneEl.textContent = assignedDriverPhone || '-';
+        if (assignedCarTypeEl) assignedCarTypeEl.textContent = assignedDriverCarType || '-';
+        if (assignedPlateEl) assignedPlateEl.textContent = assignedDriverPlate || '-';
+        if (assignedInfoBox && !assignedDriverName) {
+          assignedInfoBox.innerHTML = '<div class="text-gray-500 italic">Not assigned yet</div>';
+        }
+      }
+
       form.addEventListener('submit', function(e){
         e.preventDefault();
         var fd = new FormData(form);
@@ -805,6 +883,10 @@
 
                 if (json.booking && json.booking.meta && json.booking.meta.change_logs) {
                   renderBookingChangeLogs(json.booking.meta.change_logs);
+                }
+
+                if (json.booking) {
+                  syncBookingFormFields(json.booking);
                 }
 
                 // If server included a warning (assignment allowed but driver remains inactive), show it
