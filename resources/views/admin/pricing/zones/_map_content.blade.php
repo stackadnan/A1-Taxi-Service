@@ -211,11 +211,17 @@
         var ukBounds = [[49.5, -8.6],[61.0, 2.1]];
         console.log('UK bounds:', ukBounds);
         var map = L.map('zones-map', { maxBounds: ukBounds, maxBoundsViscosity: 0.9, minZoom: 5, maxZoom: 19 });
+        window.zonesMapInstance = map;
         console.log('Map instance created:', map);
         
         // Initial default view: London (first-time load)
         console.log('Setting initial view to London');
         map.setView([51.5074, -0.1278], 13);
+        
+        // ensure the map redraws correctly when the hidden pane becomes visible
+        if (typeof map.invalidateSize === 'function') {
+          setTimeout(function(){ map.invalidateSize(); }, 250);
+        }
         
         console.log('Adding tile layer from OpenStreetMap');
         var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }).addTo(map);

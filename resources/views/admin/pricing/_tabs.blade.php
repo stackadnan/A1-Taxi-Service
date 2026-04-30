@@ -37,24 +37,11 @@
       try {
         var name = tab.getAttribute('data-tab');
         
-        // If we're on the pricing index page (or any page that contains tab panes), intercept and activate in-page
+        // If we're on the pricing index page (or any page that contains tab panes), intercept and keep the navigation in-page.
         var panesExist = document.querySelector('[data-pane]');
         if (panesExist) {
           e.preventDefault();
-          // If a pane with that name exists, trigger the existing tab mechanism
-          var targetBtn = document.querySelector('[data-tab="'+name+'"]');
-          if (targetBtn) {
-            targetBtn.click();
-            // update browser URL without reloading
-            history.replaceState(null, '', '#'+name);
-            return;
-          }
-          // Fallback: if the pane isn't pre-rendered, attempt to call the load function used in index page
-          if (name === 'postcode' && typeof window.loadPostcodes === 'function') { window.loadPostcodes(); history.replaceState(null, '', '#postcode'); return; }
-          if (name === 'mileage' && typeof window.loadMileage === 'function') { window.loadMileage(); history.replaceState(null, '', '#mileage'); return; }
-          if (name === 'zone' && typeof window.loadZones === 'function') { window.loadZones(); history.replaceState(null, '', '#zone'); return; }
-          if (name === 'other' && typeof window.loadOther === 'function') { window.loadOther(); history.replaceState(null, '', '#other'); return; }
-          if (name === 'map' && typeof window.loadMap === 'function') { window.loadMap(); history.replaceState(null, '', '#map'); return; }
+          return;
         }
         // Otherwise, allow normal navigation (full page load) to the route (e.g., when on a different page)
       } catch (err) { console.error('Tab switch failed', err); }

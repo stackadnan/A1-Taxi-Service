@@ -719,13 +719,17 @@
         if (t) {
           t.addEventListener('click', function(){ 
             if (!loaded) { 
-              loadMap(); 
+              // Delay map initialization until after the tab activation has completed
+              // to avoid Leaflet sizing issues when the map container is still hidden.
+              setTimeout(function(){ loadMap(); }, 30);
               loaded=true; 
             } 
           });
         }
         
-        if (location.hash === '#map') loadMap();
+        if (location.hash === '#map') {
+          setTimeout(function(){ loadMap(); }, 30);
+        }
       })();
       </script>
     </section>
